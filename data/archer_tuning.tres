@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ActorTuning" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/actor_tuning.gd" id="1_tuning"]
+[ext_resource type="Resource" path="res://data/archer_shot.tres" id="2_shot"]
+
+[resource]
+script = ExtResource("1_tuning")
+move_speed = 64.0
+dodge_speed = 180.0
+dodge_seconds = 0.32
+dodge_invuln_start = 0.08
+dodge_invuln_end = 0.22
+max_health = 42.0
+max_stamina = 100.0
+stamina_regen_per_second = 20.0
+stamina_regen_delay = 0.6
+armor = 0.0
+team_id = 2
+hit_stagger_seconds = 0.18
+guard_break_stagger_seconds = 0.6
+knockback_damping = 12.0
+light_attack = ExtResource("2_shot")
+heavy_attack = ExtResource("2_shot")
+dodge_stamina_cost = 25.0

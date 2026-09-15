@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DropTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/drop_table.gd" id="1_drop"]
+
+[resource]
+script = ExtResource("1_drop")
+guaranteed_definition_ids = Array[StringName]([&"leather_cap"])
+bonus_chance = 0.25
+bonus_definition_ids = Array[StringName]([&"hunter_talisman", &"ragged_tunic"])

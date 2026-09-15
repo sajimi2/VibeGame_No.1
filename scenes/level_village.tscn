@@ -1,0 +1,327 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/level_flow.gd" id="1_flow"]
+[ext_resource type="Script" path="res://scripts/ui/combat_hud.gd" id="2_hud"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/items/loot_spawner.gd" id="4_loot"]
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="5_inventory_ui"]
+[ext_resource type="Script" path="res://scripts/ui/level_up_panel.gd" id="6_levelup_ui"]
+[ext_resource type="Script" path="res://scripts/world/quest_giver.gd" id="7_quest"]
+[ext_resource type="Script" path="res://scripts/world/level_exit.gd" id="8_exit"]
+[ext_resource type="Script" path="res://scripts/ui/sfx_player.gd" id="9_sfx"]
+
+[sub_resource type="RectangleShape2D" id="wall_h"]
+size = Vector2(960, 32)
+
+[sub_resource type="RectangleShape2D" id="wall_v"]
+size = Vector2(32, 540)
+
+[sub_resource type="RectangleShape2D" id="house"]
+size = Vector2(96, 72)
+
+[sub_resource type="RectangleShape2D" id="well_shape"]
+size = Vector2(40, 40)
+
+[sub_resource type="RectangleShape2D" id="exit_shape"]
+size = Vector2(48, 48)
+
+[sub_resource type="CircleShape2D" id="quest_shape"]
+radius = 40.0
+
+[node name="Village" type="Node2D"]
+script = ExtResource("1_flow")
+level_id = &"village"
+refills_on_entry = true
+player_path = NodePath("Player")
+hud_path = NodePath("HintLayer")
+inventory_panel_path = NodePath("HintLayer/InventoryPanel")
+quest_panel_path = NodePath("HintLayer/LevelUpPanel")
+quest_giver_path = NodePath("QuestGiver")
+sfx_path = NodePath("Sfx")
+run_save_smoke_check = false
+
+[node name="Floor" type="ColorRect" parent="."]
+offset_left = 32.0
+offset_top = 32.0
+offset_right = 928.0
+offset_bottom = 508.0
+color = Color(0.156863, 0.2, 0.164706, 1)
+mouse_filter = 2
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallTop" type="StaticBody2D" parent="Walls"]
+position = Vector2(480, 16)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Walls/WallTop"]
+color = Color(0.32549, 0.376471, 0.32549, 1)
+polygon = PackedVector2Array(-480, -16, 480, -16, 480, 16, -480, 16)
+
+[node name="Shape" type="CollisionShape2D" parent="Walls/WallTop"]
+shape = SubResource("wall_h")
+
+[node name="WallBottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(480, 524)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Walls/WallBottom"]
+color = Color(0.32549, 0.376471, 0.32549, 1)
+polygon = PackedVector2Array(-480, -16, 480, -16, 480, 16, -480, 16)
+
+[node name="Shape" type="CollisionShape2D" parent="Walls/WallBottom"]
+shape = SubResource("wall_h")
+
+[node name="WallLeft" type="StaticBody2D" parent="Walls"]
+position = Vector2(16, 270)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Walls/WallLeft"]
+color = Color(0.32549, 0.376471, 0.32549, 1)
+polygon = PackedVector2Array(-16, -270, 16, -270, 16, 270, -16, 270)
+
+[node name="Shape" type="CollisionShape2D" parent="Walls/WallLeft"]
+shape = SubResource("wall_v")
+
+[node name="WallRight" type="StaticBody2D" parent="Walls"]
+position = Vector2(944, 270)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Walls/WallRight"]
+color = Color(0.32549, 0.376471, 0.32549, 1)
+polygon = PackedVector2Array(-16, -270, 16, -270, 16, 270, -16, 270)
+
+[node name="Shape" type="CollisionShape2D" parent="Walls/WallRight"]
+shape = SubResource("wall_v")
+
+[node name="Houses" type="Node2D" parent="."]
+
+[node name="HouseA" type="StaticBody2D" parent="Houses"]
+position = Vector2(220, 160)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Houses/HouseA"]
+color = Color(0.482353, 0.4, 0.313726, 1)
+polygon = PackedVector2Array(-48, -36, 48, -36, 48, 36, -48, 36)
+
+[node name="Roof" type="Polygon2D" parent="Houses/HouseA"]
+color = Color(0.6, 0.32549, 0.286275, 1)
+polygon = PackedVector2Array(-54, -36, 0, -60, 54, -36)
+
+[node name="Shape" type="CollisionShape2D" parent="Houses/HouseA"]
+shape = SubResource("house")
+
+[node name="HouseB" type="StaticBody2D" parent="Houses"]
+position = Vector2(200, 400)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Houses/HouseB"]
+color = Color(0.482353, 0.4, 0.313726, 1)
+polygon = PackedVector2Array(-48, -36, 48, -36, 48, 36, -48, 36)
+
+[node name="Roof" type="Polygon2D" parent="Houses/HouseB"]
+color = Color(0.6, 0.32549, 0.286275, 1)
+polygon = PackedVector2Array(-54, -36, 0, -60, 54, -36)
+
+[node name="Shape" type="CollisionShape2D" parent="Houses/HouseB"]
+shape = SubResource("house")
+
+[node name="Well" type="StaticBody2D" parent="."]
+position = Vector2(520, 270)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Well"]
+color = Color(0.4, 0.439216, 0.482353, 1)
+polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
+
+[node name="Shape" type="CollisionShape2D" parent="Well"]
+shape = SubResource("well_shape")
+
+[node name="QuestGiver" type="Area2D" parent="."]
+z_index = 5
+position = Vector2(300, 240)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("7_quest")
+prompt_label_path = NodePath("Prompt")
+
+[node name="Visual" type="Polygon2D" parent="QuestGiver"]
+color = Color(0.917647, 0.803922, 0.454902, 1)
+polygon = PackedVector2Array(0, -12, 12, 0, 0, 12, -12, 0)
+
+[node name="Shape" type="CollisionShape2D" parent="QuestGiver"]
+shape = SubResource("quest_shape")
+
+[node name="Prompt" type="Label" parent="QuestGiver"]
+offset_left = -90.0
+offset_top = -54.0
+offset_right = 90.0
+offset_bottom = -36.0
+theme_override_colors/font_color = Color(0.95, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+mouse_filter = 2
+
+[node name="ExitToForest" type="Area2D" parent="."]
+position = Vector2(880, 270)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("8_exit")
+destination = &"forest"
+flow_path = NodePath("..")
+
+[node name="Visual" type="Polygon2D" parent="ExitToForest"]
+color = Color(0.454902, 0.6, 0.376471, 1)
+polygon = PackedVector2Array(-24, -24, 24, -24, 24, 24, -24, 24)
+
+[node name="Shape" type="CollisionShape2D" parent="ExitToForest"]
+shape = SubResource("exit_shape")
+
+[node name="Prompt" type="Label" parent="ExitToForest"]
+offset_left = -60.0
+offset_top = -46.0
+offset_right = 60.0
+offset_bottom = -28.0
+theme_override_colors/font_color = Color(0.95, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+mouse_filter = 2
+
+[node name="Loot" type="Node2D" parent="."]
+script = ExtResource("4_loot")
+player_path = NodePath("../Player")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(200, 270)
+
+[node name="Sfx" type="Node" parent="."]
+script = ExtResource("9_sfx")
+
+[node name="HintLayer" type="CanvasLayer" parent="."]
+script = ExtResource("2_hud")
+player_path = NodePath("../Player")
+health_bar_path = NodePath("HealthBar")
+stamina_bar_path = NodePath("StaminaBar")
+enemy_bar_path = NodePath("EnemyBar")
+status_label_path = NodePath("StatusLabel")
+hint_label_path = NodePath("ControlsLabel")
+enemy_name_label_path = NodePath("EnemyName")
+quest_status_label_path = NodePath("QuestStatus")
+
+[node name="BuildLabel" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 628.0
+offset_bottom = 26.0
+theme_override_colors/font_color = Color(0.945098, 0.831373, 0.435294, 1)
+theme_override_font_sizes/font_size = 12
+text = "村庄 · 安全点（进入即回满状态） — 向右走到契约板按 E 接任务"
+mouse_filter = 2
+
+[node name="HealthLabel" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 30.0
+offset_right = 40.0
+offset_bottom = 46.0
+theme_override_font_sizes/font_size = 11
+text = "HP"
+mouse_filter = 2
+
+[node name="HealthBar" type="ProgressBar" parent="HintLayer"]
+offset_left = 40.0
+offset_top = 30.0
+offset_right = 200.0
+offset_bottom = 46.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+mouse_filter = 2
+
+[node name="StaminaLabel" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 50.0
+offset_right = 40.0
+offset_bottom = 66.0
+theme_override_font_sizes/font_size = 11
+text = "SP"
+mouse_filter = 2
+
+[node name="StaminaBar" type="ProgressBar" parent="HintLayer"]
+offset_left = 40.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 66.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+mouse_filter = 2
+
+[node name="EnemyName" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 74.0
+offset_right = 200.0
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 11
+text = "（附近无敌人）"
+mouse_filter = 2
+
+[node name="EnemyBar" type="ProgressBar" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 92.0
+offset_right = 160.0
+offset_bottom = 106.0
+max_value = 60.0
+value = 0.0
+show_percentage = false
+mouse_filter = 2
+
+[node name="QuestStatus" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 126.0
+offset_right = 320.0
+offset_bottom = 142.0
+theme_override_colors/font_color = Color(0.85, 0.88, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+mouse_filter = 2
+
+[node name="StatusLabel" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 300.0
+offset_right = 628.0
+offset_bottom = 322.0
+theme_override_colors/font_color = Color(0.960784, 0.490196, 0.435294, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+[node name="ControlsLabel" type="Label" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 334.0
+offset_right = 628.0
+offset_bottom = 352.0
+theme_override_colors/font_color = Color(0.784314, 0.831373, 0.878431, 1)
+theme_override_font_sizes/font_size = 12
+text = "WASD 移动 | 左键 轻击 | Q 重击 | Space 闪避 | 右键按住 格挡 | E 交互 | I 背包 | R 重开"
+mouse_filter = 2
+
+[node name="InventoryPanel" type="PanelContainer" parent="HintLayer"]
+visible = false
+offset_left = 168.0
+offset_top = 84.0
+offset_right = 468.0
+offset_bottom = 306.0
+script = ExtResource("5_inventory_ui")
+inventory_path = NodePath("../../Player/ActorInventory")
+catalog_path = NodePath("../../Loot")
+
+[node name="LevelUpPanel" type="PanelContainer" parent="HintLayer"]
+offset_left = 12.0
+offset_top = 196.0
+offset_right = 212.0
+offset_bottom = 264.0
+script = ExtResource("6_levelup_ui")
+progression_path = NodePath("../../Player/ActorProgression")

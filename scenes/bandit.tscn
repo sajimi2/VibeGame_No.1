@@ -1,0 +1,77 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/bandit_controller.gd" id="1_bandit"]
+[ext_resource type="Script" path="res://scripts/actors/actor_action_port.gd" id="2_port"]
+[ext_resource type="Script" path="res://scripts/actors/actor_combatant.gd" id="3_combatant"]
+[ext_resource type="Script" path="res://scripts/combat/attack_spawner.gd" id="4_hitbox"]
+[ext_resource type="Script" path="res://scripts/combat/actor_hurtbox.gd" id="5_hurtbox"]
+[ext_resource type="Resource" path="res://data/bandit_tuning.tres" id="6_tuning"]
+
+[ext_resource type="Script" path="res://scripts/combat/actor_hit_feedback.gd" id="9_feedback"]
+
+[ext_resource type="Resource" path="res://data/drop_bandit.tres" id="8_drop"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bandit"]
+radius = 8.0
+
+[sub_resource type="Gradient" id="Gradient_blade"]
+colors = PackedColorArray(0.9, 0.35, 0.3, 1, 0.9, 0.35, 0.3, 0.35)
+
+[node name="Bandit" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_bandit")
+drop_table = ExtResource("8_drop")
+command_port_path = NodePath("ActorActionPort")
+combatant_path = NodePath("ActorCombatant")
+weapon_path = NodePath("Visual/Blade")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="Visual"]
+color = Color(0.858824, 0.415686, 0.32549, 1)
+polygon = PackedVector2Array(8, 0, 0, 8, -8, 0, 0, -8)
+
+[node name="Blade" type="Line2D" parent="Visual"]
+points = PackedVector2Array(-11, 0, 11, 0)
+width = 3.0
+texture_mode = 2
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+gradient = SubResource("Gradient_blade")
+
+[node name="BodyShape" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bandit")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("5_hurtbox")
+
+[node name="Shape" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_bandit")
+
+[node name="ActorActionPort" type="Node" parent="."]
+process_physics_priority = -50
+script = ExtResource("2_port")
+tuning = ExtResource("6_tuning")
+combatant_path = NodePath("../ActorCombatant")
+
+[node name="ActorCombatant" type="Node2D" parent="."]
+process_physics_priority = -10
+script = ExtResource("3_combatant")
+tuning = ExtResource("6_tuning")
+command_port_path = NodePath("../ActorActionPort")
+
+[node name="AttackSpawner" type="Node2D" parent="."]
+process_physics_priority = -5
+script = ExtResource("4_hitbox")
+command_port_path = NodePath("../ActorActionPort")
+combatant_path = NodePath("../ActorCombatant")
+
+[node name="HitFeedback" type="Node" parent="."]
+script = ExtResource("9_feedback")
+combatant_path = NodePath("../ActorCombatant")
+body_visual_path = NodePath("../Visual/Body")

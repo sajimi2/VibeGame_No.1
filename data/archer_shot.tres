@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AttackSpec" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/attack_spec.gd" id="1_spec"]
+[ext_resource type="PackedScene" path="res://scenes/arrow.tscn" id="2_projectile"]
+
+[resource]
+script = ExtResource("1_spec")
+damage = 10.0
+stamina_cost = 0.0
+windup_seconds = 0.6
+active_seconds = 0.1
+recovery_seconds = 0.8
+range_pixels = 26.0
+half_height_pixels = 10.0
+forward_offset_pixels = 8.0
+stamina_damage = 14.0
+stagger_seconds = 0.18
+knockback_pixels = 22.0
+spawns_projectile = true
+projectile_scene = ExtResource("2_projectile")
+projectile_speed_pixels = 210.0
+projectile_max_range_pixels = 260.0

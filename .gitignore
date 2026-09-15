@@ -1,0 +1,13 @@
+.godot/
+builds/
+work/
+*.tmp
+
+# Local credentials and machine-specific files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+Thumbs.db
+.DS_Store

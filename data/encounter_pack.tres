@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EncounterGroup" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/encounter_group.gd" id="1_group"]
+[ext_resource type="PackedScene" path="res://scenes/bandit.tscn" id="2_bandit"]
+[ext_resource type="PackedScene" path="res://scenes/beast.tscn" id="3_beast"]
+
+[resource]
+script = ExtResource("1_group")
+id = &"pack"
+display_name = "林地巡猎"
+enemy_scenes = Array[PackedScene]([ExtResource("2_bandit"), ExtResource("3_beast")])
+spawn_offsets = Array[Vector2]([Vector2(-40, 0), Vector2(60, 40)])
+activity_radius = 170

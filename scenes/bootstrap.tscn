@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[node name="Bootstrap" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Status" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 616.0
+offset_bottom = 160.0
+text = "OUTPOST RPG - ARCHITECTURE SCAFFOLD\n\nGameplay implementation starts at task T01.\nRead HANDOFF.md and docs/TASKS.md.\nThis screen is not a playable prototype."
