@@ -8,7 +8,9 @@ rem                   scene changes without re-exporting
 
 setlocal
 set "ROOT=%~dp0"
-set "EXPORTED=%ROOT%builds\windows\OutpostRPG.exe"
+rem Bump this line to the newest exported build: launching a stale build is the easiest way to
+rem "re-test" a bug that was already fixed.
+set "EXPORTED=%ROOT%builds\windows\OutpostRPG_v02_Stage2.exe"
 set "GODOT=D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
 
 if /i "%~1"=="dev" goto :dev

@@ -42,6 +42,8 @@ builds/windows/OutpostRPG_v02_Stage2.exe，配套同名 pck（2026-09-15 导出�
 本版包含两种近战与一次性武器领取；不包含正式美术与正式音效。
 旧版 OutpostRPG.exe、OutpostRPG_Codex.exe、OutpostRPG_v02_Stage1.exe 全部保留用于对照。
 源码入口：双击 EXE 跑导出版；`play.bat dev` 直接跑当前源码（改代码后无需重新导出）。
+`play.bat`（无参数）与桌面快捷方式 "Outpost RPG" 都已指向本版；每导出新版本时要同步改这两处，
+否则容易拿旧包复测已经修好的问题。
 
 ## 备份与验证原则
 v0.2 前源码备份：work/before_v02（含 .gdignore）。
