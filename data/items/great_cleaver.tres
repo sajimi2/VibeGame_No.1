@@ -5,11 +5,12 @@
 
 [resource]
 script = ExtResource("1_def")
-id = &"bandit_cleaver"
-display_name = "盗匪砍刀"
+id = &"great_cleaver"
+display_name = "大砍刀"
 category = 0
 base_modifiers = {
-"attack": 7.0
+"attack": 9.0,
+"move_speed": -6.0
 }
 bonus_pool = Array[StringName]([&"attack"])
 weapon_profile = ExtResource("2_weapon")

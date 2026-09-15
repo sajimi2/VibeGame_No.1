@@ -30,6 +30,9 @@ var quest_stage: QuestStage = QuestStage.NOT_STARTED
 var current_level: StringName = LEVEL_VILLAGE
 ## True once the completion reward has been paid; a second hand-in must not pay again.
 var reward_paid := false
+## One-time world grants, keyed by flag (the starting kit, the village weapon rack, ...). Recorded
+## here rather than on the granting node so a claim survives leaving the level and loading a save.
+var claimed: Dictionary = {}
 ## Player state handed from one level to the next. Written by the level being left, read by the
 ## level being entered; the village ignores it because the village always refills (DESIGN).
 var pending_vitals: Dictionary = {}
@@ -81,6 +84,19 @@ func is_quest_deliverable() -> bool:
 func is_quest_completed() -> bool:
 	return quest_stage == QuestStage.COMPLETED
 
+# --- one-time grants -------------------------------------------------------------------------
+
+func has_claimed(flag: StringName) -> bool:
+	return claimed.has(String(flag))
+
+## Records a one-time grant. Returns false when it had already been taken, so a caller can keep the
+## "hand the item over" step and the "remember it" step in the same decision.
+func claim(flag: StringName) -> bool:
+	if has_claimed(flag):
+		return false
+	claimed[String(flag)] = true
+	return true
+
 func stage_label() -> String:
 	match quest_stage:
 		QuestStage.NOT_STARTED: return "未接"
@@ -103,6 +119,7 @@ func snapshot() -> Dictionary:
 		"quest_stage": int(quest_stage),
 		"current_level": String(current_level),
 		"reward_paid": reward_paid,
+		"claimed": claimed.duplicate(),
 	}
 
 ## Restores run state from a snapshot (see snapshot()). Validation of the file's schema version is
@@ -115,6 +132,9 @@ func restore_from_snapshot(data: Dictionary) -> bool:
 	quest_stage = clampi(int(data.get("quest_stage", 0)), 0, GameSession.QuestStage.COMPLETED) as QuestStage
 	current_level = StringName(String(data.get("current_level", LEVEL_VILLAGE)))
 	reward_paid = bool(data.get("reward_paid", false))
+	## Older saves have no claimed table; an empty one simply means nothing has been taken yet.
+	var claimed_data: Variant = data.get("claimed", {})
+	claimed = (claimed_data as Dictionary).duplicate() if claimed_data is Dictionary else {}
 	## A completed contract cannot be un-paid; a paid flag without completion would re-pay.
 	if quest_stage == QuestStage.COMPLETED:
 		reward_paid = true

@@ -190,6 +190,19 @@ func is_bag_full() -> bool:
 func get_equipped(slot: StringName) -> ItemInstance:
 	return _equipment.get(slot)
 
+## Behaviour of the weapon currently in the weapon slot, or null when nothing is equipped (the
+## wielder then keeps its fallback moves: an unarmed player throws punches).
+func equipped_weapon_profile() -> WeaponProfile:
+	return weapon_profile_of(get_equipped(SLOT_WEAPON))
+
+## Behaviour a specific instance would provide if equipped. Null for non-weapons, empty slots and
+## weapons that have no profile yet.
+func weapon_profile_of(item: ItemInstance) -> WeaponProfile:
+	if item == null:
+		return null
+	var definition := _definition_for(item)
+	return definition.weapon_profile if definition != null else null
+
 func get_in_bag(instance_id: String) -> ItemInstance:
 	var index := _find_in_bag(instance_id)
 	return _bag[index] if index >= 0 else null

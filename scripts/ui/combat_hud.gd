@@ -20,6 +20,9 @@ const REFRESH_INTERVAL := 0.15
 @export var enemy_name_label_path: NodePath
 ## Optional label showing the contract's stage and progress.
 @export var quest_status_label_path: NodePath
+## Optional label for the equipped weapon. Every level's HUD gets one; when a scene does not name a
+## node for it the HUD builds the label itself, so no level has to be edited to show it.
+@export var weapon_status_label_path: NodePath
 
 var _health_bar: ProgressBar
 var _stamina_bar: ProgressBar
@@ -28,6 +31,7 @@ var _status_label: Label
 var _hint_label: Label
 var _enemy_name_label: Label
 var _quest_status_label: Label
+var _weapon_status_label: Label
 var _player: PlayerController
 var _encounters: EncounterManager
 var _focus: ActorCombatant = null
@@ -55,6 +59,7 @@ func _ready() -> void:
 	_hint_label = get_node_or_null(hint_label_path) as Label
 	_enemy_name_label = get_node_or_null(enemy_name_label_path) as Label
 	_quest_status_label = get_node_or_null(quest_status_label_path) as Label
+	_build_weapon_status_label()
 	_player = get_node_or_null(player_path) as PlayerController
 	_encounters = get_node_or_null(encounter_manager_path) as EncounterManager
 	if _hint_label != null:
@@ -136,6 +141,27 @@ func set_status(text: String) -> void:
 func set_quest_status(text: String) -> void:
 	if _quest_status_label != null:
 		_quest_status_label.text = text
+
+## The weapon line: what is in hand and how it moves while attacking. The level flow owns the text
+## (it is the only place that knows the run's inventory and catalog); the HUD only displays it.
+func set_weapon_status(text: String) -> void:
+	if _weapon_status_label == null:
+		return
+	_weapon_status_label.text = text
+
+## Built in code when the scene does not provide a node: four levels share this script and none of
+## them should need a scene edit just to gain a HUD line.
+func _build_weapon_status_label() -> void:
+	_weapon_status_label = get_node_or_null(weapon_status_label_path) as Label
+	if _weapon_status_label != null:
+		return
+	_weapon_status_label = Label.new()
+	_weapon_status_label.position = Vector2(12, 109)
+	_weapon_status_label.add_theme_font_size_override("font_size", 11)
+	_weapon_status_label.modulate = Color(0.82, 0.86, 0.72)
+	_weapon_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_weapon_status_label.text = "武器：赤手（拳击）"
+	add_child(_weapon_status_label)
 
 func clear_death_state() -> void:
 	_status_override = ""

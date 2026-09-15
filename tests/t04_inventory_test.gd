@@ -80,8 +80,9 @@ func _snapshot_count(inventory: ActorInventory) -> int:
 # --- cases ---------------------------------------------------------------------------------
 
 func _test_catalog_completeness() -> void:
-	print("[test] the catalog holds twelve distinct definitions")
-	_check(_catalog.ids().size() == 12, "the catalog must hold 12 definitions (got %d)" % _catalog.ids().size())
+	print("[test] the catalog holds fourteen distinct definitions")
+	var expected := ItemCatalog.default_ids().size()
+	_check(_catalog.ids().size() == expected, "the catalog must hold %d definitions (got %d)" % [expected, _catalog.ids().size()])
 	var seen := {}
 	for id in ItemCatalog.default_ids():
 		_check(_catalog.has_definition(id), "definition '%s' must resolve" % id)
@@ -91,7 +92,7 @@ func _test_catalog_completeness() -> void:
 		_check(not definition.display_name.is_empty(), "%s must have a display name" % id)
 		_check(not definition.base_modifiers.is_empty(), "%s must modify something" % id)
 		seen[id] = true
-	_check(seen.size() == 12, "all twelve ids must be distinct (got %d)" % seen.size())
+	_check(seen.size() == expected, "all %d ids must be distinct (got %d)" % [expected, seen.size()])
 
 func _test_capacity_and_duplicates() -> void:
 	print("[test] bag capacity and unique instance ids")

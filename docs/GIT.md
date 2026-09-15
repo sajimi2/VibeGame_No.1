@@ -1,8 +1,12 @@
 # 本地版本管理
 
-仓库根目录：D:\vibe coding\OutpostRPG。默认分支 main。
+仓库根目录：D:\vibe coding\OutpostRPG。默认分支 main。远程：`origin` =
+`https://github.com/sajimi2/VibeGame_No.1.git`，本地 main 跟踪 origin/main（Codex 于 2026-09-15 建立并
+推送）。标签 `v0.2-stage1` 标记用户已试玩通过的 v0.2 阶段 1。
 
-第一个提交保存用户已试玩通过的 v0.2 阶段 1；标签 v0.2-stage1 用于定位此稳定版本。阶段 2 尚未开始修改。
+注意：`.git` 目录属主是 Codex 运行账户（LAPTOP-COML2AH9/CodexSandboxOffline），本机另一个账户直接跑
+`git` 会报 `dubious ownership`。已在本机执行
+`git config --global --add safe.directory 'D:/vibe coding/OutpostRPG'`；换机器或换账户时需要重新添加。
 
 源码、场景、资源配置、Godot .uid 文件、测试及文档进入版本管理；.godot/、builds/、work/、临时文件及本地密钥文件忽略。正式美术和音频素材应跟随代码提交。
 
@@ -20,4 +24,5 @@ git log --oneline --decorate -10
 
 需要尝试较大改动时可新建分支；要恢复旧版本，先保留当前未提交工作，再明确要恢复哪些文件，不直接执行破坏性重置。
 
-目前仅建立本地仓库，未配置远程、未上传 GitHub。本地 Git 可以记录版本，但不能替代异地备份；work/ 中的测试日志和 builds/ 中的 exe 不包含在提交内。
+远程已配置，可由实施者在验证通过后推送；推送前先确认没有夹带他人的未完成工作。`work/` 中的测试日志和
+`builds/` 中的 exe 不进入提交，因此远程仓库不含可执行产物，发布包需要单独传递。

@@ -120,6 +120,7 @@ func _test_stamina_is_atomic() -> void:
 	var player := await _spawn(PLAYER_SCENE, Vector2(200, 200), group)
 	var port := _port(player)
 	var combatant := _combatant(player)
+	var light_cost: float = _combatant(player).tuning.light_attack.stamina_cost
 
 	_check(combatant.try_spend_stamina(0.0) == false, "spending zero must be refused")
 	_check(combatant.try_spend_stamina(-5.0) == false, "spending a negative amount must be refused")
@@ -127,9 +128,13 @@ func _test_stamina_is_atomic() -> void:
 	_check_close(before, combatant.max_stamina(), 0.001, "no spend must leave stamina untouched")
 
 	## Drain to just under a light attack's cost, then a request must be refused with no residue.
-	while combatant.get_stamina() > 10.0:
-		if not combatant.try_spend_stamina(10.0):
+	## The cost is read from the spec instead of hardcoded: what the player swings is now data (an
+	## equipped weapon's spec, or the unarmed fallback), and this check is about atomicity rather
+	## than about one particular number.
+	while combatant.get_stamina() >= light_cost:
+		if not combatant.try_spend_stamina(light_cost):
 			break
+	_check(combatant.get_stamina() < light_cost, "stamina drained below one light attack (%.1f < %.1f)" % [combatant.get_stamina(), light_cost])
 	await _step()
 	var stamina_before := combatant.get_stamina()
 	var state_before := port.get_state()
@@ -205,7 +210,9 @@ func _test_hit_lands_once_per_swing() -> void:
 	## Run well past the whole attack: the target sits inside reach the entire time.
 	await _steps(90)
 	var after := target.get_health()
-	var expected := before - 18.0
+	## Derived from the player's actual spec plus its equipment bonus, because the light attack's
+	## damage is data now (a weapon profile's move, or the unarmed fallback).
+	var expected := before - (_combatant(player).tuning.light_attack.damage + _combatant(player).attack_bonus())
 	_check_close(after, expected, 0.001, "the swing must deal its damage exactly once")
 	_check(port.get_state() == ActorCommandPort.State.IDLE or port.get_state() == ActorCommandPort.State.MOVE, "the attack must have finished")
 	await _free_group(group)

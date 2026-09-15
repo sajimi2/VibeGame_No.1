@@ -59,9 +59,9 @@ func request_action(action: Action) -> bool:
 		return false
 	match action:
 		Action.LIGHT_ATTACK:
-			return _try_start_attack(tuning.light_attack)
+			return _try_start_attack(_resolve_attack_spec(false, tuning.light_attack))
 		Action.HEAVY_ATTACK:
-			return _try_start_attack(tuning.heavy_attack)
+			return _try_start_attack(_resolve_attack_spec(true, tuning.heavy_attack))
 		Action.DODGE:
 			return _try_start_dodge()
 		Action.DASH:
@@ -94,7 +94,7 @@ func get_velocity() -> Vector2:
 		ActorCommandPort.State.DODGE:
 			return _dodge_direction * tuning.dodge_speed
 		ActorCommandPort.State.WINDUP, ActorCommandPort.State.ACTIVE, ActorCommandPort.State.RECOVERY:
-			return _attack_charge_velocity()
+			return _attack_velocity()
 		_:
 			return ActorMovement.velocity_for(_move_axis, _move_speed())
 
@@ -104,15 +104,51 @@ func _move_speed() -> float:
 	var bonus := _combatant.equipment_modifier(ActorCombatant.STAT_MOVE_SPEED) if _combatant != null else 0.0
 	return maxf(0.0, tuning.move_speed + bonus)
 
-## A charging attack (beast lunge) drags the body along the locked attack direction; a normal
-## attack stands still. Speed is derived from the spec so the distance stays the tuning knob.
-func _attack_charge_velocity() -> Vector2:
-	if _active_spec == null or _active_spec.charge_distance_pixels <= 0.0:
+## Which attack spec an action should use right now. A weapon the actor has equipped may swap in its
+## own moves; anything else (an unarmed player, every enemy) keeps the actor's own tuning. Resolved
+## per request rather than cached, so the very next swing after an equipment change already uses the
+## new weapon and no stale spec can survive a swap.
+func _resolve_attack_spec(is_heavy: bool, fallback: AttackSpec) -> AttackSpec:
+	if _combatant == null:
+		return fallback
+	var profile := _combatant.equipped_weapon_profile()
+	if profile == null:
+		return fallback
+	return profile.spec_for(is_heavy, fallback)
+
+## Velocity while an attack owns the body. Three independent contributions:
+##   charge  - the whole-attack drag of a lunge (beast), derived from a distance in the spec;
+##   strike  - the ACTIVE-only step forward of a heavy swing, so reach lands where the swing reads;
+##   steer   - how much of the actor's locomotion the weapon allows while committed.
+## An enemy attack sets none of them, so its behaviour is byte-for-byte what it was before.
+func _attack_velocity() -> Vector2:
+	if _active_spec == null:
 		return Vector2.ZERO
-	var total := _active_spec.windup_seconds + _active_spec.active_seconds + _active_spec.recovery_seconds
-	if total <= 0.0:
-		return Vector2.ZERO
-	return _attack_direction * (_active_spec.charge_distance_pixels / total)
+	var velocity := Vector2.ZERO
+	if _active_spec.charge_distance_pixels > 0.0:
+		var total := _active_spec.windup_seconds + _active_spec.active_seconds + _active_spec.recovery_seconds
+		if total > 0.0:
+			velocity += _attack_direction * (_active_spec.charge_distance_pixels / total)
+	if _state == ActorCommandPort.State.ACTIVE and _active_spec.strike_advance_pixels > 0.0:
+		velocity += _attack_direction * (_active_spec.strike_advance_pixels / maxf(_active_spec.active_seconds, 0.0001))
+	return velocity + _move_axis * (_move_speed() * _attack_move_scale())
+
+## Locomotion available during the current attack, as a fraction of the actor's move speed.
+func _attack_move_scale() -> float:
+	if _active_spec == null:
+		return 0.0
+	match _active_spec.move_mode:
+		AttackSpec.MoveMode.FULL_SPEED:
+			return 1.0
+		AttackSpec.MoveMode.SCALED:
+			return maxf(0.0, _active_spec.move_speed_scale)
+		_:
+			return 0.0
+
+## True while a committed action (attack or dodge) still owns the actor's body. Equipment changes
+## are refused during this window so a mid-swing swap cannot leave a half-applied weapon.
+func is_action_in_progress() -> bool:
+	return not ActionRules.allows_locomotion(_state)
 
 ## True only while the damage window is open. The hitbox polls this, so the ACTIVE window is
 ## decided in exactly one place.

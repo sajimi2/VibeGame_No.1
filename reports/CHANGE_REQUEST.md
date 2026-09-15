@@ -70,6 +70,70 @@
 - 调用方影响：追加抽象方法会要求所有实现类提供它。仓库内实现类为新增的 `ActorProgression`。
 - 迁移方案：无。若 Codex 采用不同命名/签名，改动集中在契约文件与一个实现文件。
 
+## 变更 6（v0.2 阶段 2）：AttackSpec 追加移动模式、移速比与挥砍位移
+
+- 类型：向既有数据 Resource 追加字段（追加式；不改既有字段名、含义或默认行为）。
+- 现状：已在 `scripts/combat/attack_spec.gd` 声明，六个玩家招式资源与既有敌人招式资源均已可读。
+- 原因：`docs/DEVELOPMENT_PLAN_V02.md` 阶段 2 要求"攻击资源增加移动模式、移速比、挥砍位移，
+  默认兼容敌人"。小刀要在整个出招过程保持全速移动，大砍刀要 60% 移速并在伤害窗内前移。
+- 语义：
+  - `enum MoveMode { STATIONARY, FULL_SPEED, SCALED }` 与 `move_mode`（默认 `STATIONARY` =
+    出招期间身体完全由招式接管，与阶段 1 行为一致）；
+  - `move_speed_scale`（默认 1.0，只在 `SCALED` 下生效）；
+  - `strike_advance_pixels`（默认 0，只在 ACTIVE 生效；速度由"距离 ÷ 有效时长"推导，距离是调参口）。
+- 调用方影响：`ActorActionPort._attack_velocity()` 是唯一读取方；默认值使既有敌人招式行为逐项不变，
+  有 `tests/v02_stage2_test.gd` 的默认值断言守着。数据文件未加字段者按默认值读取。
+- 迁移方案：无。
+
+## 变更 7（v0.2 阶段 2）：新增 WeaponProfile，武器行为与物品定义分离
+
+- 类型：新增文件与追加字段。
+- 现状：新增 `scripts/combat/weapon_profile.gd`（`class_name WeaponProfile extends Resource`：
+  `light_attack`、`heavy_attack`、`description`、`spec_for(is_heavy, fallback)`）；
+  `ItemDefinition` 追加可选字段 `weapon_profile`。
+- 原因：玩家会在运行中换武器，招式必须跟着换；把招式挂在物品定义上比在 `ActorActionPort` 里写
+  武器分支更小，也让"武器外观/动作从定义读取，不写入存档"这条阶段 2 约束自然成立。
+- 语义：装备武器时 `ActorActionPort` 每次出招前取 `ActorCombatant.equipped_weapon_profile()`；
+  为 null（空手、或没有背包的敌人）时使用 `ActorTuning` 自带的招式；武器槽为空是正常状态，不是错误。
+- 调用方影响：`ActorInventory`、`ActorCombatant` 各追加一个只读查询方法；既有物品定义不填新字段时
+  行为与之前完全相同。
+- 迁移方案：无。
+
+## 变更 8（v0.2 阶段 2）：GameSession 追加一次性领取标记
+
+- 类型：向具体类追加状态与方法（不是 `scripts/contracts` 下的公共协议）。
+- 现状：`GameSession.claimed: Dictionary` + `has_claimed(flag)` / `claim(flag)`，纳入
+  `snapshot()` / `restore_from_snapshot()`。
+- 原因：开局的刀和村庄武器架的大砍刀都只能拿一次。标记放在会话而不是发放节点上，换图、重试、
+  读档才不会重复发放；这与既有 `reward_paid`（契约奖励只发一次）同一思路。
+- 语义：`claim()` 已领取过则返回 false 且不改变状态；调用方必须在物品真的交到手上之后才调用它。
+- 存档影响：`session` 里多一个可选键 `claimed`；schema 仍为 v1，旧档缺该键时按空表处理。
+- 调用方影响：`LevelFlow`（开局装备、HUD 刷新）、`WeaponRack`。
+- 迁移方案：无。
+
+## 变更 9（v0.2 阶段 2）：新增 WeaponRack 一次性领取交互节点
+
+- 类型：新增具体节点脚本 `scripts/world/weapon_rack.gd`（不是公共协议）。
+- 现状：村庄场景新增 `WeaponRack` 节点，`LevelFlow` 新增可选 `weapon_rack_path` 并在 `_ready()` 里
+  `bind_session` + `set_player`（与 `QuestGiver` 相同的显式绑定，避免子节点先 ready 拿到空会话）。
+- 原因：阶段 2 要求"村庄一次性领取大砍刀"。做成数据驱动节点后，后续再发武器只需要场景加一个节点与
+  一份物品定义，不需要新代码。
+- 语义：按 E 领取；物品先交付成功、再写领取标记（满包时拒绝领取且不消耗武器）；领取后提示变为"已取走"。
+- 调用方影响：仅村庄场景；其他关卡不挂该节点时为 null，逻辑跳过。
+- 迁移方案：无。
+
+## 变更 10（v0.2 阶段 2）：物品目录 12 → 14，玩家默认招式改名
+
+- 类型：数据变更（追加入口 + 替换两个旧资源）。
+- 现状：新增 `hunting_knife`、`great_cleaver` 两个定义与对应的武器配置资源；
+  `data/attack_light.tres` / `data/attack_heavy.tres`（v0.1 剑盾招式）删除，
+  `data/player_tuning.tres` 改指 `data/attack_fist_light.tres` / `data/attack_fist_heavy.tres`。
+- 原因：阶段 2 明确"新游戏默认小刀；村庄一次性领取大砍刀""空手基础拳击；法杖留待后续"，
+  剑盾不在 v0.2 计划内；`ItemCatalog.default_ids()` 的注释与尺寸说明同步更新。
+- 调用方影响：`ItemCatalog.default_ids()` 顺序变化；`tests/t04_inventory_test.gd` 的定义数断言从
+  写死 12 改为按 `default_ids().size()` 读取。
+- 迁移方案：旧存档里的物品 ID 未变、未被删除，仍能加载；只是不再有新的剑盾招式资源。
+
 ## 记录项：T01 未改动但值得留档的约定
 
 - `ActorActionPort.SPEED_PIXELS_PER_SECOND = 90.0` 为 DESIGN.md 的试调默认值，T02 已按约定迁入

@@ -66,9 +66,12 @@ func run() -> void:
 	check(not player.can_process(), "world is actually paused behind inventory")
 	var caption := ("★" if item.rarity == 1 else "") + "盗匪砍刀"
 	check(click(panel, caption), "UI renders and selects acquired item")
-	check(inventory.get_equipped(&"weapon") == null, "selection does not equip immediately")
+	var equipped_before := inventory.get_equipped(&"weapon")
+	check(equipped_before != null and String(equipped_before.definition_id) != "bandit_cleaver",
+		"selection does not equip immediately (the starting knife is still in hand)")
 	check(click(panel, "装备"), "equipment button connected")
-	check(inventory.get_equipped(&"weapon") != null, "UI equips item")
+	var equipped_after := inventory.get_equipped(&"weapon")
+	check(equipped_after != null and String(equipped_after.definition_id) == "bandit_cleaver", "UI equips item")
 	var combatant := player.get_node("ActorCombatant") as ActorCombatant
 	check(combatant.attack_bonus() == float(item.modifiers.get("attack", 0)), "equipment affects real actor stats")
 	check(click(panel, "卸下"), "unequip button connected")

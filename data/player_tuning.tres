@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="ActorTuning" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/actor_tuning.gd" id="1_tuning"]
-[ext_resource type="Resource" path="res://data/attack_light.tres" id="2_light"]
-[ext_resource type="Resource" path="res://data/attack_heavy.tres" id="3_heavy"]
+[ext_resource type="Resource" path="res://data/attack_fist_light.tres" id="2_light"]
+[ext_resource type="Resource" path="res://data/attack_fist_heavy.tres" id="3_heavy"]
 
 [resource]
 script = ExtResource("1_tuning")

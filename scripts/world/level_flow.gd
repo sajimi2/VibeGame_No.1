@@ -20,6 +20,12 @@ const INVENTORY_ACTION := &"inventory"
 const SAVE_ACTION := &"save_game"
 const LOAD_ACTION := &"load_game"
 
+## Session flags for one-time grants (v0.2 阶段 2).
+const CLAIM_STARTING_KIT := &"starting_kit"
+## The weapon a new run starts with; the great cleaver is claimed from the village rack instead.
+const STARTING_WEAPON_ID := &"hunting_knife"
+const STARTING_WEAPON_INSTANCE := "starter-knife"
+
 @export var level_id: StringName = &"village"
 ## The village is the safe point: entering it refills health and stamina.
 @export var refills_on_entry := false
@@ -30,6 +36,8 @@ const LOAD_ACTION := &"load_game"
 @export var quest_panel_path: NodePath
 ## Optional quest giver; only the village has one.
 @export var quest_giver_path: NodePath
+## Optional one-time weapon rack; only the village has one.
+@export var weapon_rack_path: NodePath
 ## Optional shared audio source for the level's cues.
 @export var sfx_path: NodePath
 
@@ -44,6 +52,7 @@ var _hud: CombatHud
 var _inventory_panel: Control
 var _quest_panel: Control
 var _quest_giver: QuestGiver
+var _weapon_rack: WeaponRack
 var _sfx: SfxPlayer
 var _session: GameSession
 var _awaiting_retry := false
@@ -59,6 +68,7 @@ func _ready() -> void:
 	_inventory_panel = get_node_or_null(inventory_panel_path) as Control
 	_quest_panel = get_node_or_null(quest_panel_path) as Control
 	_quest_giver = get_node_or_null(quest_giver_path) as QuestGiver
+	_weapon_rack = get_node_or_null(weapon_rack_path) as WeaponRack
 	_sfx = get_node_or_null(sfx_path) as SfxPlayer
 	_session = GameSession.current
 	if _session == null:
@@ -74,6 +84,11 @@ func _ready() -> void:
 	if _quest_giver != null and _player != null:
 		_quest_giver.bind_session(_session)
 		_quest_giver.set_player(_player)
+	if _weapon_rack != null and _player != null:
+		_weapon_rack.bind_session(_session)
+		_weapon_rack.set_player(_player)
+	_grant_starting_kit()
+	_refresh_weapon_status()
 	if run_save_smoke_check:
 		## Deferred so the level is fully inside the tree before the round-trip runs.
 		_run_save_smoke_check.call_deferred()
@@ -160,6 +175,9 @@ func _connect_signals() -> void:
 	if _inventory_panel is InventoryPanel:
 		(_inventory_panel as InventoryPanel).item_dropped.connect(_on_item_dropped)
 		(_inventory_panel as InventoryPanel).notice.connect(_show_notice)
+	var inventory := _inventory()
+	if inventory != null:
+		inventory.equipment_changed.connect(_on_equipment_changed)
 	if _progressions() != null:
 		_progressions().leveled_up.connect(_on_level_up)
 	var loot := get_node_or_null("Loot") as LootSpawner
@@ -172,6 +190,67 @@ func _show_notice(message: String) -> void:
 		_hud.show_notice(message)
 	if message.begins_with("已装备") and _sfx != null:
 		_sfx.play(SfxPlayer.Cue.PICKUP)
+
+# --- weapons (v0.2 阶段 2) -------------------------------------------------------------------
+
+## A new run starts with the hunting knife already in hand: the player has to be able to fight
+## before finding anything. The grant is recorded in the session, so leaving the level, dying, or
+## loading a save can never hand out a second copy.
+##
+## The flag is only set when the weapon is actually in the inventory, and the grant is skipped
+## entirely when a weapon is already equipped -- that keeps a save made before this version, or one
+## whose knife was thrown away, from being silently re-armed.
+func _grant_starting_kit() -> void:
+	if _session == null or _session.has_claimed(CLAIM_STARTING_KIT):
+		return
+	var inventory := _inventory()
+	if inventory == null:
+		return
+	if inventory.get_equipped(ActorInventory.SLOT_WEAPON) == null:
+		var item := _catalog().roll(STARTING_WEAPON_ID, STARTING_WEAPON_INSTANCE)
+		if item != null and inventory.try_equip_direct(item, ActorInventory.SLOT_WEAPON):
+			_show_notice("获得初始武器：%s" % _definition_name(STARTING_WEAPON_ID))
+	_session.claim(CLAIM_STARTING_KIT)
+	_refresh_weapon_status()
+
+## A weapon swap changes which attack specs the next swing uses, so the HUD line is refreshed from
+## the same signal that makes the actor recompute its stats.
+func _on_equipment_changed(_slot: StringName, _instance_id: String) -> void:
+	_refresh_weapon_status()
+
+func _refresh_weapon_status() -> void:
+	if _hud == null:
+		return
+	_hud.set_weapon_status(equipped_weapon_label())
+
+## "武器：大砍刀 — 横斩与重劈，蓄势收招 60% 移速". Unarmed is a real state, not a failure: with the
+## weapon slot empty the player keeps the tuning's fallback moves (fists).
+func equipped_weapon_label() -> String:
+	var inventory := _inventory()
+	var item: ItemInstance = inventory.get_equipped(ActorInventory.SLOT_WEAPON) if inventory != null else null
+	if item == null:
+		return "武器：赤手（拳击）"
+	var definition := _catalog().definition(item.definition_id)
+	if definition == null:
+		return "武器：未知"
+	var profile := inventory.weapon_profile_of(item)
+	if profile == null or profile.description.is_empty():
+		return "武器：%s" % definition.display_name
+	return "武器：%s — %s" % [definition.display_name, profile.description]
+
+## The loot spawner owns the run's catalog (definitions loaded once); a level without one still
+## works, it just builds its own.
+func _catalog() -> ItemCatalog:
+	var loot := get_node_or_null("Loot")
+	if loot != null and loot.has_method("catalog"):
+		var existing := loot.call("catalog") as ItemCatalog
+		if existing != null:
+			return existing
+	return ItemCatalog.build()
+
+func _definition_name(definition_id: StringName) -> String:
+	var definition := _catalog().definition(definition_id)
+	return definition.display_name if definition != null else String(definition_id)
 
 func _on_item_collected(_item: ItemInstance) -> void:
 	if _sfx != null:

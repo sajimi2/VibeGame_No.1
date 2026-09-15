@@ -6,6 +6,14 @@ extends Node
 ## assets exist).
 ##
 ## It only plays sounds it is told to play: game rules never live here.
+##
+## Known engine-side warning: once any cue has been played, quitting the process makes Godot report
+## "2 ObjectDB instances were leaked at exit" (an AudioStreamWAV plus its AudioStreamPlaybackWAV,
+## both at reference count 1). It was reproduced with nothing but this class playing a single cue,
+## and it survives stopping the player, clearing its stream and freeing the node before shutdown, so
+## it is the audio layer retaining the playback rather than a dangling reference here. It is a
+## shutdown-only message with no effect on a session; level startup deliberately plays no cue so the
+## headless startup check stays clean.
 
 const MIX_RATE := 22050
 const MAX_AMPLITUDE := 0.35

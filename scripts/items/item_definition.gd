@@ -14,3 +14,7 @@ enum Category { WEAPON, HEAD, BODY, ACCESSORY }
 @export var base_modifiers: Dictionary = {}
 ## A quality roll picks one modifier from here and adds a small amount of it.
 @export var bonus_pool: Array[StringName] = []
+## Optional behaviour for Category.WEAPON entries: the attack specs the wielder swaps in while this
+## item is equipped. Null means the weapon only contributes its modifiers and the wielder keeps the
+## fallback moves (enemies, and any weapon not yet given its own profile).
+@export var weapon_profile: WeaponProfile

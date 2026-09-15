@@ -39,6 +39,19 @@
 | T06 | READY_FOR_REVIEW | 完整冒险闭环；程序生成音效 |
 | T07 | READY_FOR_REVIEW | 存档完成并在导出版内验证；Windows 导出已产出可运行 EXE |
 
+| 里程碑 | 状态 | 备注 |
+|---|---|---|
+| v0.2 阶段 1 | 用户试玩通过 | Codex 实现；reports/V02_STAGE1.md |
+| v0.2 阶段 2 | READY_FOR_REVIEW | Harness 实现；手感待试玩；reports/V02_STAGE2.md |
+| v0.2 阶段 3 | TODO | 像素美术与完整音效 |
+| v0.2 阶段 4 | TODO | 四关整体验证与独立交付 |
+
 T03～T07 均已完成并自测通过，等待 Codex 一次性复审。
+
+2026-09-15：用户让 Codex 直接修复试玩缺陷（村庄契约 E 无效、灰墙碰撞体积、弓箭手朝向与穿墙、遭遇越界消失），Codex 修复并导出 OutpostRPG_Codex.exe，另做 Git 管理与 v0.2 计划；记录见 reports/CODEX_PLAYTEST_FIX_20260915.md。
+
+2026-09-15：用户确认 v0.2 阶段 1（装备与成长流程）无 bug，Codex 实现并导出 OutpostRPG_v02_Stage1.exe，本地 main 首个提交 + 标签 v0.2-stage1，并推送 GitHub；记录见 reports/V02_STAGE1.md。
+
+2026-09-15：用户把后续开发交给 Harness。**Harness 完成 v0.2 阶段 2（两种近战）**：`AttackSpec` 增加移动模式/移速比/挥砍位移（默认值等价于旧行为，敌人零改动）；新增 `WeaponProfile` 与 `ItemDefinition.weapon_profile`，`ActorActionPort` 每次出招解析当前武器招式；小刀三阶段全速移动，大砍刀 60% 移速且伤害窗内前移 8/14 像素并受墙碰撞约束；开局默认猎刀、村庄武器架按 E 一次性领取大砍刀（`GameSession.claimed` 随存档保存）；HUD 新增当前武器行。新增 tests/v02_stage2_test.gd 92 项；**14 个套件 637 项断言 0 失败**，check.ps1 退出 0；真实窗口实测小刀 90.0 / 大砍刀 50.4 / 站立重击前移 87.5 px/s，截图 work/v02_stage2_{knife,cleaver,strike}.png 已目视检查；导出 OutpostRPG_v02_Stage2.exe 实跑退出 0。接口追加记录见 reports/CHANGE_REQUEST.md 变更 6～10，完整结果与未验证项见 reports/V02_STAGE2.md。**手感与数值平衡待用户试玩**；阶段 3 美术音效、阶段 4 整体验证未开始。
 
 

@@ -1,15 +1,15 @@
 [gd_resource type="Resource" script_class="ItemDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1_def"]
-[ext_resource type="Resource" path="res://data/weapons/cleaver.tres" id="2_weapon"]
+[ext_resource type="Resource" path="res://data/weapons/knife.tres" id="2_weapon"]
 
 [resource]
 script = ExtResource("1_def")
-id = &"bandit_cleaver"
-display_name = "盗匪砍刀"
+id = &"hunting_knife"
+display_name = "猎刀"
 category = 0
 base_modifiers = {
-"attack": 7.0
+"attack": 4.0
 }
 bonus_pool = Array[StringName]([&"attack"])
 weapon_profile = ExtResource("2_weapon")

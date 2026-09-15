@@ -20,6 +20,23 @@ extends Resource
 @export var knockback_pixels: float = 26.0
 
 @export_group("Motion")
+## How the attacker may steer while this attack is committed. STATIONARY is the default and keeps
+## every existing enemy attack planted; the player's weapons opt in explicitly.
+enum MoveMode {
+	## No steering at all: the attack owns the body until RECOVERY ends.
+	STATIONARY,
+	## The attacker keeps its full locomotion speed through WINDUP/ACTIVE/RECOVERY.
+	FULL_SPEED,
+	## Locomotion is kept but multiplied by move_speed_scale (a heavy weapon's committed walk).
+	SCALED,
+}
+
+@export var move_mode: MoveMode = MoveMode.STATIONARY
+## Fraction of the actor's locomotion speed available while SCALED. Ignored by the other modes.
+@export var move_speed_scale: float = 1.0
+## Forward travel along the locked attack direction, applied only while the damage window (ACTIVE)
+## is open. This is what makes a heavy swing read as stepping into the blow instead of a slide.
+@export var strike_advance_pixels: float = 0.0
 ## When > 0 the attacker keeps moving along its locked attack direction during WINDUP/ACTIVE/
 ## RECOVERY, covering about this many pixels in total. This is what makes a beast's lunge read as
 ## a lunge instead of a stationary swing; the speed is derived so the distance is the tuning knob.

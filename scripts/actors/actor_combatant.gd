@@ -90,6 +90,14 @@ func equipment_modifier(key: StringName) -> float:
 func attack_bonus() -> float:
 	return equipment_modifier(STAT_ATTACK)
 
+## Behaviour of the equipped weapon, or null when unarmed or when this actor has no inventory
+## (every enemy). ActorActionPort asks for this on each attack so a weapon swap takes effect on the
+## next swing without the port caching anything.
+func equipped_weapon_profile() -> WeaponProfile:
+	if _inventory == null:
+		return null
+	return _inventory.equipped_weapon_profile()
+
 func _clamp_to_ceilings() -> void:
 	_health = minf(_health, max_health())
 	_stamina = minf(_stamina, max_stamina())

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AttackSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/attack_spec.gd" id="1_spec"]
+
+[resource]
+script = ExtResource("1_spec")
+damage = 12.0
+stamina_cost = 18.0
+windup_seconds = 0.28
+active_seconds = 0.1
+recovery_seconds = 0.38
+range_pixels = 25.0
+half_height_pixels = 9.0
+forward_offset_pixels = 7.0
+stamina_damage = 18.0
+stagger_seconds = 0.2
+knockback_pixels = 26.0
+move_mode = 0
+move_speed_scale = 1.0
+strike_advance_pixels = 0.0
