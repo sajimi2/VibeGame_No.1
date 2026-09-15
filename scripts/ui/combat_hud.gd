@@ -43,7 +43,7 @@ var _notice_seconds := 0.0
 func show_notice(message: String) -> void:
 	if _notice_label == null:
 		_notice_label = Label.new()
-		_notice_label.position = Vector2(16, 166)
+		_notice_label.position = Vector2(14, 310)
 		_notice_label.add_theme_font_size_override("font_size", 12)
 		_notice_label.modulate = Color(1.0, 0.88, 0.6)
 		add_child(_notice_label)

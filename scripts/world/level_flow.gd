@@ -89,6 +89,10 @@ func _ready() -> void:
 		_weapon_rack.set_player(_player)
 	_grant_starting_kit()
 	_refresh_weapon_status()
+	var presentation := preload("res://scripts/ui/stage_presentation.gd").new()
+	presentation.name = "Presentation"
+	add_child(presentation)
+	presentation.setup(self, _player, _encounters, _sfx)
 	if run_save_smoke_check:
 		## Deferred so the level is fully inside the tree before the round-trip runs.
 		_run_save_smoke_check.call_deferred()
@@ -300,7 +304,7 @@ func _on_player_died(_source_id: int) -> void:
 ## A swing cue on commit, so the wind-up is audible as well as visible.
 func _on_player_attack_started(_spec: AttackSpec) -> void:
 	if _sfx != null:
-		_sfx.play(SfxPlayer.Cue.SWING)
+		_sfx.play(SfxPlayer.Cue.STAB if _spec.move_mode == AttackSpec.MoveMode.FULL_SPEED else SfxPlayer.Cue.SWING)
 
 func _on_quest_stage_changed(_stage: GameSession.QuestStage) -> void:
 	_refresh_hud()
