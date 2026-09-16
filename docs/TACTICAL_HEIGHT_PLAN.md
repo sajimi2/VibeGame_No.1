@@ -26,3 +26,12 @@
 ## 技术参考
 - https://docs.godotengine.org/en/stable/classes/class_characterbody3d.html
 - https://docs.godotengine.org/en/stable/classes/class_spritebase3d.html
+
+## 用户美术参考（2026-09-16）
+参考图保存为 art_reference/user_style_reference.png，仅用于风格沟通，不作为自制素材或直接用于游戏场景。
+- 低饱和土褐、苔绿、灰黑，保留像素颗粒和较沉稳的西幻氛围。
+- 岩壁以不规则竖向岩块、裂隙和苔藓形成层次；自然高地不继续使用整齐砖墙外观。
+- 草地与泥地自然交错，减少当前试验场明显的重复方格；细节密度服从角色和弹道可读性。
+- 树冠采用有体积层次的不规则轮廓，搭配石头、灌木、枯草等少量自然物。
+- 人物更修长，动作和装备轮廓清楚；保持已确定的固定斜视角、多朝向纸片方案。
+- 本次仅记录美术目标，尚未替换试验场素材；参考图中的枪械和快捷栏不代表新增玩法需求。

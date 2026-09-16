@@ -20,3 +20,5 @@ scripts/export_height.ps1：独立临时导出项目，不修改生产主入口�
 此交付只实现计划阶段 1 与阶段 2 的基础部分。尚无敌人/攻击/顶部伤害/弹道/布破坏/背包等。仍需阶段 3～6。未做人类连续试玩；遮挡采用单个身体点近似，树冠遮挡使用近似体积，后续按实际战斗需要细化，不宣称逐像素遮挡准确。
 
 Godot 官方参考记录于 docs/TACTICAL_HEIGHT_PLAN.md。运行 play_height.bat，或 play_height.bat dev；旧桌面入口保留四关版。
+
+2026-09-16 标签修复：试验场说明 Label3D 启用 no_depth_test，避免地面裁掉文字。实际渲染截图 height_platform.png 已确认高台与低洼文字完整；相关 20 项测试通过（work/height-label-fix.log），独立包重新导出成功。美术参考归档于 docs/art_reference/，仅作方向参考。

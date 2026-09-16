@@ -175,6 +175,9 @@ func _label(text: String, where: Vector3) -> void:
 	label.outline_size = 6
 	label.modulate = Color("eddbac")
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	# World annotations are UI: terrain must not cut off their lower half.
+	label.no_depth_test = true
+	label.render_priority = 20
 	label.position = where
 	add_child(label)
 
