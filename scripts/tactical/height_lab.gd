@@ -6,12 +6,15 @@ var player: CharacterBody3D
 var camera: Camera3D
 var status: Label
 var notice: Label
-var paused := false
+var perspective := false
+var combat: Node3D
+var feedback: Label
+var last_feedback := "左键挥刀 / 右键射箭：瞄准训练靶身体或金色顶部"
 var materials: Dictionary = {}
 
 func _ready() -> void:
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-	get_window().content_scale_size = Vector2i(640, 360)
+	get_window().content_scale_size = Vector2i(960, 540)
 	RenderingServer.set_default_clear_color(Color("202e36"))
 	var environment_node := WorldEnvironment.new()
 	var environment := Environment.new()
@@ -38,21 +41,29 @@ func _ready() -> void:
 	camera.name = "FixedAngleCamera"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 17
-	camera.far = 100
+	camera.far = 160
+	process_physics_priority = 10
 	add_child(camera)
-	camera.position = player.position + Vector3(0, 14, 20)
-	camera.rotation_degrees = Vector3(-34.992, 0, 0)
+	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+	camera.rotation_degrees = Vector3(-35, 25, 0)
+	camera.position = player.position + camera.global_basis.z * 26
 	camera.current = true
 	player.camera = camera
 	_build_ui()
+	_build_targets()
+	combat = preload("res://scripts/tactical/lab_combat.gd").new()
+	add_child(combat)
+	combat.setup(player, func(message: String): last_feedback = message)
 
 func _physics_process(_delta: float) -> void:
-	camera.position = player.position + Vector3(0, 14, 20)
-	status.text = "高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
+	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+	feedback.text = last_feedback
+	status.text = ("弱透视" if perspective else "斜角正交") + "  |  高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.physical_keycode == KEY_R: player.reset_position()
+		if event.physical_keycode == KEY_R: get_tree().reload_current_scene()
+		if event.physical_keycode == KEY_V: toggle_camera()
 		if event.physical_keycode == KEY_ESCAPE: get_tree().quit()
 
 func material(kind: String) -> StandardMaterial3D:
@@ -143,7 +154,9 @@ func _build_ground() -> void:
 func _build_props() -> void:
 	box("StoneWall", Vector3(-1, 1.6, 3), Vector3(0.65, 3.2, 5), "wall")
 	box("LowCover", Vector3(-6, 0.6, 1), Vector3(4, 1.2, 0.6), "wall")
-	box("ClothScreen", Vector3(9, 1.2, 6), Vector3(4, 2.4, 0.08), "cloth", 4 | 8)
+	var cloth := box("ClothScreen", Vector3(9, 1.2, 6), Vector3(4, 2.4, 0.08), "cloth", 4 | 8)
+	cloth.set_meta("penetrable", true)
+	box("ClothBackWall", Vector3(9, 1.4, 3.8), Vector3(4, 2.8, 0.4), "wall")
 	for x in [7.0, 11.0]: box("ClothPost", Vector3(x, 1.3, 6), Vector3(0.14, 2.6, 0.14), "wood")
 	# Low beam verifies that standing up cannot clip into solid ceilings.
 	box("LowBeam", Vector3(-10, 1.4, 6), Vector3(3, 0.4, 2), "wood")
@@ -164,7 +177,7 @@ func _build_props() -> void:
 		canopy.get_child(1).hide()
 	_label("矮墙 · 按住 C 下蹲", Vector3(-6, 1.5, 1))
 	_label("石墙 · 绕行", Vector3(-1, 3.6, 3))
-	_label("布帘 · 可步行穿过", Vector3(9, 2.8, 6))
+	_label("布帘 · 穿箭 / 三次破损", Vector3(9, 2.8, 6))
 	_label("低梁 · 蹲下通过", Vector3(-10, 2, 6))
 
 func _label(text: String, where: Vector3) -> void:
@@ -187,24 +200,41 @@ func _build_ui() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.05, 0.08, 0.10, 0.88)
 	panel.position = Vector2(10, 10)
-	panel.size = Vector2(370, 64)
+	panel.size = Vector2(545, 94)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(panel)
 	var title := Label.new()
-	title.text = "立体战术试验场 / 01 空间与姿态"
+	title.text = "立体战术试验场 / 02 高度攻击与弹道"
 	title.position = Vector2(18, 14)
-	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color("eddbac")
 	layer.add_child(title)
 	status = Label.new()
 	status.position = Vector2(18, 40)
-	status.add_theme_font_size_override("font_size", 12)
+	status.add_theme_font_size_override("font_size", 16)
 	layer.add_child(status)
 	notice = Label.new()
-	notice.text = "WASD 移动 · 鼠标朝向 · 按住 C 下蹲 · R 回起点 · Esc 退出\n本轮验证高度 / 坡道 / 遮挡；敌人、攻击和弹道将在后续接入。"
-	notice.position = Vector2(12, 319)
-	notice.add_theme_font_size_override("font_size", 11)
+	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · V 切换镜头\nR 重置试验场 · Esc 退出 | 金色靶顶可从上方命中；本轮尚无敌人 AI"
+	notice.position = Vector2(16, 492)
+	notice.add_theme_font_size_override("font_size", 14)
 	notice.add_theme_color_override("font_shadow_color", Color.BLACK)
 	notice.add_theme_constant_override("shadow_offset_x", 1)
 	notice.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(notice)
+
+func toggle_camera() -> void:
+	perspective = not perspective
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE if perspective else Camera3D.PROJECTION_ORTHOGONAL
+	camera.fov = rad_to_deg(2 * atan(17.0 / 80.0))
+	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+
+func _build_targets() -> void:
+	for point in [Vector3(-4, 0, 5), Vector3(5, 2, -7), Vector3(10, 0, -7), Vector3(12.5, 0, 7)]:
+		var target := preload("res://scripts/tactical/training_target.gd").new()
+		target.position = point
+		add_child(target)
+	feedback = Label.new()
+	feedback.position = Vector2(18, 70)
+	feedback.add_theme_font_size_override("font_size", 14)
+	feedback.modulate = Color("ebcd84")
+	status.get_parent().add_child(feedback)

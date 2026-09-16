@@ -89,10 +89,10 @@ func run() -> void:
 	await frames(60)
 	check(actor.position.z < 5, "cloth does not block locomotion")
 	var hashes := {}
-	for heading in 8:
+	for heading in 12:
 		var image: Image = preload("res://scripts/tactical/directional_art.gd").texture(heading, 0, false).get_image()
 		hashes[hash(image.get_data())] = true
-	check(hashes.size() == 8, "eight distinct direction textures")
+	check(hashes.size() == 12, "twelve distinct direction textures")
 	actor.reset_position()
 	actor.test_motion = Vector2.ZERO
 	await frames(10)

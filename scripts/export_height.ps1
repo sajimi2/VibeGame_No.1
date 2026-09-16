@@ -12,7 +12,7 @@ Set-Content -LiteralPath (Join-Path $stagingRoot 'project.godot') -Value $config
 Copy-Item -LiteralPath (Join-Path $projectRoot 'export_presets.cfg') -Destination $stagingRoot
 $buildPath = Join-Path $projectRoot 'builds/windows/OutpostRPG_HeightLab.exe'
 & $GodotPath --headless --path $stagingRoot --editor --import *> (Join-Path $projectRoot 'work/height-export-import.log')
-if ($LASTEXITCODE -ne 0) { throw 'Height export import failed' }
+if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath (Join-Path $projectRoot 'work/height-export-import.log') -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw 'Height export import failed; inspect height-export-import.log' }
 & $GodotPath --headless --path $stagingRoot --export-release 'Windows Desktop' $buildPath *> (Join-Path $projectRoot 'work/height-export.log')
-if ($LASTEXITCODE -ne 0) { throw 'Height export failed' }
+if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath (Join-Path $projectRoot 'work/height-export.log') -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw 'Height export failed; inspect height-export.log' }
 Write-Output "Exported: $buildPath"

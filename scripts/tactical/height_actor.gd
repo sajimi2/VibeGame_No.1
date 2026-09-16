@@ -3,6 +3,8 @@ const Art = preload("res://scripts/tactical/directional_art.gd")
 const STAND_HEIGHT := 1.65
 const CROUCH_HEIGHT := 0.95
 var camera: Camera3D
+var aim_point := Vector3.ZERO
+var cursor := Vector2.ZERO
 var shape_node: CollisionShape3D
 var sprite: Sprite3D
 var outline: Sprite3D
@@ -17,6 +19,7 @@ var test_crouch := false
 var spawn := Vector3(-6, 0.1, 5)
 
 func _ready() -> void:
+	cursor = get_viewport().get_mouse_position()
 	collision_layer = 2
 	collision_mask = 1
 	floor_snap_length = 0.35
@@ -25,7 +28,7 @@ func _ready() -> void:
 	shape_node = CollisionShape3D.new()
 	# Rounded locomotion shape avoids flat cylinder rims snagging convex ramp edges.
 	# Combat body/top hit regions remain a separate future component.
-	var locomotion :=  CapsuleShape3D.new()
+	var locomotion := CapsuleShape3D.new()
 	locomotion.radius = 0.29
 	locomotion.height = STAND_HEIGHT
 	shape_node.shape = locomotion
@@ -68,6 +71,9 @@ func set_crouch(value: bool) -> bool:
 func _physics_process(delta: float) -> void:
 	var move := test_motion if test_mode else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	set_crouch(test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C))
+	if not test_mode and camera != null:
+		var world_move := camera.global_basis.x * move.x + Vector3(camera.global_basis.z.x, 0, camera.global_basis.z.z).normalized() * move.y
+		move = Vector2(world_move.x, world_move.z)
 	var speed := 2.0 if crouched else 4.2
 	velocity.x = move.x * speed
 	velocity.z = move.y * speed
@@ -76,16 +82,11 @@ func _physics_process(delta: float) -> void:
 	if move.length() > 0.1:
 		facing = move.normalized()
 		gait += delta * speed * 2.8
-	if not test_mode and camera != null:
-		var mouse := get_viewport().get_mouse_position()
-		var origin := camera.project_ray_origin(mouse)
-		var ray := camera.project_ray_normal(mouse)
-		var target = Plane(Vector3.UP, global_position.y + 0.65).intersects_ray(origin, ray)
-		if target != null:
-			var aim: Vector3 = target - global_position
-			if Vector2(aim.x, aim.z).length() > 0.2: facing = Vector2(aim.x, aim.z).normalized()
-	direction_index = posmod(roundi(atan2(facing.x, facing.y) / (PI / 4)), 8)
-	_refresh_art(1 if move.length() > 0.1 and sin(gait) > 0 else 0)
+	if not test_mode and camera != null: update_aim(cursor)
+	var view_facing := Vector3(facing.x, 0, facing.y)
+	if camera != null: view_facing = view_facing.rotated(Vector3.UP, -camera.rotation.y)
+	direction_index = posmod(roundi(atan2(view_facing.x, view_facing.z) / (PI / 6)), 12)
+	_refresh_art(posmod(int(gait * 2), 4) if move.length() > 0.1 else 0)
 	_update_occlusion()
 	if global_position.y < -5: reset_position()
 
@@ -110,3 +111,20 @@ func _update_occlusion() -> void:
 func reset_position() -> void:
 	global_position = spawn
 	velocity = Vector3.ZERO
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion or event is InputEventMouseButton:
+		cursor = event.position
+
+func update_aim(mouse: Vector2) -> void:
+	if camera == null: return
+	var origin := camera.project_ray_origin(mouse)
+	var ray := camera.project_ray_normal(mouse)
+	var query := PhysicsRayQueryParameters3D.create(origin, origin + ray * 100, 1 | 8 | 16)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var target = hit.get("position", Plane(Vector3.UP, global_position.y + 0.65).intersects_ray(origin, ray))
+	if target != null:
+		aim_point = target
+		var aim: Vector3 = target - global_position
+		if Vector2(aim.x, aim.z).length() > 0.2: facing = Vector2(aim.x, aim.z).normalized()

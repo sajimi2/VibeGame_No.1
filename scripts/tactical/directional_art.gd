@@ -1,39 +1,42 @@
 extends RefCounted
-## Original pixel silhouettes: eight headings and two gait frames.
+## Original pixel silhouettes: twelve headings and four gait frames.
 static var cache: Dictionary = {}
 
 static func texture(direction: int, step: int, crouch: bool, outline: bool = false) -> Texture2D:
 	var key := "%s/%s/%s/%s" % [direction, step, crouch, outline]
 	if cache.has(key): return cache[key]
 	var image := Image.create(24, 32, false, Image.FORMAT_RGBA8)
-	var back := direction in [3, 4, 5]
-	var side := direction in [2, 6]
-	var shift := 3 if crouch else 0
+	var back := direction in [4, 5, 6, 7, 8]
+	var side := direction in [3, 9]
+	var shift := (3 if crouch else 0) + (1 if step == 2 else 0)
 	var dark := Color("252c32")
 	var coat := Color("548589") if not back else Color("43666f")
-	var left := 8 if side else 6
-	var width := 8 if side else 12
+	var angle := direction * PI / 6
+	var width := roundi(12 - 4 * absf(sin(angle)))
+	var left := (24 - width) / 2 as int
+
 	image.fill_rect(Rect2i(left, 11 + shift, width, 12 - shift), dark)
 	image.fill_rect(Rect2i(left + 1, 12 + shift, width - 2, 9 - shift), coat)
 	image.fill_rect(Rect2i(8, 3 + shift, 9, 10), dark)
 	image.fill_rect(Rect2i(9, 4 + shift, 7, 4), Color("795d42"))
 	image.fill_rect(Rect2i(9, 8 + shift, 7, 4), Color("ceac84") if not back else Color("604d3e"))
 	if not back:
-		var eye_x := 14 if direction in [1, 2] else 9 if direction in [6, 7] else 11
+		var eye_x := 11 + roundi(sin(angle) * 3)
 		image.fill_rect(Rect2i(eye_x, 9 + shift, 2, 1), dark)
-	if direction in [1, 7]:
-		image.fill_rect(Rect2i(9 if direction == 1 else 15, 5 + shift, 2, 7), Color("604d3e"))
+	if direction in [1, 2, 10, 11]:
+		image.fill_rect(Rect2i(8 + direction if direction < 3 else 15 - (12 - direction), 5 + shift, 2, 7), Color("604d3e"))
 	image.fill_rect(Rect2i(left + 1, 20, width - 2, 2), Color("9d8451"))
 	var leg_length := 5 if crouch else 7
 	for leg in 2:
 		var x := 8 + leg * 6
-		var y := 22 + (step if leg == 0 else -step)
+		var stride: int = [0, 2, 0, -2][step % 4]
+		var y := 22 + (stride if leg == 0 else -stride)
 		image.fill_rect(Rect2i(x, y, 3, leg_length), Color("38454b"))
 		image.fill_rect(Rect2i(x - 1, y + leg_length - 1, 4, 2), dark)
 	image.fill_rect(Rect2i(left - 2, 14 + shift, 3, 6 - shift), Color("ceac84"))
 	image.fill_rect(Rect2i(left + width - 1, 14 + shift, 3, 6 - shift), Color("ceac84"))
 	if back:
-		var pack_x := 7 if direction == 3 else 11 if direction == 5 else 9
+		var pack_x := 9 + roundi(sin(angle) * 3)
 		image.fill_rect(Rect2i(pack_x, 14 + shift, 6, 5), Color("725f43"))
 	if outline:
 		var border := Image.create(24, 32, false, Image.FORMAT_RGBA8)
