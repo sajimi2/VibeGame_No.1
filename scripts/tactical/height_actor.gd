@@ -23,10 +23,12 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_max_angle = deg_to_rad(42)
 	shape_node = CollisionShape3D.new()
-	var cylinder := CylinderShape3D.new()
-	cylinder.radius = 0.29
-	cylinder.height = STAND_HEIGHT
-	shape_node.shape = cylinder
+	# Rounded locomotion shape avoids flat cylinder rims snagging convex ramp edges.
+	# Combat body/top hit regions remain a separate future component.
+	var locomotion :=  CapsuleShape3D.new()
+	locomotion.radius = 0.29
+	locomotion.height = STAND_HEIGHT
+	shape_node.shape = locomotion
 	shape_node.position.y = STAND_HEIGHT / 2
 	add_child(shape_node)
 	sprite = _sprite(false)
@@ -49,7 +51,7 @@ func set_crouch(value: bool) -> bool:
 	if value == crouched: return true
 	if not value:
 		var query := PhysicsShapeQueryParameters3D.new()
-		var standing := CylinderShape3D.new()
+		var standing := CapsuleShape3D.new()
 		standing.radius = 0.28
 		standing.height = STAND_HEIGHT - 0.04
 		query.shape = standing
