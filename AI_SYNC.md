@@ -1,20 +1,23 @@
 # OutpostRPG 当前交接
 
-用户已试玩 DSH 的阶段 2，没有新 bug，现由 Codex 接续实现。个人 Demo，不设逐任务审批；用户自己试玩，发现 bug 或进度积累后集中审查。AGENTS.md 已同步简化，本文覆盖旧槽位。
+## 当前目标
+2026-09-16 用户批准固定斜视角、有高度/遮挡/弹道的战术原型计划。详细阶段见 docs/TACTICAL_HEIGHT_PLAN.md。Codex 继续实现，用户决定手感，按阶段交付，不要求逐任务审批。
 
-## 本轮结果
-阶段 3 美术声音雏形已实现：四张地图像素地面/建筑/障碍、角色和敌人、行走与攻击分层、受击闪白/粒子/伤害数字、格挡反馈及可关震屏。添加合成音效、地区短音乐/环境声、整理 HUD，Esc 打开音量设置并暂停游戏。
-美术来自 assets/pixel/pixel_assets.gd 与 scripts/ui/pixel_*.gd 的原创代码绘制；声音来自 scripts/ui/sfx_player.gd 的合成波形，无外部素材包。音量和震屏选择仅在当前进程内保留，详见 assets/README.md。
+## 已完成的第一步
+在 tactical-height-prototype 分支加入独立入口 scenes/tactical_height.tscn：真实三维坡道、2m 高台、-1m 低洼、固定约 35 度正交镜头；八朝向像素角色、两帧行走、按住 C 下蹲；下蹲改变圆柱碰撞体，低梁下禁止起身；玩家被挡显示浅黄像素轮廓。树木用纸片，地形使用带像素纹理的几何体。
+布帘已分离步行与遮挡属性，可穿行但会遮住角色；本轮尚无射箭/破坏。几何场地和人物仍为样品，尚非最终美术。
+
+## 启动
+新试验版：play_height.bat 或 builds/windows/OutpostRPG_HeightLab.exe（同名 pck 必须同目录）。源码运行：play_height.bat dev。
+WASD 移动、鼠标朝向、按住 C 下蹲、R 回起点、Esc 退出。沿右侧坡道可上高台，左侧低洼有出口坡道。
+原 play.bat、桌面快捷方式、project.godot 主入口仍是已试玩的四关版本；未触碰其存档。试验场暂不接背包/成长/存档。
 
 ## 验证
-scripts/check.ps1 通过；表现测试真实窗口 32 项通过；相关武器、背包、旧 bug、冒险和存档共 244 项断言通过。损坏存档用例预期输出 JSON 错误，但测试通过。截图和日志在 work/stage3*，见 reports/V02_STAGE3.md。
-2026-09-16 用户试玩反馈：效果已实现，未测试出 bug；提供了首领大厅区域清空截图。以此标记阶段 3 试玩通过，不宣称覆盖全部边界情况。
+真实渲染窗口 tests/height_lab_test.gd 20 项零失败，检查坡道上下行、低洼出口、墙碰撞、下蹲/起身限制、遮挡、固定镜头、八方向与实际输入入口；截图 work/height_*.png 已检查。scripts/check.ps1 导入、原入口启动、契约解析通过。独立 EXE 无头启动退出 0。见 reports/HEIGHT_LAB_01.md。
+用户尚未试玩新视角。未完成敌人感知/搜索、攻击/弹道、顶部伤害、盾牌、布破损、屋顶淡出和 RPG 集成，不把地形测试当作战术闭环验收。
 
-## 入口与下一步
-新版：builds/windows/OutpostRPG_v02_Stage3.exe 与同名 pck。play.bat 启动新版；play.bat dev 跑源码，旧导出包保留。
-接下来按用户反馈调美术/听感，再完成计划阶段 4 的整段冒险体验验证，不扩展关卡、法杖、技能树或 AI NPC。
+## 下一步
+阶段 3：高度攻击与弹道，先验证石墙阻挡、布帘穿透、穿布后被后方墙拦截及粗粒度顶部命中。然后阶段 4 索敌/丢失目标/搜索，再接两种敌人。避免直接重做四关。
 
 ## Git
-阶段 3 经用户试玩通过，合入 main 并以 v0.2-stage3 标记本次回退节点，同步到 origin。之前的 v0.2-stage2（9b3d987）仍保留。接下来等待用户的新构想。
-完整计划：docs/DEVELOPMENT_PLAN_V02.md。早期 HANDOFF/TASKS/STATUS 的逐任务派发限制已过时，以本文及 AGENTS.md 为准。
-
+原 main 已在 GitHub，用户试玩通过标签 v0.2-stage3，旧 v0.2-stage2 保留。本轮在独立分支本地提交，尚未推送；不改稳定标签。
