@@ -6,7 +6,6 @@ var player: CharacterBody3D
 var camera: Camera3D
 var status: Label
 var notice: Label
-var perspective := false
 var stylized := true
 var combat: Node3D
 var feedback: Label
@@ -15,7 +14,9 @@ var materials: Dictionary = {}
 
 func _ready() -> void:
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
-	get_window().content_scale_size = Vector2i(960, 540)
+	get_window().content_scale_size = Vector2i(1280, 720)
+	get_window().min_size = Vector2i(1280, 720)
+	get_window().content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
 	RenderingServer.set_default_clear_color(Color("202e36"))
 	var environment_node := WorldEnvironment.new()
 	var environment := Environment.new()
@@ -34,8 +35,10 @@ func _ready() -> void:
 	add_child(sunlight)
 	_build_ground()
 	_build_props()
+	preload("res://scripts/tactical/outpost_sample.gd").build(self)
 	player = Actor.new()
 	player.name = "Explorer"
+	player.spawn = Vector3(-4.5, 0.1, 10.5)
 	add_child(player)
 	player.reset_position()
 	camera = Camera3D.new()
@@ -45,7 +48,7 @@ func _ready() -> void:
 	camera.far = 160
 	process_physics_priority = 10
 	add_child(camera)
-	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+	camera.position = snapped_camera_position(player.position + camera.global_basis.z * 26.0)
 	camera.rotation_degrees = Vector3(-35, 25, 0)
 	camera.position = player.position + camera.global_basis.z * 26
 	camera.current = true
@@ -57,14 +60,15 @@ func _ready() -> void:
 	combat.setup(player, func(message: String): last_feedback = message)
 
 func _physics_process(_delta: float) -> void:
-	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+	camera.position = snapped_camera_position(player.position + camera.global_basis.z * 26.0)
 	feedback.text = last_feedback
-	status.text = ("弱透视" if perspective else "斜角正交") + "  |  高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
+	status.text = "斜角正交" + "  |  高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_R: get_tree().reload_current_scene()
-		if event.physical_keycode == KEY_V: toggle_camera()
+		if event.physical_keycode == KEY_F1:
+			for label in get_tree().get_nodes_in_group("sample_annotations"): label.visible = not label.visible
 		if event.physical_keycode == KEY_B: toggle_shading()
 		if event.physical_keycode == KEY_ESCAPE: get_tree().quit()
 
@@ -72,14 +76,22 @@ func material(kind: String) -> StandardMaterial3D:
 	if materials.has(kind): return materials[kind]
 	var palette := {"grass": Color("536448"), "stone": Color("778184"), "wall": Color("626b72"), "path": Color("988468"), "soil": Color("514a3e"), "wood": Color("796349"), "cloth": Color("985b4f")}
 	var base: Color = palette.get(kind, Color.GRAY)
-	var image := Image.create(32, 32, false, Image.FORMAT_RGB8)
+	var image := Image.create(64, 64, false, Image.FORMAT_RGB8)
 	image.fill(base)
-	for y in 32:
-		for x in 32:
-			var shade := (x * 37 + y * 19 + x * y) % 47
+	var texture_rng := RandomNumberGenerator.new()
+	texture_rng.seed = 7319 + kind.hash()
+	for y in 64:
+		for x in 64:
+			var shade := int(texture_rng.randi() % 47)
 			if kind in ["wall", "stone"] and (y % 8 == 0 or (x + (y / 8 as int) * 8) % 16 == 0):
 				image.set_pixel(x, y, base.darkened(0.27))
-			elif shade < 3: image.set_pixel(x, y, base.lightened(0.12))
+			elif kind == "wood":
+				var grain := sin(float(x / 2) * 2.2 + sin(float(y) * 0.15))
+				image.set_pixel(x, y, base.darkened(0.16) if grain > 0.65 else base)
+			elif kind == "soil":
+				var seam := (y + int(2 * sin(x * 0.18))) % 17
+				image.set_pixel(x, y, base.darkened(0.18) if seam < 2 else base)
+			elif shade < 2: image.set_pixel(x, y, base.lightened(0.055))
 	var result := StandardMaterial3D.new()
 	result.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	result.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
@@ -141,6 +153,51 @@ func ramp(label: String, origin: Vector3, width: float, length: float, rise: flo
 	visual.material_override = mat
 	body.add_child(visual)
 
+func natural_ledge(label: String, origin: Vector3, outline: PackedVector2Array, height: float) -> void:
+	# Flat cap and irregular sides use the same mesh for rendering and collision.
+	# Keep the south lip aligned with the access ramp.
+	var top := SurfaceTool.new()
+	top.begin(Mesh.PRIMITIVE_TRIANGLES)
+	top.set_smooth_group(-1)
+	var indices := Geometry2D.triangulate_polygon(outline)
+	for i in range(0, indices.size(), 3):
+		for j in [0, 1, 2]:
+			var point := outline[indices[i + j]]
+			top.add_vertex(Vector3(point.x, height, point.y))
+	top.generate_normals()
+	top.set_material(material("grass"))
+	var mesh := top.commit()
+	var sides := SurfaceTool.new()
+	sides.begin(Mesh.PRIMITIVE_TRIANGLES)
+	sides.set_smooth_group(-1)
+	for i in outline.size():
+		var a := outline[i]
+		var b := outline[(i + 1) % outline.size()]
+		var ring_a := Vector3(a.x, height, a.y)
+		var ring_b := Vector3(b.x, height, b.y)
+		var middle_a := Vector3(a.x * (1.04 + 0.02 * (i % 3)), height * (0.42 + 0.05 * (i % 3)), a.y)
+		var middle_b := Vector3(b.x * (1.04 + 0.02 * (((i + 1) % outline.size()) % 3)), height * (0.42 + 0.05 * (((i + 1) % outline.size()) % 3)), b.y)
+		var foot_a := Vector3(a.x * 1.1, 0, a.y)
+		var foot_b := Vector3(b.x * 1.1, 0, b.y)
+		for vertex in [ring_a, middle_b, ring_b, ring_a, middle_a, middle_b,
+			middle_a, foot_b, middle_b, middle_a, foot_a, foot_b]:
+			sides.add_vertex(vertex)
+	sides.generate_normals()
+	sides.set_material(material("soil"))
+	sides.commit(mesh)
+	var body := StaticBody3D.new()
+	body.name = label
+	body.position = origin
+	body.collision_layer = 13
+	body.collision_mask = 0
+	add_child(body)
+	var visual := MeshInstance3D.new()
+	visual.mesh = mesh
+	body.add_child(visual)
+	var collision := CollisionShape3D.new()
+	collision.shape = mesh.create_trimesh_shape()
+	body.add_child(collision)
+
 func _build_ground() -> void:
 	# Rectangular depression x[-10,-4], z[-8,-2], surrounded by walkable ground.
 	box("NorthGround", Vector3(0, -0.5, -11), Vector3(32, 1, 6), "grass")
@@ -149,11 +206,22 @@ func _build_ground() -> void:
 	box("EastGround", Vector3(6, -0.5, -5), Vector3(20, 1, 6), "grass")
 	box("Depression", Vector3(-7, -1.5, -5), Vector3(6, 1, 6), "soil")
 	ramp("DepressionExit", Vector3(-7, -1, -4), 3, 4, 1)
-	box("HighPlatform", Vector3(5, 1, -7), Vector3(8, 2, 6), "stone")
+	natural_ledge("HighPlatform", Vector3(5, 0, -7), PackedVector2Array([
+		Vector2(-4, -1.8), Vector2(-3.2, -3), Vector2(-1.1, -3.35),
+		Vector2(0.5, -2.9), Vector2(2.8, -3.2), Vector2(3.7, -1.8),
+		Vector2(4, 0.4), Vector2(3.5, 2), Vector2(2, 3),
+		Vector2(-2, 3), Vector2(-3.8, 2.1), Vector2(-4.3, 0.4)]), 2.0)
+	natural_ledge("LowRockShelf", Vector3(12.5, 0, -10.5), PackedVector2Array([
+		Vector2(-1.6, -0.8), Vector2(-0.5, -1.6), Vector2(1, -1.3),
+		Vector2(1.7, -0.2), Vector2(1.3, 1.1), Vector2(-0.8, 1.1),
+		Vector2(-1.7, 0.4)]), 0.8)
+	ramp("RockShelfAccess", Vector3(12.5, 0, -7.4), 1.5, 2, 0.8)
+	_label("岩台 +0.8m", Vector3(12.5, 1.05, -10.5))
 	ramp("HighRamp", Vector3(5, 0, 2), 4, 6, 2)
 	for x in [-16.25, 16.25]: box("Boundary", Vector3(x, 0.5, 0), Vector3(0.5, 3, 28), "wall")
-	for z in [-14.25, 14.25]: box("Boundary", Vector3(0, 0.5, z), Vector3(32, 3, 0.5), "wall")
-	_label("高台 +2m", Vector3(5, 2.05, -8))
+	for z in [-14.25, 14.25]:
+		box("Boundary", Vector3(0, 0.5 if z < 0 else -0.3, z), Vector3(32, 3 if z < 0 else 1.6, 0.5), "wall")
+	_label("土坡高地 +2m", Vector3(5, 2.05, -8))
 	_label("坡道", Vector3(5, 0.5, 1))
 	_label("低洼 -1m", Vector3(-7, -0.8, -5))
 
@@ -167,7 +235,7 @@ func _build_props() -> void:
 	# Low beam verifies that standing up cannot clip into solid ceilings.
 	box("LowBeam", Vector3(-10, 1.4, 6), Vector3(3, 0.4, 2), "wood")
 	for x in [-11.6, -8.4]: box("BeamPost", Vector3(x, 0.7, 6), Vector3(0.2, 1.4, 2), "wood")
-	for location in [Vector3(-12, 0, 0), Vector3(12, 0, -3), Vector3(2, 0, 9)]:
+	for location in [Vector3(-12, 0, 0), Vector3(12, 0, -3), Vector3(2, 0, 9), Vector3(-12.5, 0, 10)]:
 		var trunk := box("Tree", location + Vector3(0, 1, 0), Vector3(0.55, 2, 0.55), "wood")
 		trunk.get_child(1).hide()
 		var sprite := Sprite3D.new()
@@ -197,6 +265,8 @@ func _build_props() -> void:
 func _label(text: String, where: Vector3) -> void:
 	var label := Label3D.new()
 	label.text = text
+	label.add_to_group("sample_annotations")
+	label.visible = false
 	label.font_size = 24
 	label.pixel_size = 0.026
 	label.outline_size = 6
@@ -218,7 +288,7 @@ func _build_ui() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(panel)
 	var title := Label.new()
-	title.text = "立体战术试验场 / 02 高度攻击与弹道"
+	title.text = "正交美术样板 / 林间废弃哨站"
 	title.position = Vector2(18, 14)
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color("eddbac")
@@ -228,25 +298,29 @@ func _build_ui() -> void:
 	status.add_theme_font_size_override("font_size", 16)
 	layer.add_child(status)
 	notice = Label.new()
-	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · V 切换镜头\nB 明暗对比 · R 重置 · Esc 退出 | 金色靶顶可从上方命中；本轮尚无敌人 AI"
-	notice.position = Vector2(16, 492)
+	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · F1 场景标注\nB 明暗对比 · R 重置 · Esc 退出 | 本轮：镜头稳定与场景美术；敌人、角色精修待后续"
+	notice.position = Vector2(16, 662)
 	notice.add_theme_font_size_override("font_size", 14)
 	notice.add_theme_color_override("font_shadow_color", Color.BLACK)
 	notice.add_theme_constant_override("shadow_offset_x", 1)
 	notice.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(notice)
 
-func toggle_camera() -> void:
-	perspective = not perspective
-	camera.projection = Camera3D.PROJECTION_PERSPECTIVE if perspective else Camera3D.PROJECTION_ORTHOGONAL
-	camera.fov = rad_to_deg(2 * atan(17.0 / 80.0))
-	camera.position = player.position + camera.global_basis.z * (40.0 if perspective else 26.0)
+func snapped_camera_position(desired: Vector3) -> Vector3:
+	# Quantize only the render camera, never physics or aiming coordinates.
+	var pixel := camera.size / float(get_window().content_scale_size.y)
+	var local := camera.global_basis.inverse() * desired
+	local.x = snappedf(local.x, pixel)
+	local.y = snappedf(local.y, pixel)
+	return camera.global_basis * local
 
 func _build_targets() -> void:
 	for point in [Vector3(-4, 0, 5), Vector3(5, 2, -7), Vector3(10, 0, -7), Vector3(12.5, 0, 7)]:
 		var target := preload("res://scripts/tactical/training_target.gd").new()
 		target.position = point
 		add_child(target)
+		target.feedback.add_to_group("sample_annotations")
+		target.feedback.visible = false
 	feedback = Label.new()
 	feedback.position = Vector2(18, 70)
 	feedback.add_theme_font_size_override("font_size", 14)

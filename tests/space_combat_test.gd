@@ -34,12 +34,11 @@ func run():
  current_scene = lab
  lab.player.test_mode = true
  await frames(10)
- check(root.content_scale_size == Vector2i(960, 540), "960x540 render size")
+ check(root.content_scale_size == Vector2i(1280, 720), "1280x720 render size")
  check(absf(rad_to_deg(lab.camera.rotation.y) - 25) < 0.1, "fixed 25 degree yaw")
  await capture("orthographic")
- lab.toggle_camera()
  await frames(3)
- check(lab.camera.projection == Camera3D.PROJECTION_PERSPECTIVE, "weak perspective selectable")
+ check(lab.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "orthographic production camera")
  var projected_start: Vector2 = lab.camera.unproject_position(lab.player.position)
  var initial: Vector3 = lab.player.position
  lab.player.test_mode = false
@@ -49,8 +48,7 @@ func run():
  lab.player.test_mode = true
  var moved: Vector3 = lab.player.position - initial
  check(moved.dot(Vector3(lab.camera.global_basis.z.x,0,lab.camera.global_basis.z.z)) < -0.4, "W moves camera-relative forward")
- await capture("perspective")
- lab.toggle_camera()
+ await capture("orthographic_moving")
  var wall = lab.get_node("StoneWall")
  var shot = arrow(Vector3(-3,1.5,3), Vector3(1000,0,0))
  await frames(3)
@@ -113,6 +111,8 @@ func run():
  check(highshot.stopped and highshot.result.has("collider") and highshot.result.collider.has_method("receive_strike") and highshot.result.collider.last_region == "顶部", "actual platform shot hits lower target top")
  await capture("top_hit")
  lab.player.reset_position()
+ # Arrange the melee test within reach, independently of the showcase spawn.
+ lab.player.position = Vector3(-6,0.1,5)
  lab.player.test_mode = false
  await frames(10)
  var near_dummy
@@ -156,6 +156,6 @@ func run():
  key.pressed = true
  Input.parse_input_event(key)
  await frames(2)
- check(lab.perspective, "V key switches camera in production input")
+ check(lab.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "V no longer switches the production camera")
  print("SPACE_COMBAT: %d checks, %d failures" % [checks,failures])
  quit(1 if failures else 0)

@@ -96,7 +96,7 @@ func run() -> void:
 	actor.reset_position()
 	actor.test_motion = Vector2.ZERO
 	await frames(10)
-	check(actor.position.distance_to(Vector3(-6, 0, 5)) < 0.1, "reset restores spawn")
+	check(Vector2(actor.position.x, actor.position.z).distance_to(Vector2(actor.spawn.x, actor.spawn.z)) < 0.1 and actor.is_on_floor(), "reset restores spawn")
 	actor.test_mode = false
 	Input.action_press("move_right")
 	var before: Vector3 = actor.position
