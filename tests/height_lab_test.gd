@@ -28,6 +28,8 @@ func capture(label: String) -> void:
 
 func run() -> void:
 	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab.encounter_enabled = false
+	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)
 	current_scene = lab
 	actor = lab.player
@@ -69,12 +71,12 @@ func run() -> void:
 	check(actor.crouched and actor.shape_node.shape.height < 1, "crouching changes collider")
 	check(actor.occluded and actor.outline.visible, "hidden player receives outline")
 	await capture("occlusion")
-	await place(Vector3(-10, 0.1, 8))
-	actor.test_motion = Vector2(0, -1)
+	await place(Vector3(-10, 0.1, 4))
+	actor.test_motion = Vector2(0, 1)
 	await frames(60)
 	actor.test_motion = Vector2.ZERO
 	await frames(2)
-	check(actor.position.z < 6.2, "crouch under low beam")
+	check(actor.position.z > 5.8, "crouch under low beam")
 	actor.test_crouch = false
 	await frames(4)
 	check(actor.crouched, "blocked standing does not penetrate ceiling")

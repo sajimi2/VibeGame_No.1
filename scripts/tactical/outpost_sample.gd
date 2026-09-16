@@ -44,9 +44,20 @@ static func build(lab: Node3D) -> void:
 			var point: Vector3 = center + Vector3(rng.randf_range(-1.3,1.3),0.003,rng.randf_range(-0.8,0.8))
 			patch(lab,point,Vector2(0.07,0.04),Color("8a8150") if i%3 == 0 else Color("5c6c43"),i)
 	build_tower(lab)
+	for spec in [Vector4(-0.5,0,10,1.2),Vector4(-0.5,1.2,10,0.8),Vector4(1.25,0,11.2,1.2)]:
+		var center := Vector3(spec.x,spec.y+spec.w*0.5,spec.z)
+		lab.box("ReferenceCrate",center,Vector3.ONE*spec.w,"wood")
+		# Thin raised edge strips clarify the three faces without new gameplay.
+		for x in [-1,1]:
+			for z in [-1,1]:
+				lab.box("CrateUpright",center+Vector3(x*spec.w*0.5,0,z*spec.w*0.5),Vector3(0.055,spec.w,0.055),"wood_frame",0)
+		for y in [-1,1]:
+			for z in [-1,1]:
+				lab.box("CrateRim",center+Vector3(0,y*spec.w*0.5,z*spec.w*0.5),Vector3(spec.w,0.06,0.06),"wood_frame",0)
+	lab._label("木箱 · 绕行观察侧面",Vector3(0.2,2.5,10.5))
 
 static func build_tower(lab: Node3D) -> void:
-	var o := Vector3(-8,0,10)
+	var o := Vector3(-8,0,9)
 	# Low masonry plinth supports a single accessible timber platform.
 	lab.box("TowerPlinth",o+Vector3(0,0.5,0),Vector3(4.2,1,3.4),"stone")
 	lab.box("TowerFloorSupport",o+Vector3(0,1.09,0),Vector3(4.2,0.21,3.4),"wood")

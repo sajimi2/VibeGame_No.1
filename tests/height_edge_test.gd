@@ -6,6 +6,7 @@ func frames(count: int) -> void:
  for i in count: await physics_frame
 func run() -> void:
  var lab = load("res://scenes/tactical_height.tscn").instantiate()
+ ProjectSettings.set_setting("tactical/testing",true)
  root.add_child(lab)
  var actor = lab.player
  actor.test_mode = true

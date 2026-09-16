@@ -14,14 +14,30 @@ var direction_index := 0
 var gait := 0.0
 var movement_direction := 0
 var shadow: Node3D
+var world_shadow: MeshInstance3D
 var occluded := false
 var test_mode := false
 var test_motion := Vector2.ZERO
 var test_crouch := false
+var max_hp := 100
+var safe_zone := false
+var hp := 100
+var hurt_time := 0.0
+var invulnerable := 0.0
+var attack_pose := 0
+var attack_facing := Vector2(0,1)
+var effects: Node3D
+var foot_distance := 0.0
+var landing_delay := 0.0
+var jumped := false
 var spawn := Vector3(-6, 0.1, 5)
 
 func _ready() -> void:
 	cursor = get_viewport().get_mouse_position()
+	var listener := AudioListener3D.new()
+	listener.position.y = 1.1
+	add_child(listener)
+	listener.make_current()
 	collision_layer = 2
 	collision_mask = 1
 	floor_snap_length = 0.35
@@ -40,13 +56,15 @@ func _ready() -> void:
 	outline = _sprite(true)
 	outline.visible = false
 	shadow = preload("res://scripts/tactical/ground_shadow.gd").new()
+	shadow.radius=0.18
 	add_child(shadow)
+	world_shadow=preload("res://scripts/tactical/world_lighting.gd").actor_shadow(self)
 	_refresh_art(0)
 
 func _sprite(is_outline: bool) -> Sprite3D:
 	var item := Sprite3D.new()
-	item.pixel_size = 0.06
-	item.offset = Vector2(0, 16)
+	item.pixel_size = 0.04
+	item.offset = Vector2(0, 24)
 	item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	item.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	item.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
@@ -75,23 +93,44 @@ func set_crouch(value: bool) -> bool:
 	return true
 
 func _physics_process(delta: float) -> void:
+	hurt_time = maxf(0,hurt_time-delta)
+	invulnerable = maxf(0,invulnerable-delta)
+	sprite.modulate = Color(0.55,0.55,0.55) if hp<=0 else Color(1.8,0.8,0.7) if hurt_time>0 else Color.WHITE
+	sprite.rotation.z = -0.7 if hp<=0 else 0
+	world_shadow.visible = hp>0
 	var move := test_motion if test_mode else Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if hp <= 0: move = Vector2.ZERO
 	set_crouch(test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C))
 	if not test_mode and camera != null:
 		var world_move := camera.global_basis.x * move.x + Vector3(camera.global_basis.z.x, 0, camera.global_basis.z.z).normalized() * move.y
 		move = Vector2(world_move.x, world_move.z)
 	var speed := 2.0 if crouched else 4.2
-	velocity.x = move.x * speed
-	velocity.z = move.y * speed
+	landing_delay=maxf(0,landing_delay-delta)
+	if is_on_floor() or not jumped:
+		velocity.x = move.x * speed
+		velocity.z = move.y * speed
+	else:
+		velocity.x = move_toward(velocity.x,move.x*speed,delta*3.0)
+		velocity.z = move_toward(velocity.z,move.y*speed,delta*3.0)
 	velocity.y -= 20 * delta
 	var previous_position := global_position
+	var was_airborne := not is_on_floor()
 	move_and_slide()
+	if was_airborne and is_on_floor() and jumped:
+		jumped=false
+		landing_delay=0.12
+		if is_instance_valid(effects): effects.landing(global_position)
 	var traveled := global_position - previous_position
 	var planar_distance := Vector2(traveled.x, traveled.z).length()
+	foot_distance += planar_distance
+	if foot_distance > 1.0 and is_on_floor():
+		foot_distance = 0
+		if is_instance_valid(effects): effects.sound("step",global_position)
 	if move.length() > 0.1:
-		facing = move.normalized()
+		if attack_pose == 0: facing = move.normalized()
 		gait += planar_distance / 1.8 * TAU
-	if not test_mode and camera != null: update_aim(cursor)
+	if not test_mode and camera != null and attack_pose not in [1,2,3]: update_aim(cursor)
+	if attack_pose in [1,2,3]: facing = attack_facing
 	var view_facing := Vector3(facing.x, 0, facing.y)
 	if camera != null: view_facing = view_facing.rotated(Vector3.UP, -camera.rotation.y)
 	direction_index = posmod(roundi(atan2(view_facing.x, view_facing.z) / (PI / 6)), 12)
@@ -106,9 +145,9 @@ func _refresh_art(step: int) -> void:
 	var height := CROUCH_HEIGHT if crouched else STAND_HEIGHT
 	for item in [sprite, outline]:
 		item.position = Vector3.ZERO
-		item.scale.y = 0.7 if crouched else 1.0
-	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction)
-	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction)
+		item.scale.y = 0.7 if crouched else 0.92 if jumped else 1.0
+	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction, attack_pose)
+	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction, attack_pose)
 
 func _update_occlusion() -> void:
 	if camera == null: return
@@ -121,11 +160,16 @@ func _update_occlusion() -> void:
 	outline.visible = occluded
 
 func reset_position() -> void:
+	hp = max_hp
+	invulnerable = 0
 	global_position = spawn
 	velocity = Vector3.ZERO
+	jumped=false
+	landing_delay=0
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_SPACE: request_jump()
 	if event is InputEventMouseMotion or event is InputEventMouseButton:
 		cursor = event.position
 
@@ -140,3 +184,17 @@ func update_aim(mouse: Vector2) -> void:
 		aim_point = target
 		var aim: Vector3 = target - global_position
 		if Vector2(aim.x, aim.z).length() > 0.2: facing = Vector2(aim.x, aim.z).normalized()
+
+func receive_damage(amount: int, _direction: Vector3) -> void:
+	if hp <= 0 or invulnerable > 0 or safe_zone: return
+	hp = maxi(0,hp-amount)
+	hurt_time = 0.18
+	invulnerable = 0.65
+	if is_instance_valid(effects): effects.impact(global_position+Vector3.UP,amount,hp==0)
+
+func request_jump() -> bool:
+	if hp<=0 or crouched or not is_on_floor() or jumped or landing_delay>0: return false
+	velocity.y=5.3
+	jumped=true
+	if is_instance_valid(effects): effects.sound("step",global_position)
+	return true

@@ -5,6 +5,13 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('OutpostRPG-Height-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force (Join-Path $stagingRoot 'scripts/tactical'), (Join-Path $stagingRoot 'scenes') | Out-Null
 Copy-Item -Path (Join-Path $projectRoot 'scripts/tactical/*.gd') -Destination (Join-Path $stagingRoot 'scripts/tactical')
+# Shared inventory contracts and only the two weapon definitions used here.
+$sharedFiles = @('scripts/contracts/inventory_port.gd','scripts/contracts/item_instance.gd','scripts/items/actor_inventory.gd','scripts/items/item_definition.gd','scripts/items/item_catalog.gd','scripts/combat/weapon_profile.gd','scripts/combat/attack_spec.gd','data/items/hunting_knife.tres','data/items/great_cleaver.tres','data/weapons/knife.tres','data/weapons/cleaver.tres','data/attack_knife_light.tres','data/attack_knife_heavy.tres','data/attack_cleaver_light.tres','data/attack_cleaver_heavy.tres')
+foreach ($relative in $sharedFiles) {
+    $destination = Join-Path $stagingRoot $relative
+    New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
+    Copy-Item -LiteralPath (Join-Path $projectRoot $relative) -Destination $destination
+}
 Copy-Item -LiteralPath (Join-Path $projectRoot 'scenes/tactical_height.tscn') -Destination (Join-Path $stagingRoot 'scenes')
 $config = Get-Content -LiteralPath (Join-Path $projectRoot 'project.godot') -Raw
 $config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"').Replace('res://scenes/level_village.tscn', 'res://scenes/tactical_height.tscn')

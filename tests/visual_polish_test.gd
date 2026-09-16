@@ -11,12 +11,14 @@ func check(value: bool, message: String):
  print("%s %s" % ["PASS" if value else "FAIL", message])
 func run():
  var lab = load("res://scenes/tactical_height.tscn").instantiate()
+ lab.encounter_enabled = false
+ ProjectSettings.set_setting("tactical/testing",true)
  root.add_child(lab)
  current_scene = lab
  var actor = lab.player
  actor.test_mode = true
  await frames(10)
- var sheet := Image.create(24*8,32*3,false,Image.FORMAT_RGBA8)
+ var sheet := Image.create(32*8,48*3,false,Image.FORMAT_RGBA8)
  sheet.fill(Color("596350"))
  for row in 3:
   var hashes := {}
@@ -24,15 +26,15 @@ func run():
   for frame in 8:
    var image := Art.texture(direction,frame,false,false,direction).get_image()
    hashes[hash(image.get_data())] = true
-   sheet.blit_rect(image,Rect2i(0,0,24,32),Vector2i(frame*24,row*32))
+   sheet.blit_rect(image,Rect2i(0,0,32,48),Vector2i(frame*32,row*48))
    var contact := false
-   for x in 24:
-    if image.get_pixel(x,31).a > 0: contact = true
+   for x in 32:
+    if image.get_pixel(x,47).a > 0: contact = true
    check(contact,"at least one planted foot: direction %d frame %d" % [direction,frame])
   check(hashes.size() >= 6,"distinct gait poses for direction %d" % direction)
- sheet.resize(768,384,Image.INTERPOLATE_NEAREST)
+ sheet.resize(768,432,Image.INTERPOLATE_NEAREST)
  sheet.save_png("res://work/walk_cycle_sheet.png")
- check(actor.sprite.position == Vector3.ZERO and actor.sprite.offset == Vector2(0,16),"sprite pivot remains at feet")
+ check(actor.sprite.position == Vector3.ZERO and actor.sprite.offset == Vector2(0,24),"sprite pivot remains at feet")
  check(actor.sprite.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,"tilted paper no longer casts detached shadow")
  check(actor.shadow.patch.global_position.distance_to(actor.global_position) < 0.08,"contact shadow lies directly under feet")
  actor.position = Vector3(-6,0.1,2.5)

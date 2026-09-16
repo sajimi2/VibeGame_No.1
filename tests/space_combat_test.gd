@@ -30,6 +30,8 @@ func capture(label: String):
  root.get_texture().get_image().save_png("res://work/combat_%s.png" % label)
 func run():
  lab = load("res://scenes/tactical_height.tscn").instantiate()
+ lab.encounter_enabled = false
+ ProjectSettings.set_setting("tactical/testing",true)
  root.add_child(lab)
  current_scene = lab
  lab.player.test_mode = true
@@ -156,6 +158,6 @@ func run():
  key.pressed = true
  Input.parse_input_event(key)
  await frames(2)
- check(lab.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "V no longer switches the production camera")
+ check(lab.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "V leaves orthographic projection unchanged")
  print("SPACE_COMBAT: %d checks, %d failures" % [checks,failures])
  quit(1 if failures else 0)

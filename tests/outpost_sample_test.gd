@@ -16,6 +16,8 @@ func capture(label: String) -> void:
 	root.get_texture().get_image().save_png("res://work/outpost_" + label + ".png")
 func run() -> void:
 	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab.encounter_enabled = false
+	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)
 	current_scene = lab
 	var actor: CharacterBody3D = lab.player

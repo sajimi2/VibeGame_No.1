@@ -1,10 +1,10 @@
 extends RefCounted
 ## Shared finite-segment collision for arrows and melee; no endpoint-only overlap.
-static func trace(world: World3D, start: Vector3, finish: Vector3, excluded: Array[RID] = []) -> Dictionary:
+static func trace(world: World3D, start: Vector3, finish: Vector3, excluded: Array[RID] = [], mask: int = 8 | 16) -> Dictionary:
  var skip: Array[RID] = excluded.duplicate()
  var penetrated: Array = []
  for i in 16:
-  var query := PhysicsRayQueryParameters3D.create(start, finish, 8 | 16, skip)
+  var query := PhysicsRayQueryParameters3D.create(start, finish, mask, skip)
   query.hit_from_inside = true
   var hit := world.direct_space_state.intersect_ray(query)
   if hit.is_empty(): return {"penetrated": penetrated}

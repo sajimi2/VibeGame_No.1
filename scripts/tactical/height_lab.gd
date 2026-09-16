@@ -1,5 +1,5 @@
 extends Node3D
-## Isolated spatial prototype. No production save, inventory or quest mutation.
+## Tactical level; original four-scene game and its save remain separate.
 const Actor = preload("res://scripts/tactical/height_actor.gd")
 const Art = preload("res://scripts/tactical/directional_art.gd")
 var player: CharacterBody3D
@@ -9,10 +9,24 @@ var notice: Label
 var stylized := true
 var combat: Node3D
 var feedback: Label
-var last_feedback := "左键挥刀 / 右键射箭：瞄准训练靶身体或金色顶部"
+var last_feedback := "空格短跳 · E 取得密函 · 留意弓箭手的瞄准动作"
 var materials: Dictionary = {}
+var encounter_enabled := true
+var progression: Node
+var progress_enabled := true
+var mission_enabled := true
+var archer: CharacterBody3D
+var objective: Node3D
+var guard: CharacterBody3D
+var effects: Node3D
+var routes: Node
+var results_enabled := true
+var run_flow: CanvasLayer
+var lighting: Node3D
+const Lighting = preload("res://scripts/tactical/world_lighting.gd")
 
 func _ready() -> void:
+	if ProjectSettings.get_setting("tactical/testing",false): progress_enabled=false
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	get_window().content_scale_size = Vector2i(1280, 720)
 	get_window().min_size = Vector2i(1280, 720)
@@ -33,12 +47,24 @@ func _ready() -> void:
 	sunlight.light_energy = 0.8
 	sunlight.shadow_enabled = true
 	add_child(sunlight)
+	lighting = Lighting.new()
+	add_child(lighting)
+	lighting.pixel_material=Lighting.pixel_pass(self)
+	lighting.setup(sunlight,environment)
 	_build_ground()
 	_build_props()
 	preload("res://scripts/tactical/outpost_sample.gd").build(self)
+	if encounter_enabled and mission_enabled:
+		# A low broken fence offers a jump shortcut; grounded agents go around.
+		box("JumpFence",Vector3(-4,0.21,2),Vector3(3.0,0.42,0.20),"wood")
+		_label("断栏 · 空格短跳 / 两侧绕行",Vector3(-4,0.8,2))
+		preload("res://scripts/tactical/outpost_route.gd").build(self)
+	effects = preload("res://scripts/tactical/encounter_effects.gd").new()
+	add_child(effects)
 	player = Actor.new()
+	player.effects = effects
 	player.name = "Explorer"
-	player.spawn = Vector3(-4.5, 0.1, 10.5)
+	player.spawn = Vector3(-3.5, 0.1, 11)
 	add_child(player)
 	player.reset_position()
 	camera = Camera3D.new()
@@ -48,9 +74,8 @@ func _ready() -> void:
 	camera.far = 160
 	process_physics_priority = 10
 	add_child(camera)
-	camera.position = snapped_camera_position(player.position + camera.global_basis.z * 26.0)
-	camera.rotation_degrees = Vector3(-35, 25, 0)
-	camera.position = player.position + camera.global_basis.z * 26
+	camera.rotation_degrees = Vector3(-35,25,0)
+	update_camera_position()
 	camera.current = true
 	player.camera = camera
 	_build_ui()
@@ -58,11 +83,12 @@ func _ready() -> void:
 	combat = preload("res://scripts/tactical/lab_combat.gd").new()
 	add_child(combat)
 	combat.setup(player, func(message: String): last_feedback = message)
+	if encounter_enabled: start_encounter.call_deferred()
 
 func _physics_process(_delta: float) -> void:
-	camera.position = snapped_camera_position(player.position + camera.global_basis.z * 26.0)
-	feedback.text = last_feedback
-	status.text = "斜角正交" + "  |  高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
+	update_camera_position()
+	feedback.text = "你已倒下 · 按 R 重置" if player.hp<=0 else "守卫已击败 · 按 R 重置遭遇" if not mission_enabled and is_instance_valid(guard) and guard.hp<=0 else last_feedback
+	status.text = ("斜角正交 · 生命 %d/%d" % [player.hp,player.max_hp]) + "  |  高度 %.2f m  ·  %s  ·  %s" % [player.position.y, "下蹲" if player.crouched else "站立", "遮挡轮廓" if player.occluded else "可见"]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -74,7 +100,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func material(kind: String) -> StandardMaterial3D:
 	if materials.has(kind): return materials[kind]
-	var palette := {"grass": Color("536448"), "stone": Color("778184"), "wall": Color("626b72"), "path": Color("988468"), "soil": Color("514a3e"), "wood": Color("796349"), "cloth": Color("985b4f")}
+	var palette := {"grass": Color("536448"), "stone": Color("778184"), "wall": Color("626b72"), "path": Color("988468"), "soil": Color("514a3e"), "wood": Color("796349"), "cloth": Color("985b4f"), "wood_frame": Color("4e4032")}
 	var base: Color = palette.get(kind, Color.GRAY)
 	var image := Image.create(64, 64, false, Image.FORMAT_RGB8)
 	image.fill(base)
@@ -83,15 +109,30 @@ func material(kind: String) -> StandardMaterial3D:
 	for y in 64:
 		for x in 64:
 			var shade := int(texture_rng.randi() % 47)
-			if kind in ["wall", "stone"] and (y % 8 == 0 or (x + (y / 8 as int) * 8) % 16 == 0):
-				image.set_pixel(x, y, base.darkened(0.27))
+			if kind in ["wall","stone"]:
+				var row := y/16 as int
+				var brick_x := (x+row*16)%32
+				var brick_tone := ((x+row*16)/32 as int + row*3)%3
+				var color := base.darkened(brick_tone*0.045)
+				if y%16==0 or brick_x==0: color=base.darkened(0.32)
+				elif y%16 in [1,2] or brick_x==1: color=base.lightened(0.12)
+				elif y%16==15 or brick_x==31: color=base.darkened(0.14)
+				image.set_pixel(x,y,color)
 			elif kind == "wood":
-				var grain := sin(float(x / 2) * 2.2 + sin(float(y) * 0.15))
-				image.set_pixel(x, y, base.darkened(0.16) if grain > 0.65 else base)
-			elif kind == "soil":
-				var seam := (y + int(2 * sin(x * 0.18))) % 17
-				image.set_pixel(x, y, base.darkened(0.18) if seam < 2 else base)
-			elif shade < 2: image.set_pixel(x, y, base.lightened(0.055))
+				var grain := sin(float(x/2)*2.2+sin(float(y)*0.15))
+				image.set_pixel(x,y,base.darkened(0.16) if grain>0.65 else base)
+			elif kind in ["soil","path","grass"]:
+				# Broad pixel clusters, no fine white noise or continuous gradients.
+				var cx := x/8 as int
+				var cy := y/8 as int
+				var cluster := sin(cx*1.73+sin(cy*0.83)*2.0)+cos(cy*1.32-cx*0.37)
+				var color := base.lightened(0.04) if cluster>1.2 else base.darkened(0.045) if cluster< -1.2 else base
+				if kind=="grass": color=base.lightened(0.018) if cluster>1.65 else base.darkened(0.02) if cluster< -1.65 else base
+				if kind=="soil":
+					var band := (y+int(3*sin(cx*0.7)))%20
+					if band<2: color=base.darkened(0.22)
+				image.set_pixel(x,y,color)
+			elif shade<2: image.set_pixel(x,y,base.lightened(0.055))
 	var result := StandardMaterial3D.new()
 	result.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	result.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
@@ -248,12 +289,7 @@ func _build_props() -> void:
 		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		add_child(sprite)
-		var root_anchor := Node3D.new()
-		root_anchor.position = location
-		add_child(root_anchor)
-		var contact := preload("res://scripts/tactical/ground_shadow.gd").new()
-		contact.radius = 1.1
-		root_anchor.add_child(contact)
+		Lighting.tree_shadow(self,location)
 		# Canopy occludes sight/camera but does not block feet.
 		var canopy := box("Canopy", location + Vector3(0, 2.7, 0), Vector3(2.8, 2.8, 0.15), "grass", 4)
 		canopy.get_child(1).hide()
@@ -284,11 +320,11 @@ func _build_ui() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.05, 0.08, 0.10, 0.88)
 	panel.position = Vector2(10, 10)
-	panel.size = Vector2(545, 94)
+	panel.size = Vector2(700, 94)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(panel)
 	var title := Label.new()
-	title.text = "正交美术样板 / 林间废弃哨站"
+	title.text = "林间废弃哨站 / 夺回密函"
 	title.position = Vector2(18, 14)
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color("eddbac")
@@ -298,13 +334,16 @@ func _build_ui() -> void:
 	status.add_theme_font_size_override("font_size", 16)
 	layer.add_child(status)
 	notice = Label.new()
-	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · F1 场景标注\nB 明暗对比 · R 重置 · Esc 退出 | 本轮：镜头稳定与场景美术；敌人、角色精修待后续"
+	notice.text = "WASD 移动 · 空格短跳 · C 下蹲 · 左键挥刀 · 右键射箭 · E 交互 · I 背包\nShift 精确射击 · R 重新出发（保留装备） · Esc 退出 · F1 标注 · B 明暗对比"
 	notice.position = Vector2(16, 662)
 	notice.add_theme_font_size_override("font_size", 14)
 	notice.add_theme_color_override("font_shadow_color", Color.BLACK)
 	notice.add_theme_constant_override("shadow_offset_x", 1)
 	notice.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(notice)
+
+func update_camera_position() -> void:
+	camera.position = snapped_camera_position(player.position + camera.global_basis.z * 26.0)
 
 func snapped_camera_position(desired: Vector3) -> Vector3:
 	# Quantize only the render camera, never physics or aiming coordinates.
@@ -315,7 +354,8 @@ func snapped_camera_position(desired: Vector3) -> Vector3:
 	return camera.global_basis * local
 
 func _build_targets() -> void:
-	for point in [Vector3(-4, 0, 5), Vector3(5, 2, -7), Vector3(10, 0, -7), Vector3(12.5, 0, 7)]:
+	var points := [] if encounter_enabled and mission_enabled else [Vector3(-4, 0, 5), Vector3(5, 2, -7), Vector3(10, 0, -7), Vector3(12.5, 0, 7)]
+	for point in points:
 		var target := preload("res://scripts/tactical/training_target.gd").new()
 		target.position = point
 		add_child(target)
@@ -333,3 +373,44 @@ func toggle_shading() -> void:
 	for material_value in materials.values():
 		material_value.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON if stylized else BaseMaterial3D.DIFFUSE_BURLEY
 	last_feedback = "分段明暗" if stylized else "连续明暗 · 对比模式"
+
+func start_encounter() -> void:
+	await get_tree().physics_frame
+	await get_tree().process_frame
+	routes = preload("res://scripts/tactical/terrain_routes.gd").new()
+	add_child(routes)
+	routes.build(get_world_3d())
+	guard = preload("res://scripts/tactical/outpost_guard.gd").new()
+	guard.player = player
+	guard.camera = camera
+	guard.routes = routes
+	guard.effects = effects
+	if mission_enabled: guard.home=Vector3(-5.0,0,-0.9)
+	guard.position = guard.home+Vector3.UP*0.05
+	add_child(guard)
+
+	if mission_enabled:
+		archer=preload("res://scripts/tactical/outpost_guard.gd").new()
+		archer.ranged=true
+		archer.hp=40
+		archer.max_hp=40
+		archer.home=Vector3(6.0,2,-7.8)
+		archer.position=archer.home+Vector3.UP*0.05
+		archer.player=player
+		archer.camera=camera
+		archer.routes=routes
+		archer.effects=effects
+		add_child(archer)
+		archer.name="OutpostArcher"
+		objective=preload("res://scripts/tactical/outpost_objective.gd").new()
+		objective.player=player
+		add_child(objective)
+		progression=preload("res://scripts/tactical/camp_progress.gd").new()
+		progression.lab=self
+		progression.persist=progress_enabled
+		add_child(progression)
+		objective.progress=progression
+		if results_enabled:
+			run_flow=preload("res://scripts/tactical/outpost_run.gd").new()
+			run_flow.lab=self
+			add_child(run_flow)
