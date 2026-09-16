@@ -8,12 +8,13 @@
 
 ## 验证
 scripts/check.ps1 通过；表现测试真实窗口 32 项通过；相关武器、背包、旧 bug、冒险和存档共 244 项断言通过。损坏存档用例预期输出 JSON 错误，但测试通过。截图和日志在 work/stage3*，见 reports/V02_STAGE3.md。
-实际听感、持续键鼠战斗手感及完整四关通关仍待用户试玩，不能把自动测试当作已完成这些体验验证。
+2026-09-16 用户试玩反馈：效果已实现，未测试出 bug；提供了首领大厅区域清空截图。以此标记阶段 3 试玩通过，不宣称覆盖全部边界情况。
 
 ## 入口与下一步
 新版：builds/windows/OutpostRPG_v02_Stage3.exe 与同名 pck。play.bat 启动新版；play.bat dev 跑源码，旧导出包保留。
 接下来按用户反馈调美术/听感，再完成计划阶段 4 的整段冒险体验验证，不扩展关卡、法杖、技能树或 AI NPC。
 
 ## Git
-当前开发分支 stage3-presentation；用户已试玩基线标签 v0.2-stage2（9b3d987），原 main 保留。阶段 3 尚未用户试玩，不打稳定标签，本轮没有推送 GitHub。
+阶段 3 经用户试玩通过，合入 main 并以 v0.2-stage3 标记本次回退节点，同步到 origin。之前的 v0.2-stage2（9b3d987）仍保留。接下来等待用户的新构想。
 完整计划：docs/DEVELOPMENT_PLAN_V02.md。早期 HANDOFF/TASKS/STATUS 的逐任务派发限制已过时，以本文及 AGENTS.md 为准。
+
