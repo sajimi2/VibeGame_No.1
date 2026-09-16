@@ -7,6 +7,7 @@ var camera: Camera3D
 var status: Label
 var notice: Label
 var perspective := false
+var stylized := true
 var combat: Node3D
 var feedback: Label
 var last_feedback := "左键挥刀 / 右键射箭：瞄准训练靶身体或金色顶部"
@@ -22,13 +23,13 @@ func _ready() -> void:
 	environment.background_color = Color("202e36")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("b9cbd4")
-	environment.ambient_light_energy = 0.65
+	environment.ambient_light_energy = 0.48
 	environment_node.environment = environment
 	add_child(environment_node)
 	var sunlight := DirectionalLight3D.new()
 	sunlight.rotation_degrees = Vector3(-55, -30, 0)
 	sunlight.light_color = Color("ffe4b5")
-	sunlight.light_energy = 0.9
+	sunlight.light_energy = 0.8
 	sunlight.shadow_enabled = true
 	add_child(sunlight)
 	_build_ground()
@@ -64,6 +65,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_R: get_tree().reload_current_scene()
 		if event.physical_keycode == KEY_V: toggle_camera()
+		if event.physical_keycode == KEY_B: toggle_shading()
 		if event.physical_keycode == KEY_ESCAPE: get_tree().quit()
 
 func material(kind: String) -> StandardMaterial3D:
@@ -80,6 +82,9 @@ func material(kind: String) -> StandardMaterial3D:
 			elif shade < 3: image.set_pixel(x, y, base.lightened(0.12))
 	var result := StandardMaterial3D.new()
 	result.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	result.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	result.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	result.roughness = 1.0
 	result.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	result.albedo_texture = ImageTexture.create_from_image(image)
 	result.uv1_triplanar = true
@@ -125,12 +130,13 @@ func ramp(label: String, origin: Vector3, width: float, length: float, rise: flo
 	body.add_child(collision)
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	surface.set_smooth_group(-1)
 	for index in [0, 1, 5, 0, 5, 4, 2, 4, 5, 2, 5, 3, 0, 4, 2, 1, 3, 5, 0, 2, 3, 0, 3, 1]:
 		surface.add_vertex(vertices[index])
 	surface.generate_normals()
 	var visual := MeshInstance3D.new()
 	visual.mesh = surface.commit()
-	var mat := material("path").duplicate() as StandardMaterial3D
+	var mat := material("path")
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	visual.material_override = mat
 	body.add_child(visual)
@@ -167,11 +173,19 @@ func _build_props() -> void:
 		var sprite := Sprite3D.new()
 		sprite.texture = Art.tree()
 		sprite.pixel_size = 0.075
-		sprite.position = location + Vector3(0, 2.25, 0)
+		sprite.position = location
+		sprite.offset = Vector2(0, 30)
+		sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		add_child(sprite)
+		var root_anchor := Node3D.new()
+		root_anchor.position = location
+		add_child(root_anchor)
+		var contact := preload("res://scripts/tactical/ground_shadow.gd").new()
+		contact.radius = 1.1
+		root_anchor.add_child(contact)
 		# Canopy occludes sight/camera but does not block feet.
 		var canopy := box("Canopy", location + Vector3(0, 2.7, 0), Vector3(2.8, 2.8, 0.15), "grass", 4)
 		canopy.get_child(1).hide()
@@ -214,7 +228,7 @@ func _build_ui() -> void:
 	status.add_theme_font_size_override("font_size", 16)
 	layer.add_child(status)
 	notice = Label.new()
-	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · V 切换镜头\nR 重置试验场 · Esc 退出 | 金色靶顶可从上方命中；本轮尚无敌人 AI"
+	notice.text = "WASD 移动 · C 下蹲 · 左键挥刀 · 右键射箭 · V 切换镜头\nB 明暗对比 · R 重置 · Esc 退出 | 金色靶顶可从上方命中；本轮尚无敌人 AI"
 	notice.position = Vector2(16, 492)
 	notice.add_theme_font_size_override("font_size", 14)
 	notice.add_theme_color_override("font_shadow_color", Color.BLACK)
@@ -238,3 +252,10 @@ func _build_targets() -> void:
 	feedback.add_theme_font_size_override("font_size", 14)
 	feedback.modulate = Color("ebcd84")
 	status.get_parent().add_child(feedback)
+
+
+func toggle_shading() -> void:
+	stylized = not stylized
+	for material_value in materials.values():
+		material_value.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON if stylized else BaseMaterial3D.DIFFUSE_BURLEY
+	last_feedback = "分段明暗" if stylized else "连续明暗 · 对比模式"

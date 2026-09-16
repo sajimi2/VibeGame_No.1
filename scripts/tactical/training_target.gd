@@ -25,6 +25,8 @@ func _ready() -> void:
  visual.position.y = 0.75
  var material := StandardMaterial3D.new()
  material.albedo_color = Color("a48058")
+ material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+ material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
  visual.material_override = material
  add_child(visual)
  var cap := MeshInstance3D.new()
@@ -37,6 +39,8 @@ func _ready() -> void:
  cap.position.y = 1.505
  var gold := StandardMaterial3D.new()
  gold.albedo_color = Color("d3b76c")
+ gold.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+ gold.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
  cap.material_override = gold
  add_child(cap)
  feedback = Label3D.new()

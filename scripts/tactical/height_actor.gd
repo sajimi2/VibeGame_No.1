@@ -12,6 +12,8 @@ var crouched := false
 var facing := Vector2(0, 1)
 var direction_index := 0
 var gait := 0.0
+var movement_direction := 0
+var shadow: Node3D
 var occluded := false
 var test_mode := false
 var test_motion := Vector2.ZERO
@@ -37,11 +39,15 @@ func _ready() -> void:
 	sprite = _sprite(false)
 	outline = _sprite(true)
 	outline.visible = false
+	shadow = preload("res://scripts/tactical/ground_shadow.gd").new()
+	add_child(shadow)
 	_refresh_art(0)
 
 func _sprite(is_outline: bool) -> Sprite3D:
 	var item := Sprite3D.new()
 	item.pixel_size = 0.06
+	item.offset = Vector2(0, 16)
+	item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	item.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	item.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	item.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
@@ -78,25 +84,31 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move.x * speed
 	velocity.z = move.y * speed
 	velocity.y -= 20 * delta
+	var previous_position := global_position
 	move_and_slide()
+	var traveled := global_position - previous_position
+	var planar_distance := Vector2(traveled.x, traveled.z).length()
 	if move.length() > 0.1:
 		facing = move.normalized()
-		gait += delta * speed * 2.8
+		gait += planar_distance / 1.8 * TAU
 	if not test_mode and camera != null: update_aim(cursor)
 	var view_facing := Vector3(facing.x, 0, facing.y)
 	if camera != null: view_facing = view_facing.rotated(Vector3.UP, -camera.rotation.y)
 	direction_index = posmod(roundi(atan2(view_facing.x, view_facing.z) / (PI / 6)), 12)
-	_refresh_art(posmod(int(gait * 2), 4) if move.length() > 0.1 else 0)
+	var walk_direction := Vector3(move.x, 0, move.y)
+	if camera != null: walk_direction = walk_direction.rotated(Vector3.UP, -camera.rotation.y)
+	movement_direction = posmod(roundi(atan2(walk_direction.x, walk_direction.z) / (PI / 6)), 12)
+	_refresh_art(posmod(int(gait / TAU * 8), 8) if planar_distance > 0.002 and is_on_floor() else -1)
 	_update_occlusion()
 	if global_position.y < -5: reset_position()
 
 func _refresh_art(step: int) -> void:
 	var height := CROUCH_HEIGHT if crouched else STAND_HEIGHT
 	for item in [sprite, outline]:
-		item.position.y = height * 0.53
+		item.position = Vector3.ZERO
 		item.scale.y = 0.7 if crouched else 1.0
-	sprite.texture = Art.texture(direction_index, step, crouched)
-	outline.texture = Art.texture(direction_index, step, crouched, true)
+	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction)
+	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction)
 
 func _update_occlusion() -> void:
 	if camera == null: return

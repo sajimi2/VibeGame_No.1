@@ -15,3 +15,8 @@ play_height.bat / builds/windows/OutpostRPG_HeightLab.exe（保留同名pck）�
 27项战斗/输入检查通过，20项空间检查通过，56条坡缘轨迹通过；真实窗口截图work/combat_*.png已检查。独立包导出和启动见work/combat-export-startup.log。详见reports/HEIGHT_LAB_02.md。
 用户尚未试玩本轮，不把自动验证当作手感确认。当前未接敌人AI、背包成长存档、音效与正式人物动画。下一步按docs/TACTICAL_HEIGHT_PLAN.md阶段4做真实视野、丢失目标后调查/搜索。
 本轮本地提交，未推送GitHub；旧main及v0.2-stage3仍保留。
+
+## 最新表现修整
+用户射箭试玩无 bug；按新反馈重做八相位行走，按实际位移播放，脚底/树根锚点固定；使用贴地接触影替代纸片实时阴影。地形卡通漫反射、去高光、坡道硬法线，B 切环境明暗对比，V 保留镜头切换。仍为初步统一，未改最终配色和比例。
+新增 tests/visual_polish_test.gd 33 项通过，战斗 27 项、空间 20 项回归通过；work/walk_cycle_sheet.png 与真实窗口截图已检查。见 reports/VISUAL_POLISH_01.md。
+跳跃只分析，未实现。用户尚未试玩此次动画与材质修改，下一步仍为玩法感知/搜索，按用户反馈调整。
