@@ -17,14 +17,15 @@ function Invoke-GodotCheck([string]$Name, [string[]]$GodotArgs) {
     if (-not $process.WaitForExit(300000)) { $process.Kill(); throw "Timed out: $Name (only this test process was stopped)." }
     $process.WaitForExit()
     $output = @(Get-Content -LiteralPath $stdout) + @(Get-Content -LiteralPath $stderr)
-    # A few pre-existing SceneTree fixtures report resource cleanup at exit; do not hide script/runtime errors.
+    # 少数已有 SceneTree 测试退出时会报告资源清理；仍须检出所有脚本与运行错误。
     $errors = $output | Where-Object { $_ -match 'SCRIPT ERROR:|Parse Error:|^ERROR:|^FAIL ' -and $_ -notmatch 'Resources still in use at exit' }
     if ($process.ExitCode -ne 0 -or $errors) { $output | Write-Output; throw "Failed: $Name (exit $($process.ExitCode))" }
     $summary = $output | Where-Object { $_ -match '\d+ (checks|traces), \d+ failures' }
     Write-Output ("PASS $Name " + ($summary -join ' '))
 }
 Invoke-GodotCheck 'import' @('--headless','--editor','--import')
-$displayArgs = if ($Rendered) { @() } else { @('--headless') }
+# 显式保留数组类型，避免单个参数与后续数组相加时变成一个字符串。
+[string[]]$displayArgs = if ($Rendered) { @() } else { @('--headless') }
 Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_smoke.gd'))
 if ($Suite -eq 'smoke') { return }
 $tests = @('attack_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
