@@ -1,9 +1,12 @@
 extends RefCounted
-## The weapon and pixel pose sample the same anticipation / strike / recovery.
+## 武器模型与像素姿态共用同一套前摇、挥出、收招曲线。
+
+## 将输入限制到 0～1，再用三次曲线平滑起止速度。
 static func blend(value: float) -> float:
 	var t := clampf(value,0,1)
 	return t*t*(3-2*t)
 
+## 按经过时间划分前摇、挥出和收招，返回角度（弧度）、手臂相位、重心和前伸量。
 static func melee(elapsed: float, windup: float, active: float, total: float, thrust: bool=false) -> Dictionary:
 	var angle := 0.0
 	var weight := 0.0

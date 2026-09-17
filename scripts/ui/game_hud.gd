@@ -1,9 +1,10 @@
 extends CanvasLayer
-## Presentation only: callers supply current status and feedback.
+## 只负责显示；状态和反馈文字由调用方传入。
 var status: Label
 var notice: Label
 var feedback: Label
 
+## 创建关卡标题、状态文字和操作提示，标题由地图提供。
 func setup(caption: String) -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.05, 0.08, 0.10, 0.88)
@@ -38,6 +39,7 @@ func setup(caption: String) -> void:
 
 
 
+## 根据传入值更新生命、高度、姿态和反馈文字，不修改玩法状态。
 func update_status(hp: int, max_hp: int, height: float, crouched: bool, occluded: bool, message: String) -> void:
 	feedback.text = message
 	status.text = ("斜角正交 · 生命 %d/%d" % [hp, max_hp]) + "  |  高度 %.2f m  ·  %s  ·  %s" % [height, "下蹲" if crouched else "站立", "遮挡轮廓" if occluded else "可见"]

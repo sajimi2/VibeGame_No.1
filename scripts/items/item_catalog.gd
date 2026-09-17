@@ -1,15 +1,13 @@
 class_name ItemCatalog
 extends RefCounted
-## The immutable item table plus the roll policy. Definitions are loaded once and treated as
-## read-only; a random roll produces a fresh ItemInstance whose modifiers are copied out of the
-## definition, so rolling can never write back into the shared resource.
+## 物品定义表及随机品质规则。定义资源约定只读；生成实例时复制属性，不回写定义。
 
 const PATH_PATTERN := "res://data/items/%s.tres"
 const RARITY_COMMON := 0
 const RARITY_FINE := 1
-## Chance that a drop is rolled as fine (upgraded) quality.
+## 随机生成优质物品的概率。
 const FINE_CHANCE := 0.3
-## How much of a bonus modifier a fine roll adds.
+## 优质物品随机增加的一项属性值。
 const FINE_BONUS_AMOUNT := 3.0
 
 var _definitions: Dictionary = {}
@@ -18,13 +16,14 @@ var _rng := RandomNumberGenerator.new()
 func _init() -> void:
 	_rng.randomize()
 
-## Replaces the RNG so a seed reproduces the same drops in tests.
+## 替换随机数生成器，供测试用固定种子复现结果。
 func set_rng(rng: RandomNumberGenerator) -> void:
 	_rng = rng
 
 func rng() -> RandomNumberGenerator:
 	return _rng
 
+## 按定义 ID 加载资源并建立查询表；缺失资源报错后跳过。
 func load_definitions(ids: Array[StringName]) -> void:
 	_definitions.clear()
 	for id in ids:
@@ -43,18 +42,18 @@ func definition(id: StringName) -> ItemDefinition:
 func ids() -> Array:
 	return _definitions.keys()
 
-## Only the two currently obtainable weapons belong to the active game catalog.
+## 当前玩法目录只收录可获得的猎刀和大砍刀。
 static func default_ids() -> Array[StringName]:
 	return [&"hunting_knife", &"great_cleaver"]
 
-## Every definition resolved, for building a catalog in one call.
+## 一次创建并加载当前物品目录。
 static func build() -> ItemCatalog:
 	var catalog := ItemCatalog.new()
 	catalog.load_definitions(default_ids())
 	return catalog
 
-## Rolls one drop from a definition id. The instance gets a fresh unique id and its own copy of
-## the modifiers; the definition resource is never touched.
+## 按定义 ID 生成物品，使用调用方提供的实例 ID，并复制属性字典。
+## 实例 ID 的唯一性由调用方及库存校验保证。
 func roll(definition_id: StringName, instance_id: String) -> ItemInstance:
 	var definition := definition(definition_id)
 	if definition == null:
@@ -72,7 +71,7 @@ func roll(definition_id: StringName, instance_id: String) -> ItemInstance:
 	instance.modifiers = modifiers
 	return instance
 
-## Fine quality adds a small extra amount of one of the definition's bonus modifiers.
+## 从定义的候选属性中随机挑一项，为优质物品增加固定加成。
 func apply_fine_bonus(definition: ItemDefinition, modifiers: Dictionary) -> void:
 	if definition.bonus_pool.is_empty():
 		return
@@ -80,14 +79,14 @@ func apply_fine_bonus(definition: ItemDefinition, modifiers: Dictionary) -> void
 	var current := float(modifiers.get(key, 0.0))
 	modifiers[key] = current + FINE_BONUS_AMOUNT
 
-## Deep copy, so an instance's modifiers never alias the definition's dictionary.
+## 复制属性字典并统一为浮点值，避免实例和共享定义互相影响。
 static func duplicate_modifiers(source: Dictionary) -> Dictionary:
 	var copy := {}
 	for key in source.keys():
 		copy[key] = float(source[key])
 	return copy
 
-## Sums the modifiers of several instances (used when recomputing equipped stats).
+## 汇总多件物品的属性加成，供装备属性重新计算使用。
 static func sum_modifiers(instances: Array) -> Dictionary:
 	var total := {}
 	for entry in instances:

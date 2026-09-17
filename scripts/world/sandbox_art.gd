@@ -1,10 +1,12 @@
 extends RefCounted
-## Original procedural environment sample. No downloaded assets.
+## 原创程序环境素材，由几何体和色块生成。
 
+## 在两端点之间放置并旋转长方体，组成支撑梁或木栏。
 static func beam(lab: Node3D, label: String, a: Vector3, b: Vector3, width: float, kind: String = "wood") -> void:
 	var body: StaticBody3D = lab.box(label, (a+b)*0.5, Vector3(width,a.distance_to(b),width),kind)
 	body.quaternion = Quaternion(Vector3.UP,(b-a).normalized())
 
+## 用固定种子生成不规则地面色块；仅显示，不创建碰撞。
 static func patch(lab: Node3D, center: Vector3, radius: Vector2, color: Color, seed_value: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -29,8 +31,9 @@ static func patch(lab: Node3D, center: Vector3, radius: Vector2, color: Color, s
 	visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	lab.add_child(visual)
 
+## 组合入口路面、哨塔和木箱等试验场环境。
 static func build(lab: Node3D) -> void:
-	# A worn approach connects the lookout entrance to the existing clearing.
+	# 用磨损地面色块连接哨塔入口与林间空地。
 	for i in 24:
 		var t := i / 23.0
 		var point := Vector3(-8 + 4*t + sin(t*5)*0.5,0.009+i*0.0001,13.4-9*t)
@@ -47,7 +50,7 @@ static func build(lab: Node3D) -> void:
 	for spec in [Vector4(-0.5,0,10,1.2),Vector4(-0.5,1.2,10,0.8),Vector4(1.25,0,11.2,1.2)]:
 		var center := Vector3(spec.x,spec.y+spec.w*0.5,spec.z)
 		lab.box("ReferenceCrate",center,Vector3.ONE*spec.w,"wood")
-		# Thin raised edge strips clarify the three faces without new gameplay.
+		# 细边条帮助区分木箱各面，仅作装饰。
 		for x in [-1,1]:
 			for z in [-1,1]:
 				lab.box("CrateUpright",center+Vector3(x*spec.w*0.5,0,z*spec.w*0.5),Vector3(0.055,spec.w,0.055),"wood_frame",0)
@@ -56,9 +59,10 @@ static func build(lab: Node3D) -> void:
 				lab.box("CrateRim",center+Vector3(0,y*spec.w*0.5,z*spec.w*0.5),Vector3(spec.w,0.06,0.06),"wood_frame",0)
 	lab._label("木箱 · 绕行观察侧面",Vector3(0.2,2.5,10.5))
 
+## 生成可从坡道登上的单层哨塔，栏杆在坡道出口留口。
 static func build_tower(lab: Node3D) -> void:
 	var o := Vector3(-8,0,9)
-	# Low masonry plinth supports a single accessible timber platform.
+	# 矮石基支撑可登上的单层木平台。
 	lab.box("TowerPlinth",o+Vector3(0,0.5,0),Vector3(4.2,1,3.4),"stone")
 	lab.box("TowerFloorSupport",o+Vector3(0,1.09,0),Vector3(4.2,0.21,3.4),"wood")
 	for i in 14:
@@ -67,12 +71,12 @@ static func build_tower(lab: Node3D) -> void:
 	lab.ramp("TowerAccess",o+Vector3(0,0,3.7),1.6,2,1.2)
 	var ramp: StaticBody3D = lab.get_node("TowerAccess")
 	ramp.get_child(1).material_override = lab.material("wood")
-	# Thin transverse strips follow the slope; the continuous ramp owns collision.
+	# 横木条沿坡面铺设，通行碰撞由连续坡道负责。
 	for i in 10:
 		var t := (i+0.5)/10.0
 		var board: StaticBody3D = lab.box("RampSlat",o+Vector3(0,1.2*t+0.012,3.7-2*t),Vector3(1.59,0.025,0.17),"wood",0)
 		board.rotation.x = atan(0.6)
-	# Jagged masonry retains a narrow window in the rear wall.
+	# 参差石墙中留出后墙窄窗。
 	for column in 7:
 		var x := -1.83 + column*0.61
 		var courses: int = [9,8,6,7,6,5,4][column]
@@ -83,7 +87,7 @@ static func build_tower(lab: Node3D) -> void:
 	for segment in 5:
 		var height := 2.9-segment*0.43
 		lab.box("TowerSideRemnant",o+Vector3(-2,1.2+height*0.5,-1.3+segment*0.6),Vector3(0.43,height,0.55),"wall")
-	# Weathered timber frame, bracing and only a few surviving roof planks.
+	# 生成残存木框架、支撑梁和少量顶板。
 	for point in [Vector3(-1.65,0,-1.25),Vector3(1.65,0,-1.25),Vector3(1.65,0,1.25)]:
 		beam(lab,"TowerPost",o+point+Vector3.UP*1.2,o+point+Vector3.UP*4.45,0.18)
 	beam(lab,"TowerTopBeam",o+Vector3(-1.85,4.5,-1.25),o+Vector3(1.9,4.5,-1.25),0.21)
@@ -92,7 +96,7 @@ static func build_tower(lab: Node3D) -> void:
 	for i in 4:
 		var plank: StaticBody3D = lab.box("RemainingRoof",o+Vector3(-1.15+i*0.43,4.65,-0.65),Vector3(0.38,0.10,1.6-i*0.19),"wood")
 		plank.rotation.x = 0.15
-	# Broken front rail leaves the central ramp mouth clear.
+	# 前栏杆在中央留口，确保坡道出口可通行。
 	for x in [-1.8,1.8]:
 		beam(lab,"RailPost",o+Vector3(x,1.2,1.5),o+Vector3(x,2.05,1.5),0.13)
 	beam(lab,"BrokenRail",o+Vector3(-1.9,1.95,1.5),o+Vector3(-1,1.88,1.5),0.12)

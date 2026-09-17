@@ -1,4 +1,5 @@
 extends Node3D
+## 箭的飞行与连续碰撞；玩家和弓手复用，通过 hostile 区分伤害对象。
 const Trace = preload("res://scripts/combat/space_trace.gd")
 var velocity := Vector3.ZERO
 var lifetime := 0.0
@@ -10,18 +11,21 @@ var hit_mask := 8 | 16
 var hostile := false
 var pierced: Array[RID] = []
 
+## 创建箭杆模型，节点原点作为飞行和碰撞检测的箭尖。
 func _ready() -> void:
 	shaft = MeshInstance3D.new()
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.035, 0.035, 0.65)
 	shaft.mesh = mesh
-	shaft.position.z = 0.325 # The collision point is the tip; the shaft stays behind it.
+	shaft.position.z = 0.325 # 节点位置代表箭尖，箭杆向后延伸。
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = Color("ffe1a0")
 	shaft.material_override = mat
 	add_child(shaft)
 
+## 把本帧运动拆成小时间步，以连续线段检查飞行轨迹并施加重力。
+## 命中实体后停下，依据敌我属性调用伤害接口；箭在寿命结束后释放。
 func _physics_process(delta: float) -> void:
 	lifetime += delta
 	if lifetime > 5: queue_free(); return
@@ -35,7 +39,7 @@ func _physics_process(delta: float) -> void:
 			pierced.append(cloth.get_rid())
 			Trace.apply_cloth(cloth)
 			if notify.is_valid(): notify.call("箭穿过布帘")
-		# Avoid counting the same cloth again while the next segment starts inside it.
+		# 穿过的布帘已加入排除列表，下一段从布内出发也不会重复计数。
 		if hit.has("position"):
 			global_position = hit.position
 			result = hit

@@ -6,6 +6,7 @@ func frames(n: int) -> void:
 func check(ok: bool,label: String) -> void:
 	print(("PASS " if ok else "FAIL ")+label)
 	if not ok: failures+=1
+## 检查守卫登塔路径、遮挡轮廓和原始分辨率调色。
 func run() -> void:
 	var lab = load("res://scenes/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false

@@ -1,5 +1,8 @@
 extends Sprite3D
+## 将小型 2D 血条绘成纹理，作为 3D 敌人头顶的纸片显示。
 var displayed := -1
+
+## 设置血条的高度、朝向相机与遮挡显示方式。
 func _ready() -> void:
 	pixel_size=0.023
 	position.y=1.92
@@ -8,6 +11,8 @@ func _ready() -> void:
 	cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	no_depth_test=true
 	render_priority=11
+
+## 以生命比例决定填充宽度，仅宽度变化时重画；死亡时隐藏血条。
 func set_health(value: int, maximum: int) -> void:
 	visible=value>0
 	var amount := clampi(roundi(float(value)/maximum*42),0,42)

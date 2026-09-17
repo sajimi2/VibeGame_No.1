@@ -9,6 +9,7 @@ func check(ok: bool,label: String) -> void:
 	checks+=1
 	if not ok: failures+=1
 	print(("PASS " if ok else "FAIL ")+label)
+## 检查辅助瞄准、高差视距、盾挡与收招弱点，以及弓手两连射。
 func run() -> void:
 	lab=load("res://scenes/tactical_height.tscn").instantiate()
 	lab.results_enabled=false

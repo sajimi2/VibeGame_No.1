@@ -1,14 +1,8 @@
 class_name ActorInventory
 extends InventoryPort
-## Concrete InventoryPort: a fixed-size bag of 20 slots plus four equipment slots.
-##
-## Invariants this class is responsible for (shared inventory contract):
-##   - a failed operation changes NOTHING (no partial mutation on any rejection path);
-##   - an instance id is unique across bag and equipment;
-##   - equipping swaps atomically, including when the bag is completely full;
-##   - the inventory owns its ItemInstances, so a caller cannot mutate stored state afterwards;
-##   - get_snapshot() returns deep copies, never live instances.
-##
+## 库存实现：20 格背包及武器、头部、身体、饰品四类装备槽。
+## 写入时复制物品，快照返回数据副本；外部不应直接修改查询到的物品。
+## 添加与换装先校验后修改，拒绝时保持原状；同一实例 ID 不应重复出现。
 const BAG_CAPACITY := 20
 const SLOT_WEAPON := &"weapon"
 const SLOT_HEAD := &"head"
@@ -18,7 +12,7 @@ const SLOT_ACCESSORY := &"accessory"
 static func legal_slots() -> Array[StringName]:
 	return [SLOT_WEAPON, SLOT_HEAD, SLOT_BODY, SLOT_ACCESSORY]
 
-## Maps an item category to the slot it may occupy.
+## 把物品类别映射到对应装备槽。
 static func slot_for_category(category: int) -> StringName:
 	match category:
 		ItemDefinition.Category.WEAPON: return SLOT_WEAPON
@@ -27,10 +21,11 @@ static func slot_for_category(category: int) -> StringName:
 		_ : return SLOT_ACCESSORY
 
 var _catalog: ItemCatalog
-## Empty slots hold null so bag positions stay stable (an index is a position, not a list cursor).
+## 空格保留 null，使背包格子的下标稳定。
 var _bag: Array[ItemInstance] = []
 var _equipment: Dictionary = {}
 
+## 提前固定背包格数和装备槽键，保证快照与界面下标一致。
 func _init() -> void:
 	for _i in BAG_CAPACITY:
 		_bag.append(null)
@@ -40,6 +35,7 @@ func _init() -> void:
 func set_catalog(catalog: ItemCatalog) -> void:
 	_catalog = catalog
 
+## 未注入目录时使用默认物品目录，支持独立实例化库存。
 func _ready() -> void:
 	if _catalog == null:
 		_catalog = ItemCatalog.build()
@@ -47,21 +43,21 @@ func _ready() -> void:
 func get_catalog() -> ItemCatalog:
 	return _catalog
 
-# --- InventoryPort -------------------------------------------------------------------------
+# 库存修改接口。
 
+## 校验物品并找到空格后保存副本，成功时发出库存变化信号。
 func try_add(item: ItemInstance) -> bool:
 	if not _is_acceptable(item):
 		return false
 	var index := _first_free_index()
 	if index < 0:
 		return false
-	## The inventory owns its copy; the caller keeps no mutable authority.
+	## 保存物品副本，防止调用者通过原始引用改写库存。
 	_bag[index] = _copy_instance(item)
 	inventory_changed.emit()
 	return true
 
-## Equip by instance id. Works from the bag or as a direct swap between slots, and always keeps
-## the item count constant by putting whatever was displaced back where the incoming item was.
+## 按实例 ID 换装；把旧装备放回来源位置，保持物品总数不变。
 func try_equip(instance_id: String, slot: StringName) -> bool:
 	if instance_id.is_empty() or not _equipment.has(slot):
 		return false
@@ -84,7 +80,7 @@ func try_equip(instance_id: String, slot: StringName) -> bool:
 	if source_slot == slot:
 		return true
 
-	## Commit phase. Every rejection was handled above, so nothing can fail from here.
+	## 所有拒绝条件已检查完，再一起交换两处引用，避免只改到一半。
 	if bag_index >= 0:
 		_bag[bag_index] = displaced
 		_equipment[slot] = incoming
@@ -95,7 +91,7 @@ func try_equip(instance_id: String, slot: StringName) -> bool:
 	inventory_changed.emit()
 	return true
 
-## Adds an item straight into its legal slot, e.g. quest rewards. Uses the same atomic swap path.
+## 直接装备外部物品，供初始装备使用；原槽位非空时需有空背包格接收旧装备。
 func try_equip_direct(item: ItemInstance, slot: StringName) -> bool:
 	if not _is_acceptable(item) or not _equipment.has(slot):
 		return false
@@ -115,9 +111,7 @@ func try_equip_direct(item: ItemInstance, slot: StringName) -> bool:
 	inventory_changed.emit()
 	return true
 
-## Replaces the whole inventory from a snapshot (see get_snapshot). Invalid entries are skipped
-## rather than aborting, so a partially damaged save still restores what it can; the caller is
-## responsible for having validated the file's schema version first.
+## 先清空再从快照恢复；跳过空条目及缺少 ID 的条目，文件版本由调用方检查。
 func restore_from_snapshot(snapshot: Dictionary) -> void:
 	for index in _bag.size():
 		_bag[index] = null
@@ -133,7 +127,7 @@ func restore_from_snapshot(snapshot: Dictionary) -> void:
 	equipment_changed.emit(&"", "")
 	inventory_changed.emit()
 
-## Rebuilds one owned instance from its snapshot form; null for an empty or unusable entry.
+## 由字典重建独立物品实例；空条目或缺少 ID 时返回 null。
 func _instance_from_dictionary(entry: Variant) -> ItemInstance:
 	if not (entry is Dictionary) or (entry as Dictionary).is_empty():
 		return null
@@ -147,8 +141,7 @@ func _instance_from_dictionary(entry: Variant) -> ItemInstance:
 		return null
 	return instance
 
-## Moves an equipped instance into a specific bag slot, swapping if that slot is occupied. Used by
-## the UI to unequip; the swap keeps the item count constant, so a full bag is not a problem.
+## 把装备移到指定背包格；该格非空时交换两件物品，物品总数不变。
 func try_unequip_to_slot(instance_id: String, bag_index: int) -> bool:
 	if instance_id.is_empty() or bag_index < 0 or bag_index >= _bag.size():
 		return false
@@ -163,6 +156,7 @@ func try_unequip_to_slot(instance_id: String, bag_index: int) -> bool:
 	inventory_changed.emit()
 	return true
 
+## 导出独立的普通字典和数组，用于存档或界面读取。
 func get_snapshot() -> Dictionary:
 	var bag_copy: Array[Dictionary] = []
 	for entry in _bag:
@@ -172,7 +166,7 @@ func get_snapshot() -> Dictionary:
 		equipment_copy[slot] = instance_to_dictionary(_equipment[slot])
 	return {"bag": bag_copy, "equipment": equipment_copy}
 
-# --- queries used by gameplay and UI -------------------------------------------------------
+# 供玩法和界面使用的查询。
 
 func bag_used() -> int:
 	var used := 0
@@ -184,25 +178,27 @@ func bag_used() -> int:
 func is_bag_full() -> bool:
 	return _first_free_index() < 0
 
+## 返回库存内部实例供读取；更换装备应使用换装接口。
 func get_equipped(slot: StringName) -> ItemInstance:
 	return _equipment.get(slot)
 
-## Equipped weapon parameters. Null lets the combat controller select its fallback profile.
+## 返回已装备武器的参数；为空时由战斗控制器选择默认配置。
 func equipped_weapon_profile() -> TacticalWeaponData:
 	return weapon_profile_of(get_equipped(SLOT_WEAPON))
 
-## Behaviour a specific instance would provide if equipped. Null for non-weapons, empty slots and
-## weapons that have no profile yet.
+## 按物品定义查找武器参数；空物品、未知定义或未配置武器参数时返回 null。
 func weapon_profile_of(item: ItemInstance) -> TacticalWeaponData:
 	if item == null:
 		return null
 	var definition := _definition_for(item)
 	return definition.weapon_profile if definition != null else null
 
+## 按实例 ID 返回背包内物品供读取，未找到时返回 null。
 func get_in_bag(instance_id: String) -> ItemInstance:
 	var index := _find_in_bag(instance_id)
 	return _bag[index] if index >= 0 else null
 
+## 移除背包物品并返回其副本，随后通知库存变化。
 func take_from_bag(instance_id: String) -> ItemInstance:
 	var index := _find_in_bag(instance_id)
 	if index < 0:
@@ -215,9 +211,7 @@ func take_from_bag(instance_id: String) -> ItemInstance:
 func has_instance(instance_id: String) -> bool:
 	return _find_in_bag(instance_id) >= 0 or _find_equipped_slot(instance_id) != &""
 
-## Total additive modifiers of everything currently equipped. The assembler adds these to the
-## actor's base values; it never accumulates on a previous result, so repeat equip/unequip cycles
-## cannot drift.
+## 从当前装备重新汇总属性加成，避免反复换装时在旧结果上累加。
 func equipped_modifiers() -> Dictionary:
 	var equipped: Array[ItemInstance] = []
 	for slot in legal_slots():
@@ -226,20 +220,21 @@ func equipped_modifiers() -> Dictionary:
 			equipped.append(entry)
 	return ItemCatalog.sum_modifiers(equipped)
 
-## Total value of one modifier key across a set of items; used by the comparison panel.
+## 读取单件物品的指定属性加成；空物品或缺少该属性时返回 0。
 static func modifier_total(item: ItemInstance, key: StringName) -> float:
 	if item == null:
 		return 0.0
 	return float(item.modifiers.get(key, 0.0))
 
-# --- internals -----------------------------------------------------------------------------
+# 内部校验、查找与复制。
 
+## 添加前检查非空 ID、已知定义和全库存唯一性。
 func _is_acceptable(item: ItemInstance) -> bool:
 	if item == null or item.instance_id.is_empty():
 		return false
 	if _definition_for(item) == null:
 		return false
-	## An instance id must be unique across the whole inventory.
+	## 实例 ID 必须在整个背包和装备区内唯一。
 	return not has_instance(item.instance_id)
 
 func _definition_for(item: ItemInstance) -> ItemDefinition:
@@ -267,7 +262,7 @@ func _find_equipped_slot(instance_id: String) -> StringName:
 			return slot
 	return &""
 
-## Deep copy so stored state cannot be mutated through the caller's reference.
+## 复制实例及其属性字典，避免新旧对象共享可变数据。
 func _copy_instance(item: ItemInstance) -> ItemInstance:
 	var copy := ItemInstance.new()
 	copy.instance_id = item.instance_id
@@ -276,7 +271,7 @@ func _copy_instance(item: ItemInstance) -> ItemInstance:
 	copy.modifiers = ItemCatalog.duplicate_modifiers(item.modifiers)
 	return copy
 
-## Snapshot form of one instance, or an empty dictionary for an empty slot.
+## 把物品转换为可保存的字典；空槽位用空字典表示。
 static func instance_to_dictionary(item: ItemInstance) -> Dictionary:
 	if item == null:
 		return {}

@@ -51,6 +51,7 @@ func walk_to(destination: Vector3) -> bool:
 			return false
 	player.test_motion=Vector2.ZERO
 	return player.position.distance_to(destination)<1.0
+## 驱动关卡闭环，覆盖通行、交付结算、死亡重试与界面按键。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	lab=load("res://scenes/tactical_height.tscn").instantiate()

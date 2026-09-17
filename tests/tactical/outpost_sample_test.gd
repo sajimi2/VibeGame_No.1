@@ -14,6 +14,7 @@ func capture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://work/outpost_" + label + ".png")
+## 实际登台和下坡，并检查像素对齐、正交投影及平台碰撞高度。
 func run() -> void:
 	lab = load("res://scenes/tactical_height.tscn").instantiate()
 	lab.encounter_enabled = false
@@ -27,7 +28,7 @@ func run() -> void:
 	actor.position = Vector3(-8,0.2,13.5)
 	actor.velocity = Vector3.ZERO
 	await frames(15)
-	# Start at z=13.5; cross the entire slope before checking the platform (z<=10.7).
+	# 从 z=13.5 出发，走完整段坡道后再检查平台高度（平台在 z<=10.7）。
 	actor.test_motion = Vector2(0,-1)
 	await frames(64)
 	actor.test_motion = Vector2.ZERO
@@ -55,7 +56,7 @@ func run() -> void:
 	check(max_error<0.02,"static edges move in whole render pixels")
 	check(lab.camera.projection == Camera3D.PROJECTION_ORTHOGONAL,"fixed orthographic projection")
 	check(root.content_scale_size == Vector2i(1280,720),"higher native render resolution")
-	# z=11.3 lies on the ramp. Probe the actual platform interior.
+	# z=11.3 位于坡道，应在平台内部取样。
 	var ray := PhysicsRayQueryParameters3D.create(Vector3(-8,3,9.9),Vector3(-8,0,9.9),1)
 	var hit := lab.get_world_3d().direct_space_state.intersect_ray(ray)
 	check(not hit.is_empty() and absf(hit.position.y-1.2)<0.04,"visible platform and floor collider agree")

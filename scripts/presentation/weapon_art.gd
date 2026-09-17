@@ -1,11 +1,13 @@
 extends RefCounted
-## Small faceted world-space weapons, shared by player and enemies.
+## 玩家和敌人共用的低面数 3D 武器模型。
 static func material(color: String) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color=Color(color)
 	mat.specular_mode=BaseMaterial3D.SPECULAR_DISABLED
 	mat.diffuse_mode=BaseMaterial3D.DIFFUSE_TOON
 	return mat
+
+## 创建武器装饰用的小长方体网格，不附带碰撞。
 static func block(parent: Node3D, size: Vector3, at: Vector3, color: String) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
@@ -15,6 +17,8 @@ static func block(parent: Node3D, size: Vector3, at: Vector3, color: String) -> 
 	parent.add_child(node)
 	node.position=at
 	return node
+
+## 用刀刃网格和握柄部件组装近战武器，朝局部 -Z 方向伸出。
 static func sword() -> MeshInstance3D:
 	var root := MeshInstance3D.new()
 	var blade := SurfaceTool.new()
@@ -33,6 +37,8 @@ static func sword() -> MeshInstance3D:
 	block(root,Vector3(0.35,0.08,0.085),Vector3(0,0,-0.24),"b39453")
 	block(root,Vector3(0.15,0.13,0.08),Vector3(0,0,0.13),"889ba1")
 	return root
+
+## 创建弓身、弓弦及搭在弦上的展示箭，供拉弓动画使用。
 static func bow() -> MeshInstance3D:
 	var root := MeshInstance3D.new()
 	var grip := BoxMesh.new()
@@ -62,6 +68,7 @@ static func bow() -> MeshInstance3D:
 	block(root,Vector3(0.11,0.22,0.12),Vector3(0,0,-0.22),"59442f")
 	return root
 
+## 按拉弓量重画弓弦并移动展示箭；真正的飞行箭由战斗模块创建。
 static func set_bow_draw(root: Node3D, amount: float, nocked: bool=true) -> void:
 	var string: ImmediateMesh=root.get_node("BowString").mesh
 	string.clear_surfaces()

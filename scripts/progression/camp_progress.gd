@@ -1,5 +1,5 @@
 extends Node
-## Equipment/reward controller. Depends only on the player, combat, inventory and save service.
+## 管理装备和首通奖励，连接玩家、战斗、库存、存档与背包视图。
 const Save = preload("res://scripts/persistence/tactical_save.gd")
 const InventoryView = preload("res://scripts/ui/inventory_panel.gd")
 var save_path := "user://tactical_progress_v1.json"
@@ -15,10 +15,12 @@ var view: CanvasLayer
 var open: bool:
 	get: return is_instance_valid(view) and view.open
 
+## 由关卡传入玩家与战斗系统，避免成长模块依赖整个地图。
 func setup(actor: CharacterBody3D, combat_system: Node3D) -> void:
 	player = actor
 	combat = combat_system
 
+## 创建初始库存并恢复 v1 进度，再连接库存信号、背包视图并应用装备。
 func _ready() -> void:
 	catalog = ItemCatalog.build()
 	inventory = ActorInventory.new()
@@ -37,6 +39,7 @@ func _ready() -> void:
 			xp = clampi(int(data.get("xp", 0)), 0, 60)
 			if data.get("inventory") is Dictionary:
 				inventory.restore_from_snapshot(data.inventory)
+	# 初始装备与读档完成后再连接信号，避免恢复一半时就保存或刷新界面。
 	inventory.inventory_changed.connect(changed)
 	view = InventoryView.new()
 	view.equip_requested.connect(equip)
@@ -44,6 +47,7 @@ func _ready() -> void:
 	add_child(view)
 	changed()
 
+## 尝试发放一次首通奖励；背包放入成功后才标记领奖、升级并保存。
 func grant_reward() -> bool:
 	if rewarded:
 		return false
@@ -58,6 +62,7 @@ func grant_reward() -> bool:
 	changed()
 	return true
 
+## 响应库存变化，统一更新武器参数、生命上限、持久化快照和背包显示。
 func changed() -> void:
 	var profile := inventory.equipped_weapon_profile()
 	if profile == null:
@@ -73,11 +78,13 @@ func changed() -> void:
 			push_warning("Could not save tactical progress: " + error_string(error))
 	refresh()
 
+## 死亡或攻击冷却中拒绝换装；成功交换后由库存信号触发后续刷新。
 func equip(id: String) -> bool:
 	if player.hp <= 0 or combat.cooldown > 0:
 		return false
 	return inventory.try_equip(id, &"weapon")
 
+## 把库存与战斗状态转换成界面数据；武器说明读取同一份参数资源。
 func refresh() -> void:
 	if not is_instance_valid(view):
 		return
@@ -100,5 +107,6 @@ func refresh() -> void:
 		"can_equip": player.hp > 0 and combat.cooldown <= 0, "attacking": combat.cooldown > 0,
 	})
 
+## 把背包显隐请求转给视图，由视图维护暂停状态。
 func toggle() -> void:
 	view.toggle()

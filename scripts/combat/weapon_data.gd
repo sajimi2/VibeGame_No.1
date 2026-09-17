@@ -1,6 +1,6 @@
 class_name TacticalWeaponData
 extends Resource
-## Immutable 3D weapon tuning. Distances are world metres; times are seconds.
+## 约定只读的 3D 武器参数；距离单位为米，时间单位为秒。
 @export var damage: int = 16
 @export var reach: float = 1.45
 @export var duration: float = 0.24

@@ -1,13 +1,17 @@
 extends Node3D
-## Shared sun controls and invisible volumes for world-space sprite shadows.
+## 统一控制太阳光，并用不可见立体代理为纸片角色和树投影。
 var sun: DirectionalLight3D
 var environment: Environment
 var hour := 10.5
 var pixel_material: ShaderMaterial
+
+## 接收关卡灯光和环境资源，并应用当前时刻的光照。
 func setup(light: DirectionalLight3D, env: Environment) -> void:
 	sun=light
 	environment=env
 	set_time_of_day(hour)
+
+## 按小时更新太阳角度、能量、环境色与屏幕色调；当前没有自动时间循环。
 func set_time_of_day(value: float) -> void:
 	hour = clampf(value,0,24)
 	var daylight := maxf(0,sin((hour-6)/12*PI))
@@ -22,6 +26,7 @@ func set_time_of_day(value: float) -> void:
 		if daylight>0 and daylight<0.6: tint=Color("edc8a7").lerp(Color.WHITE,daylight)
 		pixel_material.set_shader_parameter("world_tint",tint)
 
+## 创建只投影而不显示本体的网格代理，让纸片外观拥有立体阴影。
 static func caster(parent: Node3D, mesh: Mesh, center: Vector3) -> MeshInstance3D:
 	var proxy := MeshInstance3D.new()
 	proxy.mesh=mesh
@@ -29,6 +34,8 @@ static func caster(parent: Node3D, mesh: Mesh, center: Vector3) -> MeshInstance3
 	proxy.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 	parent.add_child(proxy)
 	return proxy
+
+## 用树干和树冠体积组合投影代理，挂到指定父节点下。
 static func tree_shadow(parent: Node3D, position: Vector3) -> Node3D:
 	var root := Node3D.new()
 	root.name="TreeWorldShadow"
@@ -49,13 +56,17 @@ static func tree_shadow(parent: Node3D, position: Vector3) -> Node3D:
 		crown.rings=4
 		caster(root,crown,center)
 	return root
+
+## 用胶囊代理角色体积，参与世界太阳投影。
 static func actor_shadow(parent: Node3D) -> MeshInstance3D:
 	var capsule := CapsuleMesh.new()
 	capsule.radius=0.23
 	capsule.height=1.65
 	return caster(parent,capsule,Vector3(0,0.825,0))
+
+## 创建世界画面调色层并返回材质，让时间控制器更新统一色调。
 static func pixel_pass(parent: Node) -> ShaderMaterial:
-	# Apply shared color grading at native resolution; preserve sprite detail.
+	# 在原始分辨率上统一调色，保留像素纹理细节。
 	var layer := CanvasLayer.new()
 	layer.layer=0
 	parent.add_child(layer)

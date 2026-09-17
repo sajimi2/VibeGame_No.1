@@ -1,6 +1,8 @@
 extends RefCounted
-## Original 32x48, twelve-direction actor; eight distance-driven walk poses.
+## 程序生成 32×48 像素人物：十二朝向，八相位步态由移动距离驱动。
 static var cache: Dictionary = {}
+
+## 用像素矩形采样线段，并裁剪到图像边界。
 static func stroke(image: Image, start: Vector2, finish: Vector2, color: Color, width: int = 2) -> void:
 	var length := maxi(1,ceili(start.distance_to(finish)*2))
 	for i in length+1:
@@ -8,6 +10,7 @@ static func stroke(image: Image, start: Vector2, finish: Vector2, color: Color, 
 		var rect := Rect2i(roundi(point.x),roundi(point.y),width,width).intersection(Rect2i(0,0,image.get_width(),image.get_height()))
 		if rect.has_area(): image.fill_rect(rect,color)
 
+## 按朝向、步态、姿态等参数生成角色纹理并缓存；相同组合直接复用。
 static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1) -> Texture2D:
 	if move_direction < 0: move_direction = direction
 	var key := "%s/%s/%s/%s/%s/%s/%s/%s/%s/%s" % [direction,step,crouch,outline,move_direction,pose,enemy,arm_phase,weight,draw_phase]
@@ -30,7 +33,7 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 	var body_shift := roundi(sin(angle)*weight)
 	var left := (32-width)/2 as int
 	left+=body_shift
-	# Alternating support feet stay at the ground anchor while knees articulate.
+	# 双脚交替支撑，脚底锚点保持在地面，膝部随步态活动。
 	for leg in 2:
 		var cycle := phase+leg*PI
 		var stride := cos(cycle)*(3.5 if walking else 0.0)
@@ -42,7 +45,7 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 		stroke(image,hip+Vector2.ONE,knee,Color("526168"),2)
 		stroke(image,knee,foot-Vector2(0,2),Color("36454c"),3)
 		stroke(image,foot-Vector2(1,0),foot+Vector2(2,0),Color("332f2a"),3)
-	# Tunic silhouette, shoulder mantle, belt, buckle and side pouch.
+	# 绘制外衣、肩部披片、腰带、扣环和侧袋。
 	image.fill_rect(Rect2i(left,shoulder_y,width,hip_y-shoulder_y+2),ink)
 	image.fill_rect(Rect2i(left+1,shoulder_y+1,width-2,hip_y-shoulder_y),coat)
 	image.fill_rect(Rect2i(left+2,shoulder_y,width-4,3),light)
@@ -52,7 +55,7 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 	else:
 		image.fill_rect(Rect2i(12,shoulder_y+4,8,7),leather)
 		image.fill_rect(Rect2i(13,shoulder_y+4,6,2),Color("957447"))
-	# Chamfered head silhouette and a directional nose/ear rather than a flat square.
+	# 用削角轮廓和朝向相关的鼻耳表现头部。
 	image.fill_rect(Rect2i(11,head_y,10,14),ink)
 	image.fill_rect(Rect2i(10,head_y+3,12,8),ink)
 	image.fill_rect(Rect2i(12,head_y+1,8,5),Color("65503c") if not enemy else Color("758489"))
@@ -80,8 +83,7 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 				hand=front if arm==0 else front.lerp(Vector2(15-sin(angle)*2,shoulder_y+2),draw)
 			hand.x+=body_shift
 		elif arm==1:
-			# Keep the weapon arm in a ready pose between attacks, avoiding an
-			# instantaneous jump from dangling hands to a forward weapon grip.
+			# 两次攻击之间保持持械准备姿势，避免手臂从垂下位置瞬间跳到握柄处。
 			hand=Vector2(16+sin(angle)*7,shoulder_y+6+cos(angle)*3)
 		elif walking:
 			hand += Vector2(sin(walk_angle)*sin(phase+arm*PI)*3,cos(walk_angle)*cos(phase+arm*PI)*2)
@@ -100,10 +102,12 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 	var result := ImageTexture.create_from_image(image)
 	cache[key] = result
 	return result
+
+## 程序生成像素树纹理，根部位置用于对齐地面。
 static func tree() -> Texture2D:
 	if cache.has("tree"): return cache.tree
 	var image := Image.create(48, 64, false, Image.FORMAT_RGBA8)
-	# Forked trunk and root flare; last opaque row remains at y=61.
+	# 绘制分叉树干与外扩树根，最后一行不透明像素固定在 y=61。
 	for y in range(26,62):
 		var width := 3 if y < 56 else 3 + (y-56)/2
 		for x in range(23-width,26+width):

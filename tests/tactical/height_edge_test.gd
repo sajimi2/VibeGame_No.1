@@ -4,6 +4,7 @@ var failures := 0
 func _initialize() -> void: run.call_deferred()
 func frames(count: int) -> void:
  for i in count: await physics_frame
+## 遍历蹲姿、坡道、方向与侧缘偏移，限制单帧高度跳变，检测碰撞修正问题。
 func run() -> void:
  var lab = load("res://scenes/tactical_height.tscn").instantiate()
  ProjectSettings.set_setting("tactical/testing",true)
@@ -28,7 +29,7 @@ func run() -> void:
       peak = maxf(peak, absf(actor.position.y - previous.y))
      largest_step = maxf(largest_step, peak)
      checks += 1
-     # Ordinary gravity-driven descent is allowed; contact recovery must not teleport.
+     # 允许重力引起的正常下落；碰撞修正不能造成瞬间高度跳变。
      if peak > 0.2:
       failures += 1
       print("FAIL edge crouch=%s slope=%s side=%s offset=%s step=%s" % [crouch, slope[0], side, offset, peak])

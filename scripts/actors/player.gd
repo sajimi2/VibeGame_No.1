@@ -1,4 +1,5 @@
 extends CharacterBody3D
+## 玩家移动与姿态控制；战斗时序由 player_combat 单独处理。
 const Art = preload("res://scripts/presentation/directional_art.gd")
 const STAND_HEIGHT := 1.65
 const CROUCH_HEIGHT := 0.95
@@ -35,6 +36,7 @@ var landing_delay := 0.0
 var jumped := false
 var spawn := Vector3(-6, 0.1, 5)
 
+## 入树后创建胶囊碰撞、纸片外观和投影；相机与效果系统由关卡注入。
 func _ready() -> void:
 	cursor = get_viewport().get_mouse_position()
 	var listener := AudioListener3D.new()
@@ -47,8 +49,8 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_max_angle = deg_to_rad(42)
 	shape_node = CollisionShape3D.new()
-	# Rounded locomotion shape avoids flat cylinder rims snagging convex ramp edges.
-	# Combat body/top hit regions remain a separate future component.
+	# 胶囊底部圆滑，避免平底圆柱在坡道凸边卡住。
+	# 此形状负责移动碰撞；顶部命中另由命中法线和来袭方向判断。
 	var locomotion := CapsuleShape3D.new()
 	locomotion.radius = 0.29
 	locomotion.height = STAND_HEIGHT
@@ -64,6 +66,7 @@ func _ready() -> void:
 	world_shadow=preload("res://scripts/presentation/world_lighting.gd").actor_shadow(self)
 	_refresh_art(0)
 
+## 创建始终朝向相机的纸片；轮廓副本忽略深度，用于被遮挡时显示。
 func _sprite(is_outline: bool) -> Sprite3D:
 	var item := Sprite3D.new()
 	item.pixel_size = 0.04
@@ -77,6 +80,7 @@ func _sprite(is_outline: bool) -> Sprite3D:
 	add_child(item)
 	return item
 
+## 切换胶囊高度；站起前检测头顶净空，受阻则保持下蹲并返回 false。
 func set_crouch(value: bool) -> bool:
 	if value == crouched: return true
 	if not value:
@@ -95,6 +99,8 @@ func set_crouch(value: bool) -> bool:
 	shape_node.position.y = height / 2
 	return true
 
+## 每个固定物理帧依次处理输入、重力、碰撞移动和表现；delta 的单位是秒。
+## 移动与攻击独立，实际行走距离驱动步态，避免顶墙时原地跑步。
 func _physics_process(delta: float) -> void:
 	hurt_time = maxf(0,hurt_time-delta)
 	invulnerable = maxf(0,invulnerable-delta)
@@ -104,11 +110,13 @@ func _physics_process(delta: float) -> void:
 	var move := test_motion if test_mode else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if hp <= 0: move = Vector2.ZERO
 	set_crouch(test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C))
+	# 屏幕方向输入转到世界 X/Z 平面，使 WASD 与固定斜角镜头一致。
 	if not test_mode and camera != null:
 		var world_move := camera.global_basis.x * move.x + Vector3(camera.global_basis.z.x, 0, camera.global_basis.z.z).normalized() * move.y
 		move = Vector2(world_move.x, world_move.z)
 	var speed := 2.0 if crouched else 4.2
 	landing_delay=maxf(0,landing_delay-delta)
+	# 落地时直接响应输入；跳跃途中减缓水平速度变化，保留起跳惯性。
 	if is_on_floor() or not jumped:
 		velocity.x = move.x * speed
 		velocity.z = move.y * speed
@@ -144,6 +152,7 @@ func _physics_process(delta: float) -> void:
 	_update_occlusion()
 	if global_position.y < -5: reset_position()
 
+## 按朝向、步态和攻击姿态选择纹理，使本体与遮挡轮廓同步。
 func _refresh_art(step: int) -> void:
 	var height := CROUCH_HEIGHT if crouched else STAND_HEIGHT
 	for item in [sprite, outline]:
@@ -152,6 +161,7 @@ func _refresh_art(step: int) -> void:
 	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction, attack_pose, false, attack_arm, attack_weight, bow_draw)
 	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction, attack_pose, false, attack_arm, attack_weight, bow_draw)
 
+## 从相机向角色发射射线；被实体或树冠遮挡时显示轮廓。
 func _update_occlusion() -> void:
 	if camera == null: return
 	var target := global_position + Vector3.UP * (0.5 if crouched else 0.95)
@@ -162,6 +172,7 @@ func _update_occlusion() -> void:
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 	outline.visible = occluded
 
+## 初始化或掉出地图时回到出生点，恢复生命并清除移动、跳跃状态。
 func reset_position() -> void:
 	hp = max_hp
 	invulnerable = 0
@@ -171,11 +182,13 @@ func reset_position() -> void:
 	landing_delay=0
 
 
+## 记录鼠标位置并响应跳跃；攻击按键由 player_combat 处理。
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_SPACE: request_jump()
 	if event is InputEventMouseMotion or event is InputEventMouseButton:
 		cursor = event.position
 
+## 把屏幕鼠标坐标投射到世界，优先瞄准实际碰撞点；未命中时使用角色附近的水平面。
 func update_aim(mouse: Vector2) -> void:
 	if camera == null: return
 	var origin := camera.project_ray_origin(mouse)
@@ -188,6 +201,7 @@ func update_aim(mouse: Vector2) -> void:
 		var aim: Vector3 = target - global_position
 		if Vector2(aim.x, aim.z).length() > 0.2: facing = Vector2(aim.x, aim.z).normalized()
 
+## 统一处理玩家扣血；死亡、受击无敌期及营地安全区内忽略伤害。
 func receive_damage(amount: int, _direction: Vector3) -> void:
 	if hp <= 0 or invulnerable > 0 or safe_zone: return
 	hp = maxi(0,hp-amount)
@@ -195,6 +209,7 @@ func receive_damage(amount: int, _direction: Vector3) -> void:
 	invulnerable = 0.65
 	if is_instance_valid(effects): effects.impact(global_position+Vector3.UP,amount,hp==0)
 
+## 仅允许存活、站立且落地的角色起跳；返回是否成功，防止空中连跳。
 func request_jump() -> bool:
 	if hp<=0 or crouched or not is_on_floor() or jumped or landing_delay>0: return false
 	velocity.y=5.3

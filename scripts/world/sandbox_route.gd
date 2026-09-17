@@ -1,8 +1,9 @@
 extends RefCounted
-## Dressing follows the existing walkable surfaces; roads have no collision.
+## 沿既有可通行地形布置环境；道路色块不参与碰撞。
 const Sample = preload("res://scripts/world/sandbox_art.gd")
 const Art = preload("res://scripts/presentation/weapon_art.gd")
 
+## 沿折线路径铺设地面色块，以种子保证每次生成一致。
 static func road(lab: Node3D, points: Array, width: float, seed_value: int) -> void:
 	var count := 0
 	for i in range(points.size()-1):
@@ -16,8 +17,9 @@ static func road(lab: Node3D, points: Array, width: float, seed_value: int) -> v
 			Sample.patch(lab,p+Vector3.UP*0.003,Vector2(width*0.65,0.47),Color("7b7358"),seed_value+count+600)
 			count+=1
 
+## 生成岔路标识与空间文字，引导玩家选择通行方向。
 static func signpost(lab: Node3D, point: Vector3, caption: String, facing_left: bool) -> void:
-	# Low, nonblocking trail signs; text is deliberately used only at junctions.
+	# 路标低矮且不阻路，只在岔路口显示文字。
 	lab.box("TrailPost",point+Vector3.UP*0.5,Vector3(0.10,1,0.10),"wood",0)
 	lab.box("TrailBoard",point+Vector3.UP*0.9,Vector3(0.9,0.3,0.10),"wood",0)
 	var label := Label3D.new()
@@ -29,19 +31,19 @@ static func signpost(lab: Node3D, point: Vector3, caption: String, facing_left: 
 	label.modulate=Color("ecdbb0")
 	lab.add_child(label)
 
+## 布置试验场的两条接近路线、营地与掩体提示。
 static func build(lab: Node3D) -> void:
-	# Extend the central ruin: it separates the western guard's approach from
-	# the archer's sightline. Both ends remain physically walkable.
+	# 延长中央残墙，隔开西侧守卫入口与弓手视线，两端仍可绕行。
 	lab.box("ApproachRemnant",Vector3(-1,1.5,-1.05),Vector3(0.65,3,3.1),"wall")
 	road(lab,[Vector3(-3.5,0,11),Vector3(-4.3,0,6),Vector3(-3,0,3.5),Vector3(-2.5,0,0),Vector3(-2.5,0,-3.3),Vector3(0,0,-3.3),Vector3(0.3,0,1.6),Vector3(2,0,2.8),Vector3(5,0,2)],0.82,1800)
-	# The eastern approach is an optional bypass, not a second locked corridor.
+	# 东侧小径提供可选绕行路线。
 	road(lab,[Vector3(-3.5,0,11),Vector3(-2,0,12.5),Vector3(4,0,12.5),Vector3(8.5,0,8),Vector3(9,0,6.4)],0.63,2600)
 	road(lab,[Vector3(9,0,5.5),Vector3(12,0,5),Vector3(12,0,1),Vector3(8,0,1.8),Vector3(5,0,2.6)],0.65,3100)
 	Sample.patch(lab,Vector3(-3.5,0.03,11),Vector2(2,1.6),Color("786f55"),15)
 	signpost(lab,Vector3(-2.5,0,8),"旧路 / 高地",true)
 	signpost(lab,Vector3(5.7,0,10.8),"帘后小径",false)
 	signpost(lab,Vector3(2.6,0,3.3),"密函高地",false)
-	# A bedroll, supplies, notice board and a banked fire identify the camp.
+	# 用铺盖、补给、告示板和营火标识营地。
 	var camp := Node3D.new()
 	camp.name="TrailCamp"
 	lab.add_child(camp)

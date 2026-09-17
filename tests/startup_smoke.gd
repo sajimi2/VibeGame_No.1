@@ -1,5 +1,5 @@
 extends SceneTree
-## Boot the configured entry with no access to the user's persistent progress.
+## 加载配置中的主场景，并隔离玩家真实进度。
 var checks := 0
 var failures := 0
 func _initialize() -> void:
@@ -8,6 +8,7 @@ func check(ok: bool, label: String) -> void:
 	checks += 1
 	if not ok: failures += 1
 	print(("PASS " if ok else "FAIL ") + label)
+## 以隔离存档方式加载默认入口，检查运行时装配、相机、装备和安全出生点。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing", true)
 	var path: String = ProjectSettings.get_setting("application/run/main_scene")
@@ -18,7 +19,7 @@ func run() -> void:
 	for i in 120:
 		await physics_frame
 		if is_instance_valid(scene.run_flow): break
-	# Runtime nodes need a physics tick to evaluate their spawn overlaps.
+	# 运行时节点需经过物理帧，才能更新出生点的安全区状态。
 	for i in 3: await physics_frame
 	check(is_instance_valid(scene.run_flow), "runtime assembly completes")
 	check(get_nodes_in_group("tactical_enemies").size() == 5, "three guards and two archers")

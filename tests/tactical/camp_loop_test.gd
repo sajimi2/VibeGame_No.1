@@ -9,6 +9,7 @@ func check(ok: bool,label: String) -> void:
 	checks+=1
 	if not ok: failures+=1
 	print(("PASS " if ok else "FAIL ")+label)
+## 覆盖接取、取信、交付、换装、隔离存档恢复及背包暂停闭环。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	lab=load("res://scenes/tactical_height.tscn").instantiate()

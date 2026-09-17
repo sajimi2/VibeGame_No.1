@@ -25,6 +25,7 @@ func capture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://work/mission_"+label+".png")
+## 检查跳跃边界、敌方箭伤害、弓手行为、取信返营和重试重置。
 func run() -> void:
 	lab=load("res://scenes/tactical_height.tscn").instantiate()
 	lab.results_enabled=false

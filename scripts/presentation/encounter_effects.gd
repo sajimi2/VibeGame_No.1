@@ -1,7 +1,12 @@
 extends Node3D
+## 集中创建程序音效、受击数字与短时效果，并管理临时节点的释放。
 var streams: Dictionary = {}
+
+## 预先合成并缓存各类音效，触发时直接复用音频资源。
 func _ready() -> void:
 	for kind in ["step","swing","bow","hit","alert","death"]: streams[kind] = make_sound(kind)
+
+## 把简短波形与噪声合成为 16 位 PCM 数据；固定种子使同类音效可复现。
 func make_sound(kind: String) -> AudioStreamWAV:
 	var rate := 22050
 	var duration := 0.10 if kind == "step" else 0.32 if kind in ["alert","death"] else 0.17
@@ -26,6 +31,8 @@ func make_sound(kind: String) -> AudioStreamWAV:
 	stream.mix_rate = rate
 	stream.data = data
 	return stream
+
+## 在世界位置播放空间音效，播放结束后自动释放临时播放器。
 func sound(kind: String, where: Vector3) -> void:
 	if not streams.has(kind): return
 	var audio := AudioStreamPlayer3D.new()
@@ -36,6 +43,8 @@ func sound(kind: String, where: Vector3) -> void:
 	audio.global_position = where
 	audio.finished.connect(audio.queue_free)
 	audio.play()
+
+## 显示伤害数字、音效和火花；Tween 完成后释放临时节点。
 func impact(where: Vector3, amount: int, killed: bool = false) -> void:
 	sound("death" if killed else "hit",where)
 	var number := Label3D.new()
@@ -67,6 +76,7 @@ func impact(where: Vector3, amount: int, killed: bool = false) -> void:
 		motion.parallel().tween_property(spark,"scale",Vector3.ZERO,0.18)
 		motion.tween_callback(spark.queue_free)
 
+## 生成落地尘土和脚步声，各粒子随补间动画结束释放。
 func landing(where: Vector3) -> void:
 	sound("step",where)
 	for i in 6:

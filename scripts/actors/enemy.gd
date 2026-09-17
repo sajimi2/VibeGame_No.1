@@ -1,4 +1,5 @@
 extends CharacterBody3D
+## 守卫和弓手共用的状态机，负责感知、决策、移动、攻击及受击。
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
 const Art = preload("res://scripts/presentation/directional_art.gd")
@@ -52,6 +53,8 @@ var trail: MeshInstance3D
 var marker: Label3D
 var ai_enabled := true
 var navigation_excluded: Array[RID] = []
+
+## 创建身体、武器、血条和投影，并加入敌人分组供战斗与结算查询。
 func _ready() -> void:
 	name = "OutpostGuard"
 	add_to_group("tactical_enemies")
@@ -105,6 +108,8 @@ func _ready() -> void:
 	health_bar=preload("res://scripts/presentation/enemy_health.gd").new()
 	add_child(health_bar)
 	health_bar.set_health(hp,max_hp)
+
+## 综合安全区、距离、朝向和遮挡判断视野；近距离警觉仍需通过遮挡检查。
 func can_see_target() -> bool:
 	if player.hp<=0 or player.safe_zone: return false
 	var eye := global_position+Vector3.UP*1.4
@@ -114,11 +119,13 @@ func can_see_target() -> bool:
 	var planar := Vector3(offset.x,0,offset.z)
 	var close_awareness := planar.length()<2.8 and lost_time<2.0 and state not in ["guard","return"]
 	if not close_awareness and planar.length()>0.1 and facing.dot(planar.normalized())<0.42: return false
-	# Head and torso samples prevent a nearby ledge from hiding the entire actor.
+	# 同时采样头部和躯干，避免近处的台沿把整个角色误判为不可见。
 	for height in ([0.65] if player.crouched else [1.5,1.1]):
 		var ray := PhysicsRayQueryParameters3D.create(eye,player.global_position+Vector3.UP*height,1|4,[get_rid()])
 		if get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): return true
 	return false
+
+## 固定帧内先感知、再推进状态，最后移动与更新表现；死亡后只保留倒地外观。
 func _physics_process(delta: float) -> void:
 	if not ai_enabled: return
 	clock+=delta
@@ -153,6 +160,7 @@ func _physics_process(delta: float) -> void:
 	gait+=travel/1.8*TAU
 	update_visuals(travel)
 
+## 把状态机时间转换成纸片姿态、武器动作和提示文字，不在这里结算伤害。
 func update_visuals(travel: float) -> void:
 	var view := facing.rotated(Vector3.UP,-camera.rotation.y)
 	var direction := posmod(roundi(atan2(view.x,view.z)/(PI/6)),12)
@@ -199,9 +207,11 @@ func update_visuals(travel: float) -> void:
 	var reach := 2.55 if thrust else 1.85
 	var blade_direction := -sword.global_basis.z
 	trail.sample_blade(active,sword.global_position+blade_direction*reach*0.78,sword.global_position+blade_direction*reach)
+
+## 执行一次已蓄势的攻击：弓手生成箭，守卫沿锁定方向采样近战射线。
 func perform_attack() -> void:
 	if ranged:
-		# Fire at the committed aim point, not the player's new hidden position.
+		# 朝前摇时锁定的位置放箭；玩家躲入遮挡后，不继续跟踪其新位置。
 		var arrow := preload("res://scripts/combat/arrow.gd").new()
 		arrow.hostile=true
 		arrow.hit_mask=1|2|8|16
@@ -219,6 +229,9 @@ func perform_attack() -> void:
 		if not hit.is_empty() and hit.collider==player:
 			player.receive_damage(25 if thrust else 20,locked_direction)
 			break
+
+## 接收命中法线、来袭方向及基础伤害，计算盾挡或顶部倍率并扣血。
+## 同时处理死亡、击退和打断动作，返回命中部位供反馈显示。
 func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_damage: int = 20) -> String:
 	if hp<=0: return "已倒下"
 	var top := normal.y>0.65 and incoming.y<-0.05
@@ -243,11 +256,13 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_da
 		hurt_recovery=true
 		reaction_angle=motion_angle
 		attack_time=0.35
+		# 隐藏来袭只推测攻击方向附近的位置，不能获取玩家藏身点。
 		if not target_visible: last_seen = global_position-Vector3(incoming.x,0,incoming.z).normalized()*2.5
 		search_time=5
 	effects.impact(global_position+Vector3.UP,damage,hp==0)
 	return "格挡" if blocking else "顶部" if top else "身体"
 
+## 检测相机到敌人的遮挡，只为存活且被挡住的敌人显示轮廓。
 func update_occlusion() -> void:
 	var target := global_position+Vector3.UP*0.95
 	var origin := camera.project_ray_origin(camera.unproject_position(target))
@@ -255,6 +270,7 @@ func update_occlusion() -> void:
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 	outline.visible = occluded and hp>0
 
+## 弓手从附近可达导航点中选择撤退位置，兼顾远离玩家、掩体和移动成本。
 func find_retreat() -> Vector3:
 	var best := global_position
 	var score := -INF
@@ -274,11 +290,13 @@ func find_retreat() -> Vector3:
 				best=point
 	return best
 
+## 根据双方脚底高度差扩大高处敌人的视距，并限制最大加成。
 func sight_range() -> float:
-	# Foot elevation, not an actor's height or distance from the camera.
+	# 视野加成取双方脚底的实际高度差。
 	var advantage := maxf(0,global_position.y-player.global_position.y)
 	return (11.0 if ranged else 10.0)+minf(6.0,advantage*(2.5 if ranged else 1.0))
 
+## 只在真实看见玩家时更新最后目击位置；失去视野超过宽限时间后转为调查。
 func update_senses(delta: float) -> void:
 	target_visible=can_see_target()
 	if target_visible:
@@ -295,6 +313,8 @@ func update_senses(delta: float) -> void:
 			state="investigate"
 			repath=0
 
+## 推进攻击、追击、调查和返回状态，返回本帧的水平移动方向。
+## 此函数更新决策与计时；实际碰撞移动由 _physics_process 执行。
 func choose_movement(delta: float) -> Vector3:
 	var move := Vector3.ZERO
 	if state=="windup":
@@ -324,6 +344,7 @@ func choose_movement(delta: float) -> Vector3:
 				volley_left=0
 				state="recover"
 				attack_time=1.0
+	# 近战有效命中位于前摇后的挥出阶段，略晚于进入 recover 状态的时刻。
 	elif state=="recover":
 		attack_time-=delta
 		if strike_pending and recovery_duration-attack_time>=0.09:

@@ -6,6 +6,7 @@ func frames(n: int) -> void:
 func check(ok: bool,label: String) -> void:
 	print(("PASS " if ok else "FAIL ")+label)
 	if not ok: fails+=1
+## 检查越距提示、未先接任务时直接取信，以及随后正常返营领奖。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	var lab=load("res://scenes/tactical_height.tscn").instantiate()

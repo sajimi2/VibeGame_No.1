@@ -20,6 +20,7 @@ func capture(label: String) -> void:
 	if DisplayServer.get_name()=="headless": return
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://work/attack_motion_"+label+".png")
+## 模拟攻击输入，检查近战动作、收招缓存、拉弓和敌人挥击时序。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	lab=load("res://scenes/tactical_height.tscn").instantiate()
@@ -56,7 +57,7 @@ func run() -> void:
 	check(max_change<0.7,"weapon has no hard recovery-to-idle angular snap")
 	check(player.position.distance_to(initial)>0.2,"player keeps moving throughout attack")
 	check(guard.hp==before-combat.melee_damage,"progressive swing still deals damage only once")
-	# A click just before cooldown ends is retained exactly once.
+	# 冷却结束前的点击只应缓存并执行一次。
 	guard.hp=60
 	combat.attack(guard.position+Vector3.UP)
 	await frames(18)

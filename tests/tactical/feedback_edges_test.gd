@@ -16,6 +16,7 @@ func capture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://work/feedback_"+label+".png")
+## 验证坡道侧面通行、敌人视野以及光照反馈的边界情况。
 func run() -> void:
 	lab=load("res://scenes/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false
@@ -26,7 +27,7 @@ func run() -> void:
 	player.test_mode=true
 	while not is_instance_valid(lab.guard): await frames(1)
 	guard=lab.guard
-	# Both approaches used to select a short route through the ramp side face.
+	# 这两处接近方向曾错误选择穿过坡道侧面的短路径。
 	for start in [Vector3(2.5,0.05,0.8),Vector3(7.6,0.05,-0.5)]:
 		guard.ai_enabled=false
 		guard.position=start
@@ -62,7 +63,7 @@ func run() -> void:
 	await frames(8)
 	check(guard.state in ["chase","windup","recover"],"nearby drop does not instantly switch to question mark")
 	check(guard.target_visible or guard.last_seen.distance_to(remembered)<0.03,"grace does not reveal hidden target position")
-	# Still no proximity vision through a stone wall.
+	# 即使近距离，也不能透过石墙获得视野。
 	guard.ai_enabled=false
 	guard.position=Vector3(-1.8,0.05,3)
 	guard.facing=Vector3.RIGHT

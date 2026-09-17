@@ -1,11 +1,13 @@
 extends RefCounted
-## Builds mesh/collision pairs under the supplied level. No player, UI or mission dependencies.
+## 在指定关卡根下生成配套的网格和碰撞，不依赖玩家、界面或任务。
 var root: Node3D
 var materials: Dictionary = {}
 
+## 记录生成节点的挂载根；构建器自身是 RefCounted，不进入场景树。
 func _init(parent: Node3D) -> void:
 	root = parent
 
+## 按材质种类生成像素纹理并缓存，同类地形共享资源。
 func material(kind: String) -> StandardMaterial3D:
 	if materials.has(kind): return materials[kind]
 	var palette := {"grass": Color("536448"), "stone": Color("778184"), "wall": Color("626b72"), "path": Color("988468"), "soil": Color("514a3e"), "wood": Color("796349"), "cloth": Color("985b4f"), "wood_frame": Color("4e4032")}
@@ -30,7 +32,7 @@ func material(kind: String) -> StandardMaterial3D:
 				var grain := sin(float(x/2)*2.2+sin(float(y)*0.15))
 				image.set_pixel(x,y,base.darkened(0.16) if grain>0.65 else base)
 			elif kind in ["soil","path","grass"]:
-				# Broad pixel clusters, no fine white noise or continuous gradients.
+				# 用较大像素色块组织纹理，避免细密噪点和连续渐变。
 				var cx := x/8 as int
 				var cy := y/8 as int
 				var cluster := sin(cx*1.73+sin(cy*0.83)*2.0)+cos(cy*1.32-cx*0.37)
@@ -53,6 +55,7 @@ func material(kind: String) -> StandardMaterial3D:
 	materials[kind] = result
 	return result
 
+## 同时生成盒状网格和碰撞；layers 控制它参与哪些物理查询。
 func box(label: String, center: Vector3, size: Vector3, kind: String, layers: int = 13) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = label
@@ -73,8 +76,9 @@ func box(label: String, center: Vector3, size: Vector3, kind: String, layers: in
 	body.add_child(visual)
 	return body
 
+## 生成指定宽度、长度和升高量的楔形坡道，网格与碰撞保持一致。
 func ramp(label: String, origin: Vector3, width: float, length: float, rise: float) -> void:
-	# Wedge rises toward -Z, with exactly matching mesh and collision vertices.
+	# 坡道朝 -Z 方向升高，显示与碰撞使用相同顶点。
 	var vertices := PackedVector3Array([
 		Vector3(-width / 2, 0, 0), Vector3(width / 2, 0, 0),
 		Vector3(-width / 2, 0, -length), Vector3(width / 2, 0, -length),
@@ -102,9 +106,9 @@ func ramp(label: String, origin: Vector3, width: float, length: float, rise: flo
 	visual.material_override = mat
 	body.add_child(visual)
 
+## 把二维轮廓拉成立体高台，使用同一组面生成外观和碰撞。
 func natural_ledge(label: String, origin: Vector3, outline: PackedVector2Array, height: float) -> void:
-	# Flat cap and irregular sides use the same mesh for rendering and collision.
-	# Keep the south lip aligned with the access ramp.
+	# 平顶和不规则侧面共用同一网格生成显示与碰撞；南侧入口与坡道对齐。
 	var top := SurfaceTool.new()
 	top.begin(Mesh.PRIMITIVE_TRIANGLES)
 	top.set_smooth_group(-1)
@@ -147,6 +151,7 @@ func natural_ledge(label: String, origin: Vector3, outline: PackedVector2Array, 
 	collision.shape = mesh.create_trimesh_shape()
 	body.add_child(collision)
 
+## 创建可随相机朝向的空间标注，并加入标注分组供 F1 开关控制。
 func _label(text: String, where: Vector3) -> void:
 	var label := Label3D.new()
 	label.text = text
@@ -157,7 +162,7 @@ func _label(text: String, where: Vector3) -> void:
 	label.outline_size = 6
 	label.modulate = Color("eddbac")
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	# World annotations are UI: terrain must not cut off their lower half.
+	# 空间文字作为标注显示，避免下半部分被地形遮住。
 	label.no_depth_test = true
 	label.render_priority = 20
 	label.position = where

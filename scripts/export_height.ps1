@@ -3,7 +3,7 @@ param(
     [switch]$Sandbox,
     [switch]$Battlefield
 )
-# -Battlefield remains accepted for the previous launcher; battlefield is now the default.
+# 默认导出战场，同时保留旧启动器使用的 -Battlefield 参数。
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $GodotPath) { $GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe' }
@@ -14,10 +14,10 @@ try {
         Copy-Item -LiteralPath (Join-Path $projectRoot $directory) -Destination $stage -Recurse
     }
     $config = Get-Content -LiteralPath (Join-Path $projectRoot 'project.godot') -Raw
-    # Editor tooling is not a game dependency; omit the plugin autoload/config from the export staging project.
+    # 导出暂存工程移除编辑器插件的自动加载项与配置。
     $config = [regex]::Replace($config, '(?ms)^\[autoload\].*?(?=^\[)', '')
     $config = [regex]::Replace($config, '(?ms)^\[editor_plugins\].*?(?=^\[)', '')
-    # Preserve the existing exported game's save identity, shared by battlefield and sandbox.
+    # 保留导出包原有项目身份，让战场和试验场继续共用已有存档目录。
     $config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"')
     if ($Sandbox) { $config = $config.Replace('res://scenes/battlefield.tscn','res://scenes/tactical_height.tscn') }
     Set-Content -LiteralPath (Join-Path $stage 'project.godot') -Value $config -Encoding utf8
@@ -32,7 +32,7 @@ try {
     }
     Write-Output "Exported: builds/windows/$binaryName.exe (keep its matching .pck)"
 } finally {
-    # Only remove this invocation's GUID staging directory, never the project or all temp files.
+    # 仅清理本次调用创建的 GUID 暂存目录，先校验路径归属及名称。
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
     $resolvedStage = [IO.Path]::GetFullPath($stage)
     if ($resolvedStage.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -and

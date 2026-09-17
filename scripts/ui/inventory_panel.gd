@@ -1,11 +1,12 @@
 extends CanvasLayer
-## Presentation and pause/input only. Equipment rules and persistence belong to progression.
+## 背包显示、输入与暂停；装备规则和存档由成长模块处理。
 signal equip_requested(instance_id: String)
 signal refresh_requested
 var panel: PanelContainer
 var content: VBoxContainer
 var open := false
 
+## 创建默认隐藏的背包面板，并允许其在游戏暂停时继续处理输入。
 func _ready() -> void:
 	layer = 20
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -27,6 +28,7 @@ func _ready() -> void:
 	panel.add_child(content)
 	panel.hide()
 
+## 按显示数据重建背包格；按钮只发送物品 ID，换装规则由成长系统判断。
 func refresh(model: Dictionary) -> void:
 	for child in content.get_children():
 		content.remove_child(child)
@@ -55,6 +57,7 @@ func refresh(model: Dictionary) -> void:
 			button.pressed.connect(func(): equip_requested.emit(entry.id))
 		grid.add_child(button)
 
+## 切换背包显隐与全局暂停；打开时请求刷新，显示最新装备状态。
 func toggle() -> void:
 	open = not open
 	panel.visible = open
@@ -62,6 +65,7 @@ func toggle() -> void:
 	if open:
 		refresh_requested.emit()
 
+## 处理 I 和背包内的 Esc，并消费按键，避免继续触发关卡退出。
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_I or (open and event.physical_keycode == KEY_ESCAPE):

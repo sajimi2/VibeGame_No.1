@@ -28,6 +28,7 @@ func capture(label: String):
  await process_frame
  await RenderingServer.frame_post_draw
  root.get_texture().get_image().save_png("res://work/combat_%s.png" % label)
+## 布置空间命中样例，检查高差、顶部判定、墙阻挡和布帘穿透。
 func run():
  lab = load("res://scenes/tactical_height.tscn").instantiate()
  lab.encounter_enabled = false
@@ -113,7 +114,7 @@ func run():
  check(highshot.stopped and highshot.result.has("collider") and highshot.result.collider.has_method("receive_strike") and highshot.result.collider.last_region == "顶部", "actual platform shot hits lower target top")
  await capture("top_hit")
  lab.player.reset_position()
- # Arrange the melee test within reach, independently of the showcase spawn.
+ # 把近战测试双方放到有效距离内，避免依赖展示地图的出生点。
  lab.player.position = Vector3(-6,0.1,5)
  lab.player.test_mode = false
  await frames(10)

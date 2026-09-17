@@ -1,4 +1,5 @@
 extends Node3D
+## 玩家攻击控制器：把输入转换为动作时序、射线命中和投射物。
 const Trace = preload("res://scripts/combat/space_trace.gd")
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
@@ -30,6 +31,7 @@ var assist_target: Node3D
 var assist_enabled := true
 var assist_marker: MeshInstance3D
 
+## 接收玩家和反馈回调，创建手持武器、箭容器、辅助瞄准标记与刀光。
 func setup(body: CharacterBody3D, callback: Callable) -> void:
 	actor = body
 	notify = callback
@@ -61,9 +63,11 @@ func setup(body: CharacterBody3D, callback: Callable) -> void:
 	add_child(trail)
 	process_physics_priority = 5
 
+## 返回当前姿态下的世界攻击起点，下蹲时同步降低出刀和发箭高度。
 func muzzle() -> Vector3:
 	return actor.global_position + Vector3.UP * (0.68 if actor.crouched else 1.15)
 
+## 接收未被界面消费的攻击点击；收招末段允许缓存下一次动作。
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		actor.update_aim(event.position)
@@ -77,6 +81,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif action==1: attack(point)
 		else: shoot(point)
 
+## 检查能否出刀，锁定本次方向并启动时序；实际命中由后续物理帧结算。
 func attack(point: Vector3) -> bool:
 	if get_tree().paused: return false
 	if cooldown > 0 or actor.hp<=0: return false
@@ -90,6 +95,7 @@ func attack(point: Vector3) -> bool:
 	struck.clear()
 	return true
 
+## 锁定目标并创建暂不运动的箭，等拉弓前摇结束后才放行。
 func shoot(point: Vector3):
 	if get_tree().paused or cooldown > 0 or actor.hp<=0: return null
 	cooldown = 0.45
@@ -106,6 +112,8 @@ func shoot(point: Vector3):
 	pending_arrow=arrow
 	return arrow
 
+## 推进冷却和动作时间，消费输入缓存，并让姿态、武器和命中窗口同步。
+## 死亡会取消尚未放出的箭和排队动作。
 func _physics_process(delta: float) -> void:
 	if actor.hp<=0:
 		if is_instance_valid(pending_arrow): pending_arrow.queue_free()
@@ -119,6 +127,7 @@ func _physics_process(delta: float) -> void:
 		if assist_marker.visible: assist_marker.global_position=assist_target.global_position+Vector3.UP*0.04
 	cooldown=maxf(0,cooldown-delta)
 	buffer_time=maxf(0,buffer_time-delta)
+	# 先清空缓存再执行，避免同一点击跨多个物理帧重复触发。
 	if queued_action!=0 and cooldown<=0 and buffer_time>0:
 		var action := queued_action
 		queued_action=0
@@ -165,6 +174,7 @@ func _physics_process(delta: float) -> void:
 		WeaponArt.set_bow_draw(bow,draw,elapsed<0.14)
 		if is_instance_valid(pending_arrow):
 			pending_arrow.global_position=muzzle()
+			# 拉弓前摇结束后才启动飞行，出生位置取玩家此刻的手部位置。
 			if elapsed>=0.14:
 				pending_arrow.velocity=Trace.launch_velocity(muzzle(),bow_target)
 				pending_arrow.process_mode=Node.PROCESS_MODE_INHERIT
@@ -176,6 +186,8 @@ func _physics_process(delta: float) -> void:
 	var blade_direction := -hand.global_basis.z
 	trail.sample_blade(active,muzzle()+blade_direction*melee_range*0.76,muzzle()+blade_direction*melee_range)
 
+## 在前后两次刀刃角度间补采样射线，防止挥刀过快漏判。
+## struck 按实例 ID 去重，使同一挥刀对每个目标或布帘只生效一次。
 func strike(from_angle: float, to_angle: float) -> void:
 	var samples := maxi(1, ceili(absf(to_angle - from_angle) / 3))
 	for sample in samples + 1:
@@ -195,6 +207,7 @@ func strike(from_angle: float, to_angle: float) -> void:
 			var region: String = target.receive_strike(hit.position, hit.normal, direction, melee_damage) if target.is_in_group("tactical_enemies") else target.receive_strike(hit.position, hit.normal, direction)
 			if notify.is_valid(): notify.call("近战命中：" + region)
 
+## 在光标附近选择可见且射线可达的敌人，返回轻微修正后的目标点；Shift 临时关闭辅助。
 func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
 	assist_target=null
 	if not assist_enabled or actor.camera==null or Input.is_physical_key_pressed(KEY_SHIFT): return raw
@@ -212,7 +225,7 @@ func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
 		if not get_world_3d().direct_space_state.intersect_ray(sight).is_empty(): continue
 		sight.from=muzzle()
 		if not get_world_3d().direct_space_state.intersect_ray(sight).is_empty(): continue
-		# Keep deliberate head/top shots; assist only small misses outside the body.
+		# 保留鼠标直接瞄准顶部的结果；只修正偏离身体的小幅误差。
 		var raw_ray := PhysicsRayQueryParameters3D.create(actor.camera.project_ray_origin(cursor),actor.camera.project_ray_origin(cursor)+actor.camera.project_ray_normal(cursor)*100,1|4|16,[actor.get_rid()])
 		var under_cursor := get_world_3d().direct_space_state.intersect_ray(raw_ray)
 		if under_cursor.get("collider")==enemy:
@@ -223,6 +236,7 @@ func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
 		assist_target=enemy
 	return result
 
+## 应用武器资源中的距离、伤害、时序和模型比例；成长模块通过此接口换装。
 func apply_weapon(profile: TacticalWeaponData) -> void:
 	melee_range = profile.reach
 	melee_damage = profile.damage

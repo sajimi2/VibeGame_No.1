@@ -1,8 +1,10 @@
 extends Node3D
-## Painted contact shadow aligned to the real supporting surface.
+## 脚底接触阴影，通过射线贴合实际支撑面。
 var radius := 0.4
 var patch: MeshInstance3D
 static var shadow_texture: Texture2D
+
+## 创建脚底阴影片，共享首次生成的阴影纹理。
 func _ready() -> void:
 	patch = MeshInstance3D.new()
 	var plane := PlaneMesh.new()
@@ -25,6 +27,8 @@ func _ready() -> void:
 	patch.material_override = mat
 	add_child(patch)
 	process_physics_priority = 8
+
+## 向下采样支撑面，使阴影片位置和朝向贴合坡面；没有地面时隐藏。
 func _physics_process(_delta: float) -> void:
 	var anchor: Vector3 = get_parent().global_position
 	var query := PhysicsRayQueryParameters3D.create(anchor+Vector3.UP*0.25,anchor+Vector3.DOWN*3,1)

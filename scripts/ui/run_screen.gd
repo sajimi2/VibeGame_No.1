@@ -1,5 +1,5 @@
 extends CanvasLayer
-## One attempt: contextual route hints and explicit death / hand-in results.
+## 单次挑战的路线提示、死亡及交付结算界面。
 var player: CharacterBody3D
 var objective: Node3D
 var progression: Node
@@ -17,6 +17,7 @@ var bag_button: Button
 var continue_button: Button
 var shade: ColorRect
 
+## 创建路线提示和结算面板；暂停时仍可点击按钮。
 func _ready() -> void:
 	layer=30
 	process_mode=Node.PROCESS_MODE_ALWAYS
@@ -73,6 +74,7 @@ func button(parent: Node, text: String, action: Callable) -> Button:
 	parent.add_child(item)
 	return item
 
+## 只在本局未结束且未暂停时累计用时；死亡或交付后展示相应结果。
 func _process(delta: float) -> void:
 	if not get_tree().paused and not finished: elapsed+=delta
 	if not showing:
@@ -88,6 +90,7 @@ func _process(delta: float) -> void:
 	elif position.x< -1.3 and position.z<5.5: route_hint.text="旧路守卫 · 正面盾挡箭；从矮墙侧面接近，抓挥刀后的破绽。"
 	else: route_hint.text="密函高地 · 留意弓手两连射；用墙断开瞄准，再沿土坡逼近。"
 
+## 汇总本局结果并暂停游戏，按成功或失败设置可用操作。
 func present(success: bool) -> void:
 	if showing or (finished and success): return
 	won=success
@@ -111,6 +114,7 @@ func present(success: bool) -> void:
 	shade.show()
 	retry_button.grab_focus()
 
+## 完成委托后可关闭结果面板继续探索；失败时保持结算状态。
 func dismiss() -> void:
 	if not won: return
 	showing=false
@@ -118,25 +122,29 @@ func dismiss() -> void:
 	shade.hide()
 	get_tree().paused=false
 
+## 成功结算后切换到背包，由背包接管暂停和输入。
 func open_bag() -> void:
 	if not won: return
 	dismiss()
 	progression.toggle()
 
+## 解除暂停再重载当前场景；局内任务重置，成长由存档重新恢复。
 func retry() -> void:
 	get_tree().paused=false
 	get_tree().reload_current_scene()
 
+## 结算显示时优先处理重试、背包和关闭按键，避免同时触发关卡快捷键。
 func _input(event: InputEvent) -> void:
 	if not showing: return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode not in [KEY_R,KEY_I,KEY_ESCAPE]: return
-		# Consume before reload removes this node from the scene tree.
+		# 先消费按键，避免重载场景移除本节点后继续传播输入。
 		get_viewport().set_input_as_handled()
 		if event.physical_keycode==KEY_R: retry()
 		elif won and event.physical_keycode==KEY_I: open_bag()
 		elif won and event.physical_keycode==KEY_ESCAPE: dismiss()
 
+## 由关卡传入玩家、任务、成长与提示回调，界面只依赖所需接口。
 func setup(actor: CharacterBody3D, mission: Node3D, progress: Node, hint: Callable) -> void:
 	player = actor
 	objective = mission

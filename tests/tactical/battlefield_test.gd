@@ -34,6 +34,7 @@ func walk_to(point: Vector3) -> bool:
 			return false
 	player.test_motion=Vector2.ZERO
 	return player.position.distance_to(point)<0.85
+## 检查最新战场布局、敌人通行、任务交付与重试结果。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	lab=load("res://scenes/battlefield.tscn").instantiate()
@@ -61,7 +62,7 @@ func run() -> void:
 	check(await walk_to(lab.objective.pickup_point+Vector3(0,0,0.9)),"actual slope traversal reaches high-ground objective")
 	await capture("fort")
 	check(lab.objective.interact(),"new map objective uses its own location")
-	# Real guard locomotion follows the enlarged graph around physical cover.
+	# 实际驱动守卫沿扩大后的导航图移动，检查其能否绕过实体掩体。
 	var guard=lab.guard
 	guard.position=Vector3(8,0.02,-9)
 	guard.velocity=Vector3.ZERO

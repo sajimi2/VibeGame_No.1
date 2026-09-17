@@ -1,10 +1,12 @@
 extends StaticBody3D
+## 试验场训练靶，只记录命中部位和次数，不参与真实奖励。
 var strikes := 0
 var last_region := ""
 var feedback: Label3D
 var flash := 0.0
 var visual: MeshInstance3D
 
+## 创建圆柱训练靶、顶部色块和命中反馈文字。
 func _ready() -> void:
 	collision_layer = 1 | 16
 	collision_mask = 0
@@ -51,6 +53,7 @@ func _ready() -> void:
 	feedback.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	add_child(feedback)
 
+## 按法线与来袭方向区分顶部或身体命中，累计次数并触发闪烁。
 func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3) -> String:
 	strikes += 1
 	last_region = "顶部" if normal.y > 0.65 and incoming.y < -0.05 else "身体"
@@ -58,6 +61,7 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3) -> Stri
 	flash = 0.2
 	return last_region
 
+## 按帧衰减受击闪烁；训练靶不参与敌人 AI。
 func _process(delta: float) -> void:
 	flash = maxf(0, flash - delta)
 	visual.material_override.albedo_color = Color("fff2bf") if flash > 0 else Color("a48058")

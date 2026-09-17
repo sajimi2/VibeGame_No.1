@@ -1,4 +1,5 @@
 extends Node3D
+## 单局委托状态：接取、携信、返营、交付；首通成长交给 camp_progress 保存。
 var player: CharacterBody3D
 var message := ""
 var message_time := 0.0
@@ -13,6 +14,8 @@ var marker: Label3D
 var hud: Label
 var exit_point := Vector3(-3.5,0,11)
 var pickup_point := Vector3(4.3,2,-6.1)
+
+## 创建密函箱、营地交互标记和任务提示界面。
 func _ready() -> void:
 	relic=Node3D.new()
 	add_child(relic)
@@ -54,6 +57,9 @@ func _ready() -> void:
 	hud.add_theme_constant_override("shadow_offset_x",2)
 	hud.add_theme_constant_override("shadow_offset_y",2)
 	layer.add_child(hud)
+
+## 按玩家所处位置推进接取、取信或交付；取信需通过距离与遮挡检查。
+## 奖励只在交付时申请，首通标记由成长系统保存，避免重试重复领奖。
 func interact() -> bool:
 	if player.hp<=0: return inform("已倒下，按 R 重新挑战")
 	if player.global_position.distance_to(exit_point)<2.1:
@@ -80,8 +86,12 @@ func interact() -> bool:
 	marker.hide()
 	player.effects.sound("alert",player.global_position)
 	return true
+
+## 用 E 键触发一次交互，忽略长按产生的重复按键事件。
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_E: interact()
+
+## 更新营地安全区、回满生命和携信返营状态，并刷新任务提示。
 func _physics_process(_delta: float) -> void:
 	message_time=maxf(0,message_time-_delta)
 	marker.text="哨站密函 · E 取得" if player.global_position.distance_to(pickup_point)<1.8 else "哨站密函"
@@ -91,6 +101,8 @@ func _physics_process(_delta: float) -> void:
 	hud.text="已领奖 · I 打开背包换装；R 再挑战（保留装备）" if claimed else "密函已带回 · E 交付领奖" if completed else "已取得密函 → 返回营地" if carried else "目标：前往高地取得密函（E） · 无需清空敌人" if accepted else "营地委托：按 E 接取密函任务 · I 背包"
 
 	if message_time>0: hud.text+="\n"+message
+
+## 显示短时提示并返回 false，供交互拒绝分支直接返回。
 func inform(text: String) -> bool:
 	message=text
 	message_time=3.0

@@ -1,7 +1,9 @@
 extends MeshInstance3D
-## A short, depth-tested blade ribbon marks the active part of a swing.
+## 短刀光带标记挥刀的有效阶段，参与深度测试以保留遮挡关系。
 var samples: Array=[]
 var surface := ImmediateMesh.new()
+
+## 刀光使用世界坐标，不跟随父节点的后续变换。
 func _ready() -> void:
 	top_level=true
 	mesh=surface
@@ -12,6 +14,8 @@ func _ready() -> void:
 	mat.vertex_color_use_as_albedo=true
 	mat.cull_mode=BaseMaterial3D.CULL_DISABLED
 	material_override=mat
+
+## 保留最近数帧刀刃端点，将相邻采样连成短带；有效挥刀阶段结束后逐帧消退。
 func sample_blade(active: bool, base: Vector3, tip: Vector3) -> void:
 	for item in samples: item.life-=1
 	samples=samples.filter(func(item): return item.life>0)
