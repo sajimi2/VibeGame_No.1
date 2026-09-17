@@ -51,20 +51,13 @@ func _ready() -> void:
 	add_child(lighting)
 	lighting.pixel_material=Lighting.pixel_pass(self)
 	lighting.setup(sunlight,environment)
-	_build_ground()
-	_build_props()
-	preload("res://scripts/tactical/outpost_sample.gd").build(self)
-	if encounter_enabled and mission_enabled:
-		# A low broken fence offers a jump shortcut; grounded agents go around.
-		box("JumpFence",Vector3(-4,0.21,2),Vector3(3.0,0.42,0.20),"wood")
-		_label("断栏 · 空格短跳 / 两侧绕行",Vector3(-4,0.8,2))
-		preload("res://scripts/tactical/outpost_route.gd").build(self)
+	_build_environment()
 	effects = preload("res://scripts/tactical/encounter_effects.gd").new()
 	add_child(effects)
 	player = Actor.new()
 	player.effects = effects
 	player.name = "Explorer"
-	player.spawn = Vector3(-3.5, 0.1, 11)
+	player.spawn = spawn_point()
 	add_child(player)
 	player.reset_position()
 	camera = Camera3D.new()
@@ -324,7 +317,7 @@ func _build_ui() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(panel)
 	var title := Label.new()
-	title.text = "林间废弃哨站 / 夺回密函"
+	title.text = level_title()
 	title.position = Vector2(18, 14)
 	title.add_theme_font_size_override("font_size", 20)
 	title.modulate = Color("eddbac")
@@ -379,31 +372,33 @@ func start_encounter() -> void:
 	await get_tree().process_frame
 	routes = preload("res://scripts/tactical/terrain_routes.gd").new()
 	add_child(routes)
-	routes.build(get_world_3d())
-	guard = preload("res://scripts/tactical/outpost_guard.gd").new()
-	guard.player = player
-	guard.camera = camera
-	guard.routes = routes
-	guard.effects = effects
-	if mission_enabled: guard.home=Vector3(-5.0,0,-0.9)
-	guard.position = guard.home+Vector3.UP*0.05
-	add_child(guard)
-
+	routes.build(get_world_3d(),navigation_bounds())
+	for spec in enemy_layout():
+		var enemy=preload("res://scripts/tactical/outpost_guard.gd").new()
+		enemy.ranged=spec.get("ranged",false)
+		enemy.max_hp=40 if enemy.ranged else 60
+		enemy.hp=enemy.max_hp
+		enemy.home=spec.position
+		enemy.position=enemy.home+Vector3.UP*0.05
+		enemy.player=player
+		enemy.camera=camera
+		enemy.routes=routes
+		enemy.effects=effects
+		add_child(enemy)
+		if enemy.ranged and not is_instance_valid(archer):
+			archer=enemy
+			enemy.name="OutpostArcher"
+		elif not enemy.ranged and not is_instance_valid(guard): guard=enemy
+	# Static navigation ignores actor bodies, while actual locomotion still
+	# collides with them. This avoids sampling a path endpoint on a teammate.
+	for enemy in get_tree().get_nodes_in_group("tactical_enemies"):
+		for teammate in get_tree().get_nodes_in_group("tactical_enemies"):
+			if not enemy.navigation_excluded.has(teammate.get_rid()): enemy.navigation_excluded.append(teammate.get_rid())
 	if mission_enabled:
-		archer=preload("res://scripts/tactical/outpost_guard.gd").new()
-		archer.ranged=true
-		archer.hp=40
-		archer.max_hp=40
-		archer.home=Vector3(6.0,2,-7.8)
-		archer.position=archer.home+Vector3.UP*0.05
-		archer.player=player
-		archer.camera=camera
-		archer.routes=routes
-		archer.effects=effects
-		add_child(archer)
-		archer.name="OutpostArcher"
 		objective=preload("res://scripts/tactical/outpost_objective.gd").new()
 		objective.player=player
+		objective.exit_point=spawn_point()*Vector3(1,0,1)
+		objective.pickup_point=objective_point()
 		add_child(objective)
 		progression=preload("res://scripts/tactical/camp_progress.gd").new()
 		progression.lab=self
@@ -414,3 +409,21 @@ func start_encounter() -> void:
 			run_flow=preload("res://scripts/tactical/outpost_run.gd").new()
 			run_flow.lab=self
 			add_child(run_flow)
+
+func _build_environment() -> void:
+	_build_ground()
+	_build_props()
+	preload("res://scripts/tactical/outpost_sample.gd").build(self)
+	if encounter_enabled and mission_enabled:
+		# A low broken fence offers a jump shortcut; grounded agents go around.
+		box("JumpFence",Vector3(-4,0.21,2),Vector3(3.0,0.42,0.20),"wood")
+		_label("断栏 · 空格短跳 / 两侧绕行",Vector3(-4,0.8,2))
+		preload("res://scripts/tactical/outpost_route.gd").build(self)
+
+func spawn_point() -> Vector3: return Vector3(-3.5,0.1,11)
+func objective_point() -> Vector3: return Vector3(4.3,2,-6.1)
+func navigation_bounds() -> Rect2: return Rect2(-15,-15.6,30,31.2)
+func level_title() -> String: return "林间废弃哨站 / 夺回密函"
+func enemy_layout() -> Array:
+	return [{"position":Vector3(-5,0,-0.9)},{"position":Vector3(6,2,-7.8),"ranged":true}] if mission_enabled else [{"position":Vector3(2,0,-0.5)}]
+func combat_hint() -> String: return ""

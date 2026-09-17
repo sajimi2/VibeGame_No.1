@@ -48,9 +48,12 @@ static func bow() -> MeshInstance3D:
 	string.surface_add_vertex(Vector3(0,0.63,0.02))
 	string.surface_end()
 	var thread := MeshInstance3D.new()
+	thread.name="BowString"
 	thread.mesh=string
 	thread.material_override=material("d6cba6")
 	root.add_child(thread)
+	var nocked := block(root,Vector3(0.026,0.026,0.65),Vector3(0,0,-0.25),"d7c499")
+	nocked.name="NockedArrow"
 	for i in 10:
 		var a := Vector3(0,-0.63+i*0.126,-0.22*cos((-0.63+i*0.126)/1.26*PI))
 		var b := Vector3(0,-0.63+(i+1)*0.126,-0.22*cos((-0.63+(i+1)*0.126)/1.26*PI))
@@ -58,3 +61,12 @@ static func bow() -> MeshInstance3D:
 		limb.rotation.x=atan2(b.z-a.z,b.y-a.y)
 	block(root,Vector3(0.11,0.22,0.12),Vector3(0,0,-0.22),"59442f")
 	return root
+
+static func set_bow_draw(root: Node3D, amount: float, nocked: bool=true) -> void:
+	var string: ImmediateMesh=root.get_node("BowString").mesh
+	string.clear_surfaces()
+	string.surface_begin(Mesh.PRIMITIVE_LINES)
+	for point in [Vector3(0,-0.63,0.02),Vector3(0,0,0.02+amount*0.30),Vector3(0,0,0.02+amount*0.30),Vector3(0,0.63,0.02)]: string.surface_add_vertex(point)
+	string.surface_end()
+	root.get_node("NockedArrow").visible=nocked
+	root.get_node("NockedArrow").position.z=-0.27+amount*0.30

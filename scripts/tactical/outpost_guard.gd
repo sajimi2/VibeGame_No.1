@@ -1,4 +1,6 @@
 extends CharacterBody3D
+const Motion = preload("res://scripts/tactical/combat_motion.gd")
+const WeaponArt = preload("res://scripts/tactical/weapon_art.gd")
 const Art = preload("res://scripts/tactical/directional_art.gd")
 var player: CharacterBody3D
 var camera: Camera3D
@@ -15,6 +17,10 @@ var strike_pending := false
 var thrust := false
 var volley_left := 0
 var block_flash := 0.0
+var hurt_recovery := false
+var reaction_angle := 0.0
+var motion_angle := 0.0
+var draw_from := 0.0
 var health_bar: Sprite3D
 var locked_target := Vector3.ZERO
 var retreat_goal := Vector3.ZERO
@@ -41,6 +47,8 @@ var outline: Sprite3D
 var occluded := false
 var sprite: Sprite3D
 var sword: Node3D
+var shield_node: Node3D
+var trail: MeshInstance3D
 var marker: Label3D
 var ai_enabled := true
 var navigation_excluded: Array[RID] = []
@@ -88,8 +96,12 @@ func _ready() -> void:
 	sword.add_child(held)
 	if not ranged:
 		var shield=preload("res://scripts/tactical/weapon_art.gd")
-		shield.block(sword,Vector3(0.48,0.65,0.11),Vector3(0.36,-0.12,-0.25),"596f72")
-		shield.block(sword,Vector3(0.50,0.07,0.13),Vector3(0.36,-0.12,-0.25),"c3a873")
+		shield_node=Node3D.new()
+		add_child(shield_node)
+		shield.block(shield_node,Vector3(0.48,0.65,0.11),Vector3(0.36,-0.12,-0.25),"596f72")
+		shield.block(shield_node,Vector3(0.50,0.07,0.13),Vector3(0.36,-0.12,-0.25),"c3a873")
+	trail=preload("res://scripts/tactical/swing_trail.gd").new()
+	add_child(trail)
 	health_bar=preload("res://scripts/tactical/enemy_health.gd").new()
 	add_child(health_bar)
 	health_bar.set_health(hp,max_hp)
@@ -116,6 +128,8 @@ func _physics_process(delta: float) -> void:
 	health_bar.set_health(hp,max_hp)
 	if hp<=0:
 		sword.hide()
+		trail.hide()
+		if is_instance_valid(shield_node): shield_node.hide()
 		world_shadow.hide()
 		outline.hide()
 		marker.text=""
@@ -159,6 +173,8 @@ func _physics_process(delta: float) -> void:
 				facing=Vector3(last_seen.x-global_position.x,0,last_seen.z-global_position.z).normalized()
 				state="windup"
 				attack_time=0.45
+				action_duration=0.45
+				draw_from=0.35
 			else:
 				volley_left=0
 				state="recover"
@@ -168,7 +184,9 @@ func _physics_process(delta: float) -> void:
 		if strike_pending and recovery_duration-attack_time>=0.09:
 			strike_pending=false
 			perform_attack()
-		if attack_time<=0: state="chase" if target_visible or lost_time<sight_grace else "investigate"
+		if attack_time<=0:
+			state="chase" if target_visible or lost_time<sight_grace else "investigate"
+			hurt_recovery=false
 	elif state=="chase" and target_visible and global_position.distance_to(last_seen)<(sight_range()-1.0 if ranged else 2.25 if attack_cycle%2==1 else 1.65) and (ranged or absf(global_position.y-last_seen.y)<0.65) and (not ranged or global_position.distance_to(last_seen)>3.0):
 		facing=Vector3(last_seen.x-global_position.x,0,last_seen.z-global_position.z).normalized()
 		if cooldown<=0:
@@ -178,6 +196,8 @@ func _physics_process(delta: float) -> void:
 			volley_left=1 if ranged else 0
 			attack_time=0.9 if ranged else 0.5 if thrust else 0.32
 			action_duration=attack_time
+			hurt_recovery=false
+			draw_from=0.0
 			locked_target=player.global_position+Vector3.UP*(0.55 if player.crouched else 1.0)
 			locked_direction=(last_seen+Vector3.UP-(global_position+Vector3.UP*1.1)).normalized()
 			cooldown=2.0 if ranged else 1.15
@@ -212,42 +232,61 @@ func _physics_process(delta: float) -> void:
 	elif state=="guard": facing=Vector3(sin(clock*0.5)*0.7,0,1).normalized()
 	if move.length()>0.1:
 		facing=(Vector3(last_seen.x,global_position.y,last_seen.z)-global_position).normalized() if ranged and target_visible else move
-	velocity=move*(2.75 if state=="chase" else 1.8)+knockback+Vector3.UP*(velocity.y-20*delta)
+	var committed_step := Vector3.ZERO
+	if not ranged and state=="recover" and not hurt_recovery:
+		var active_time := recovery_duration-attack_time
+		if active_time<0.18:
+			committed_step=Vector3(locked_direction.x,0,locked_direction.z).normalized()*sin(active_time/0.18*PI)*(1.8 if thrust else 1.0)
+	velocity=committed_step+move*(2.75 if state=="chase" else 1.8)+knockback+Vector3.UP*(velocity.y-20*delta)
 	knockback=knockback.move_toward(Vector3.ZERO,delta*14)
 	move_and_slide()
 	var travel := Vector2(position.x-before.x,position.z-before.z).length()
 	gait+=travel/1.8*TAU
 	var view := facing.rotated(Vector3.UP,-camera.rotation.y)
 	var direction := posmod(roundi(atan2(view.x,view.z)/(PI/6)),12)
-	var pose := 4 if ranged and state in ["windup","nock","recover"] else 1 if state=="windup" else 2 if state=="recover" and attack_time>0.5 else 0
+	var pose := 4 if ranged and state in ["windup","nock","recover"] else 1 if state=="windup" else 3 if state=="recover" else 0
 	var step := posmod(int(gait/TAU*8),8) if travel>0.002 else -1
-	var motion := 0.0
-	var extension := 0.0
-	var arm_phase := -1
-	if not ranged and state=="windup":
-		motion=lerpf(0,-0.9,clampf(1-attack_time/action_duration,0,1))
-	elif not ranged and state=="recover":
-		var elapsed := recovery_duration-attack_time
-		if elapsed<0.16:
-			motion=lerpf(-0.9,0.8,clampf(elapsed/0.16,0,1))
-			extension=sin(clampf(elapsed/0.22,0,1)*PI)*0.55
+	var motion := {"angle":0.0,"arm":-1,"weight":0,"extension":0.0}
+	var draw_phase := -1
+	if not ranged and state in ["windup","recover"]:
+		if hurt_recovery:
+			motion.angle=lerpf(reaction_angle,0,Motion.blend(1-attack_time/0.35))
+			motion.arm=clampi(roundi((motion.angle+0.9)/1.7*24),0,24)
+			motion.weight=-1 if attack_time>0.15 else 0
 		else:
-			motion=lerpf(0.8,0,clampf((elapsed-0.16)/maxf(0.1,recovery_duration-0.16),0,1))
-	if not ranged and state in ["windup","recover"]: arm_phase=clampi(roundi((motion+0.9)/1.7*12),0,12)
-	sprite.texture=Art.texture(direction,step,false,false,direction,pose,true,arm_phase)
-	outline.texture=Art.texture(direction,step,false,true,direction,pose,true,arm_phase)
+			var elapsed := action_duration-attack_time if state=="windup" else action_duration+recovery_duration-attack_time
+			motion=Motion.melee(elapsed,action_duration,0.16,recovery_duration+action_duration,thrust)
+	if ranged:
+		var draw := 0.0
+		var nocked := state=="windup"
+		if state=="windup": draw=lerpf(draw_from,1.0,Motion.blend(1-attack_time/action_duration))
+		elif state=="nock":
+			var elapsed := 0.65-attack_time
+			draw=1.0-Motion.blend(elapsed/0.075) if elapsed<0.075 else 0.35*Motion.blend((elapsed-0.12)/0.53)
+			nocked=elapsed>0.12
+		elif state=="recover" and not hurt_recovery: draw=1.0-Motion.blend((recovery_duration-attack_time)/0.075)
+		WeaponArt.set_bow_draw(sword.get_child(0),draw,nocked)
+		draw_phase=roundi(draw*8)
+	motion_angle=motion.angle
+	sprite.texture=Art.texture(direction,step,false,false,direction,pose,true,motion.arm,motion.weight,draw_phase)
+	outline.texture=Art.texture(direction,step,false,true,direction,pose,true,motion.arm,motion.weight,draw_phase)
 	update_occlusion()
 	sprite.modulate=Color(1.8,1.5,1.2) if hurt>0 else Color("bbd1b5") if ranged else Color.WHITE
 	marker.text={"guard":"弓箭手" if ranged else "守卫","chase":"!","windup":"瞄准！" if ranged else "突刺！" if thrust else "横斩！","nock":"搭箭…","recover":"收招 · 破绽","investigate":"? 调查","search":"? 搜索","return":"返回"}.get(state,state)
 	if block_flash>0: marker.text="格挡 · 绕侧/等收招"
 	marker.modulate=Color("f1a36e") if state=="windup" else Color("e5d5ac")
+	if is_instance_valid(shield_node):
+		shield_node.position=Vector3(0,1.1,0)
+		shield_node.look_at(global_position+Vector3.UP*1.1+facing)
 	sword.position=Vector3(0,1.1,0)
 	if facing.length()>0.01: sword.look_at(global_position+Vector3.UP*1.1+facing)
 	if not ranged:
-		if thrust:
-			sword.rotate_object_local(Vector3.UP,motion*0.25)
-			sword.translate_object_local(Vector3(0,0,-extension))
-		else: sword.rotate_object_local(Vector3.UP,motion)
+		sword.rotate_object_local(Vector3.UP,motion.angle)
+		sword.translate_object_local(Vector3(0,0,-motion.extension))
+	var active := not ranged and state=="recover" and not hurt_recovery and recovery_duration-attack_time<0.16
+	var reach := 2.55 if thrust else 1.85
+	var blade_direction := -sword.global_basis.z
+	trail.sample_blade(active,sword.global_position+blade_direction*reach*0.78,sword.global_position+blade_direction*reach)
 func perform_attack() -> void:
 	if ranged:
 		# Fire at the committed aim point, not the player's new hidden position.
@@ -289,6 +328,8 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_da
 		volley_left=0
 		strike_pending=false
 		state="recover"
+		hurt_recovery=true
+		reaction_angle=motion_angle
 		attack_time=0.35
 		if not target_visible: last_seen = global_position-Vector3(incoming.x,0,incoming.z).normalized()*2.5
 		search_time=5

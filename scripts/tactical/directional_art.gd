@@ -8,9 +8,9 @@ static func stroke(image: Image, start: Vector2, finish: Vector2, color: Color, 
   var rect := Rect2i(roundi(point.x),roundi(point.y),width,width).intersection(Rect2i(0,0,image.get_width(),image.get_height()))
   if rect.has_area(): image.fill_rect(rect,color)
 
-static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1) -> Texture2D:
+static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1) -> Texture2D:
  if move_direction < 0: move_direction = direction
- var key := "%s/%s/%s/%s/%s/%s/%s/%s" % [direction,step,crouch,outline,move_direction,pose,enemy,arm_phase]
+ var key := "%s/%s/%s/%s/%s/%s/%s/%s/%s/%s" % [direction,step,crouch,outline,move_direction,pose,enemy,arm_phase,weight,draw_phase]
  if cache.has(key): return cache[key]
  var image := Image.create(32,48,false,Image.FORMAT_RGBA8)
  var angle := direction*PI/6
@@ -27,7 +27,9 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
  var head_y := 16 if crouch else 6
  var shoulder_y := 26 if crouch else 21
  var width := roundi(14-4*absf(sin(angle)))
+ var body_shift := roundi(sin(angle)*weight)
  var left := (32-width)/2 as int
+ left+=body_shift
  # Alternating support feet stay at the ground anchor while knees articulate.
  for leg in 2:
   var cycle := phase+leg*PI
@@ -66,13 +68,21 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
  if pose == 1: hand_angle -= 0.9
  if pose == 2: hand_angle += 0.8
  if pose == 3: hand_angle += 0.4
- if arm_phase>=0: hand_angle=angle+lerpf(-0.9,0.8,arm_phase/12.0)
+ if arm_phase>=0: hand_angle=angle+lerpf(-0.9,0.8,arm_phase/24.0)
  for arm in 2:
   var shoulder := Vector2(left-1 if arm==0 else left+width-1,shoulder_y+2)
   var hand := shoulder+Vector2(0,8)
   if pose > 0:
    hand = Vector2(15+sin(hand_angle)*9+(arm*2-1),shoulder_y+6+cos(hand_angle)*4)
-   if pose == 4: hand += Vector2((-3 if arm==0 else 3),-2)
+   if pose == 4:
+    var draw := 1.0 if draw_phase<0 else draw_phase/8.0
+    var front := Vector2(15+sin(angle)*10,shoulder_y+4+cos(angle)*4)
+    hand=front if arm==0 else front.lerp(Vector2(15-sin(angle)*2,shoulder_y+2),draw)
+   hand.x+=body_shift
+  elif arm==1:
+   # Keep the weapon arm in a ready pose between attacks, avoiding an
+   # instantaneous jump from dangling hands to a forward weapon grip.
+   hand=Vector2(16+sin(angle)*7,shoulder_y+6+cos(angle)*3)
   elif walking:
    hand += Vector2(sin(walk_angle)*sin(phase+arm*PI)*3,cos(walk_angle)*cos(phase+arm*PI)*2)
   var elbow := shoulder.lerp(hand,0.55)+Vector2(-1 if arm==0 else 1,1)

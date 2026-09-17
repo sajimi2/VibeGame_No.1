@@ -5,7 +5,9 @@ const CELL := 0.6
 var graph := AStar3D.new()
 var cells: Dictionary = {}
 var world: World3D
-func build(source: World3D) -> void:
+func build(source: World3D, bounds: Rect2 = Rect2(-15,-15.6,30,31.2)) -> void:
+	graph.clear()
+	cells.clear()
 	world = source
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.32
@@ -13,8 +15,8 @@ func build(source: World3D) -> void:
 	var clearance := PhysicsShapeQueryParameters3D.new()
 	clearance.shape = capsule
 	clearance.collision_mask = 1
-	for z in range(-26,27):
-		for x in range(-25,26):
+	for z in range(roundi(bounds.position.y/CELL),roundi(bounds.end.y/CELL)+1):
+		for x in range(roundi(bounds.position.x/CELL),roundi(bounds.end.x/CELL)+1):
 			var ray := PhysicsRayQueryParameters3D.create(Vector3(x*CELL,8,z*CELL),Vector3(x*CELL,-2,z*CELL),1)
 			var hit := world.direct_space_state.intersect_ray(ray)
 			if hit.is_empty() or hit.normal.y<0.75: continue

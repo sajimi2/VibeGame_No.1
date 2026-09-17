@@ -25,6 +25,9 @@ var hp := 100
 var hurt_time := 0.0
 var invulnerable := 0.0
 var attack_pose := 0
+var attack_arm := -1
+var attack_weight := 0
+var bow_draw := -1
 var attack_facing := Vector2(0,1)
 var effects: Node3D
 var foot_distance := 0.0
@@ -129,8 +132,8 @@ func _physics_process(delta: float) -> void:
 	if move.length() > 0.1:
 		if attack_pose == 0: facing = move.normalized()
 		gait += planar_distance / 1.8 * TAU
-	if not test_mode and camera != null and attack_pose not in [1,2,3]: update_aim(cursor)
-	if attack_pose in [1,2,3]: facing = attack_facing
+	if not test_mode and camera != null and attack_pose == 0: update_aim(cursor)
+	if attack_pose > 0: facing = attack_facing
 	var view_facing := Vector3(facing.x, 0, facing.y)
 	if camera != null: view_facing = view_facing.rotated(Vector3.UP, -camera.rotation.y)
 	direction_index = posmod(roundi(atan2(view_facing.x, view_facing.z) / (PI / 6)), 12)
@@ -146,8 +149,8 @@ func _refresh_art(step: int) -> void:
 	for item in [sprite, outline]:
 		item.position = Vector3.ZERO
 		item.scale.y = 0.7 if crouched else 0.92 if jumped else 1.0
-	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction, attack_pose)
-	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction, attack_pose)
+	sprite.texture = Art.texture(direction_index, step, crouched, false, movement_direction, attack_pose, false, attack_arm, attack_weight, bow_draw)
+	outline.texture = Art.texture(direction_index, step, crouched, true, movement_direction, attack_pose, false, attack_arm, attack_weight, bow_draw)
 
 func _update_occlusion() -> void:
 	if camera == null: return

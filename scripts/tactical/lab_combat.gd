@@ -1,11 +1,18 @@
 extends Node3D
 const Trace = preload("res://scripts/tactical/space_trace.gd")
+const Motion = preload("res://scripts/tactical/combat_motion.gd")
+const WeaponArt = preload("res://scripts/tactical/weapon_art.gd")
 const Arrow = preload("res://scripts/tactical/space_arrow.gd")
 var actor: CharacterBody3D
 var notify: Callable
 var cooldown := 0.0
 var swing_time := 0.0
-var previous_angle := -35.0
+var previous_angle := rad_to_deg(-0.9)
+var pending_arrow: Node3D
+var bow_target := Vector3.ZERO
+var queued_action := 0
+var queued_point := Vector3.ZERO
+var buffer_time := 0.0
 var struck: Dictionary = {}
 var locked_direction := Vector3.FORWARD
 var weapon: MeshInstance3D
@@ -14,6 +21,7 @@ var bow_time := 0.0
 var hand: Node3D
 var arrows: Node3D
 var melee_hits := 0
+var trail: MeshInstance3D
 var melee_range := 1.9
 var melee_damage := 20
 var attack_duration := 0.3
@@ -49,6 +57,8 @@ func setup(body: CharacterBody3D, callback: Callable) -> void:
  assist_marker.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
  assist_marker.visible=false
  add_child(assist_marker)
+ trail=preload("res://scripts/tactical/swing_trail.gd").new()
+ add_child(trail)
  process_physics_priority = 5
 
 func muzzle() -> Vector3:
@@ -57,8 +67,15 @@ func muzzle() -> Vector3:
 func _unhandled_input(event: InputEvent) -> void:
  if event is InputEventMouseButton and event.pressed:
   actor.update_aim(event.position)
-  if event.button_index == MOUSE_BUTTON_LEFT: attack(actor.aim_point)
-  if event.button_index == MOUSE_BUTTON_RIGHT: shoot(assisted_point(actor.aim_point,actor.cursor))
+  var action := 1 if event.button_index==MOUSE_BUTTON_LEFT else 2 if event.button_index==MOUSE_BUTTON_RIGHT else 0
+  if action==0: return
+  var point: Vector3 = actor.aim_point if action==1 else assisted_point(actor.aim_point,actor.cursor)
+  if cooldown>0 and cooldown<=0.12:
+   queued_action=action
+   queued_point=point
+   buffer_time=0.16
+  elif action==1: attack(point)
+  else: shoot(point)
 
 func attack(point: Vector3) -> bool:
  if get_tree().paused: return false
@@ -69,43 +86,95 @@ func attack(point: Vector3) -> bool:
  swing_time = attack_duration
  actor.attack_facing = Vector2(locked_direction.x,locked_direction.z).normalized()
  actor.effects.sound("swing",actor.global_position)
- previous_angle = -35
+ previous_angle = rad_to_deg(-0.9)
  struck.clear()
  return true
 
 func shoot(point: Vector3):
- if cooldown > 0 or actor.hp<=0: return null
+ if get_tree().paused or cooldown > 0 or actor.hp<=0: return null
  cooldown = 0.45
  bow_time = 0.45
- actor.effects.sound("bow",actor.global_position)
+ bow_target=point
+ locked_direction=(point-muzzle()).normalized()
+ actor.attack_facing=Vector2(locked_direction.x,locked_direction.z).normalized()
  var arrow := Arrow.new()
+ arrow.process_mode=Node.PROCESS_MODE_DISABLED
+ arrow.visible=false
  arrows.add_child(arrow)
- arrow.global_position = muzzle()
- arrow.velocity = Trace.launch_velocity(muzzle(), point)
- arrow.notify = notify
+ arrow.global_position=muzzle()
+ arrow.notify=notify
+ pending_arrow=arrow
  return arrow
 
 func _physics_process(delta: float) -> void:
+ if actor.hp<=0:
+  if is_instance_valid(pending_arrow): pending_arrow.queue_free()
+  pending_arrow=null
+  queued_action=0
+  swing_time=0
+  bow_time=0
  if not actor.test_mode:
   assisted_point(actor.aim_point,actor.cursor)
   assist_marker.visible=is_instance_valid(assist_target) and actor.hp>0
   if assist_marker.visible: assist_marker.global_position=assist_target.global_position+Vector3.UP*0.04
- var phase_time := swing_time / attack_duration * 0.3
- actor.attack_pose = 1 if phase_time>0.2 else 2 if phase_time>0.08 else 3 if phase_time>0 else 4 if bow_time>0 else 0
- cooldown = maxf(0, cooldown - delta)
- bow_time = maxf(0, bow_time - delta)
- bow.visible = bow_time > 0
- weapon.visible = bow_time <= 0
- hand.global_position = muzzle()
- var direction := locked_direction if swing_time > 0 else Vector3(actor.facing.x, 0, actor.facing.y)
- if direction.cross(Vector3.UP).length() > 0.01: hand.look_at(hand.global_position + direction)
- if swing_time > 0:
-  swing_time = maxf(0, swing_time - delta)
-  var angle := lerpf(-35, 35, clampf((0.2 - swing_time/attack_duration*0.3) / 0.12, 0, 1))
-  hand.rotate_object_local(Vector3.UP, deg_to_rad(angle))
-  if swing_time/attack_duration*0.3 <= 0.2 and previous_angle < 35:
-   strike(previous_angle, angle)
-   previous_angle = angle
+ cooldown=maxf(0,cooldown-delta)
+ buffer_time=maxf(0,buffer_time-delta)
+ if queued_action!=0 and cooldown<=0 and buffer_time>0:
+  var action := queued_action
+  queued_action=0
+  if action==1: attack(queued_point)
+  else: shoot(queued_point)
+ if buffer_time<=0: queued_action=0
+ swing_time=maxf(0,swing_time-delta)
+ bow_time=maxf(0,bow_time-delta)
+ actor.attack_arm=-1
+ actor.attack_weight=0
+ actor.bow_draw=-1
+ actor.attack_pose=0
+ hand.global_position=muzzle()
+ var direction := locked_direction if swing_time>0 or bow_time>0 else Vector3(actor.facing.x,0,actor.facing.y)
+ if direction.cross(Vector3.UP).length()>0.01:
+  var desired := Basis.looking_at(direction.normalized(),Vector3.UP)
+  if swing_time>0 or bow_time>0: hand.global_basis=desired
+  else:
+   var current := hand.global_basis.orthonormalized()
+   var angle := current.get_rotation_quaternion().angle_to(desired.get_rotation_quaternion())
+   hand.global_basis=current.slerp(desired,minf(1.0,14.0*delta/maxf(angle,0.001)))
+ bow.visible=bow_time>0
+ weapon.visible=bow_time<=0
+ if swing_time>0:
+  var elapsed := attack_duration-swing_time
+  var windup := attack_duration*0.25
+  var active := attack_duration*0.36
+  var motion := Motion.melee(elapsed,windup,active,attack_duration)
+  actor.attack_pose=1 if elapsed<windup else 2 if elapsed<windup+active else 3
+  actor.attack_arm=motion.arm
+  actor.attack_weight=motion.weight
+  hand.rotate_object_local(Vector3.UP,motion.angle)
+  hand.translate_object_local(Vector3(0,0,-motion.extension))
+  if elapsed>=windup and previous_angle<rad_to_deg(0.8):
+   var angle := rad_to_deg(motion.angle) if elapsed<windup+active else rad_to_deg(0.8)
+   strike(previous_angle,angle)
+   previous_angle=angle
+ elif bow_time>0:
+  actor.attack_pose=4
+  var elapsed := 0.45-bow_time
+  var draw := Motion.blend(elapsed/0.14) if elapsed<0.14 else 1.0-Motion.blend((elapsed-0.14)/0.075)
+  actor.bow_draw=roundi(draw*8)
+  actor.attack_weight=roundi(-draw)
+  WeaponArt.set_bow_draw(bow,draw,elapsed<0.14)
+  if is_instance_valid(pending_arrow):
+   pending_arrow.global_position=muzzle()
+   if elapsed>=0.14:
+    pending_arrow.velocity=Trace.launch_velocity(muzzle(),bow_target)
+    pending_arrow.process_mode=Node.PROCESS_MODE_INHERIT
+    pending_arrow.visible=true
+    pending_arrow=null
+    actor.effects.sound("bow",actor.global_position)
+
+ var active := swing_time>attack_duration*0.39 and swing_time<attack_duration*0.75
+ var blade_direction := -hand.global_basis.z
+ trail.sample_blade(active,muzzle()+blade_direction*melee_range*0.76,muzzle()+blade_direction*melee_range)
 
 func strike(from_angle: float, to_angle: float) -> void:
  var samples := maxi(1, ceili(absf(to_angle - from_angle) / 3))

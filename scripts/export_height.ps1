@@ -1,4 +1,4 @@
-param([string]$GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe')
+param([string]$GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe', [switch]$Battlefield)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 # Isolated export project keeps the production main scene and save identity unchanged.
@@ -12,12 +12,15 @@ foreach ($relative in $sharedFiles) {
     New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectRoot $relative) -Destination $destination
 }
-Copy-Item -LiteralPath (Join-Path $projectRoot 'scenes/tactical_height.tscn') -Destination (Join-Path $stagingRoot 'scenes')
+$scenePath = if ($Battlefield) { 'scenes/battlefield.tscn' } else { 'scenes/tactical_height.tscn' }
+$binaryName = if ($Battlefield) { 'OutpostRPG_Battlefield' } else { 'OutpostRPG_HeightLab' }
+Copy-Item -LiteralPath (Join-Path $projectRoot $scenePath) -Destination (Join-Path $stagingRoot 'scenes')
 $config = Get-Content -LiteralPath (Join-Path $projectRoot 'project.godot') -Raw
-$config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"').Replace('res://scenes/level_village.tscn', 'res://scenes/tactical_height.tscn')
+$config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"').Replace('res://scenes/level_village.tscn', ('res://' + $scenePath))
+# Keep the same project identity so both entries share existing equipment progress.
 Set-Content -LiteralPath (Join-Path $stagingRoot 'project.godot') -Value $config -Encoding utf8
 Copy-Item -LiteralPath (Join-Path $projectRoot 'export_presets.cfg') -Destination $stagingRoot
-$buildPath = Join-Path $projectRoot 'builds/windows/OutpostRPG_HeightLab.exe'
+$buildPath = Join-Path $projectRoot ('builds/windows/' + $binaryName + '.exe')
 & $GodotPath --headless --path $stagingRoot --editor --import *> (Join-Path $projectRoot 'work/height-export-import.log')
 if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath (Join-Path $projectRoot 'work/height-export-import.log') -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw 'Height export import failed; inspect height-export-import.log' }
 & $GodotPath --headless --path $stagingRoot --export-release 'Windows Desktop' $buildPath *> (Join-Path $projectRoot 'work/height-export.log')

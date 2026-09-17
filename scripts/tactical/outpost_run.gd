@@ -77,7 +77,9 @@ func _process(delta: float) -> void:
 		elif lab.objective.claimed and not finished: present(true)
 	var quest=lab.objective
 	var position: Vector3=lab.player.position
-	if quest.claimed: route_hint.text="委托已完成，可自由探索或重新出发。"
+	if not lab.combat_hint().is_empty():
+		route_hint.text=lab.combat_hint()
+	elif quest.claimed: route_hint.text="委托已完成，可自由探索或重新出发。"
 	elif quest.carried: route_hint.text="返回南侧营火旁，按 E 交付。道路两端都能返回营地。"
 	elif position.distance_to(quest.exit_point)<2.5: route_hint.text="旧路：借矮墙绕盾接近守卫。东侧小径：穿过布帘，绕向高地。"
 	elif position.x< -1.3 and position.z<5.5: route_hint.text="旧路守卫 · 正面盾挡箭；从矮墙侧面接近，抓挥刀后的破绽。"
@@ -96,7 +98,7 @@ func present(success: bool) -> void:
 		if enemy.hp<=0: defeated+=1
 	var time_text := "%02d:%02d" % [int(elapsed)/60,int(elapsed)%60]
 	if success:
-		details.text="用时 %s · 击败 %d / 2 名敌人（无需清场）\n" % [time_text,defeated]
+		details.text="用时 %s · 击败 %d / %d 名敌人（无需清场）\n" % [time_text,defeated,get_tree().get_nodes_in_group("tactical_enemies").size()]
 		details.text+="首通奖励：大砍刀、60 经验；升至 2 级，生命上限 105。\n奖励已放入背包，可以立即换装。" if lab.objective.first_reward else "本次委托完成。首通奖励此前已领取，本轮不重复发放。\n现有装备与成长已保留。"
 	else:
 		details.text="本次用时 %s。重新出发会重置敌人和密函。\n已获得的装备与成长保留，不扣物品。\n可试试借墙断开弓手瞄准，或从守卫侧后方进攻。" % time_text
