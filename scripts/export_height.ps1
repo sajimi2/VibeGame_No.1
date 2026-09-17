@@ -1,28 +1,43 @@
-param([string]$GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe', [switch]$Battlefield)
+param(
+    [string]$GodotPath = $env:GODOT_BIN,
+    [switch]$Sandbox,
+    [switch]$Battlefield
+)
+# -Battlefield remains accepted for the previous launcher; battlefield is now the default.
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-# Isolated export project keeps the production main scene and save identity unchanged.
-$stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('OutpostRPG-Height-' + [guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Force (Join-Path $stagingRoot 'scripts/tactical'), (Join-Path $stagingRoot 'scenes') | Out-Null
-Copy-Item -Path (Join-Path $projectRoot 'scripts/tactical/*.gd') -Destination (Join-Path $stagingRoot 'scripts/tactical')
-# Shared inventory contracts and only the two weapon definitions used here.
-$sharedFiles = @('scripts/contracts/inventory_port.gd','scripts/contracts/item_instance.gd','scripts/items/actor_inventory.gd','scripts/items/item_definition.gd','scripts/items/item_catalog.gd','scripts/combat/weapon_profile.gd','scripts/combat/attack_spec.gd','data/items/hunting_knife.tres','data/items/great_cleaver.tres','data/weapons/knife.tres','data/weapons/cleaver.tres','data/attack_knife_light.tres','data/attack_knife_heavy.tres','data/attack_cleaver_light.tres','data/attack_cleaver_heavy.tres')
-foreach ($relative in $sharedFiles) {
-    $destination = Join-Path $stagingRoot $relative
-    New-Item -ItemType Directory -Force (Split-Path -Parent $destination) | Out-Null
-    Copy-Item -LiteralPath (Join-Path $projectRoot $relative) -Destination $destination
+if (-not $GodotPath) { $GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe' }
+$stage = Join-Path ([IO.Path]::GetTempPath()) ('OutpostRPG-export-' + [guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Path $stage -Force | Out-Null
+    foreach ($directory in @('scripts','data','scenes')) {
+        Copy-Item -LiteralPath (Join-Path $projectRoot $directory) -Destination $stage -Recurse
+    }
+    $config = Get-Content -LiteralPath (Join-Path $projectRoot 'project.godot') -Raw
+    # Editor tooling is not a game dependency; omit the plugin autoload/config from the export staging project.
+    $config = [regex]::Replace($config, '(?ms)^\[autoload\].*?(?=^\[)', '')
+    $config = [regex]::Replace($config, '(?ms)^\[editor_plugins\].*?(?=^\[)', '')
+    # Preserve the existing exported game's save identity, shared by battlefield and sandbox.
+    $config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"')
+    if ($Sandbox) { $config = $config.Replace('res://scenes/battlefield.tscn','res://scenes/tactical_height.tscn') }
+    Set-Content -LiteralPath (Join-Path $stage 'project.godot') -Value $config -Encoding utf8
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'export_presets.cfg') -Destination $stage
+    $binaryName = if ($Sandbox) { 'OutpostRPG_HeightLab' } else { 'OutpostRPG_Battlefield' }
+    New-Item -ItemType Directory -Path (Join-Path $projectRoot 'work'), (Join-Path $projectRoot 'builds/windows') -Force | Out-Null
+    foreach ($phase in @('import','export')) {
+        $phaseArgs = if ($phase -eq 'import') { @('--headless','--path',$stage,'--editor','--import') } else { @('--headless','--path',$stage,'--export-release','Windows Desktop',(Join-Path $projectRoot "builds/windows/$binaryName.exe")) }
+        $log = Join-Path $projectRoot "work/$binaryName-$phase.log"
+        & $GodotPath @phaseArgs *> $log
+        if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath $log -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw "Export $phase failed; see $log" }
+    }
+    Write-Output "Exported: builds/windows/$binaryName.exe (keep its matching .pck)"
+} finally {
+    # Only remove this invocation's GUID staging directory, never the project or all temp files.
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $resolvedStage = [IO.Path]::GetFullPath($stage)
+    if ($resolvedStage.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -and
+        (Split-Path -Leaf $resolvedStage) -match '^OutpostRPG-export-[0-9a-f]{32}$' -and
+        (Test-Path -LiteralPath $resolvedStage)) {
+        Remove-Item -LiteralPath $resolvedStage -Recurse -Force
+    }
 }
-$scenePath = if ($Battlefield) { 'scenes/battlefield.tscn' } else { 'scenes/tactical_height.tscn' }
-$binaryName = if ($Battlefield) { 'OutpostRPG_Battlefield' } else { 'OutpostRPG_HeightLab' }
-Copy-Item -LiteralPath (Join-Path $projectRoot $scenePath) -Destination (Join-Path $stagingRoot 'scenes')
-$config = Get-Content -LiteralPath (Join-Path $projectRoot 'project.godot') -Raw
-$config = $config.Replace('config/name="Outpost RPG"', 'config/name="Outpost RPG Height Lab"').Replace('res://scenes/level_village.tscn', ('res://' + $scenePath))
-# Keep the same project identity so both entries share existing equipment progress.
-Set-Content -LiteralPath (Join-Path $stagingRoot 'project.godot') -Value $config -Encoding utf8
-Copy-Item -LiteralPath (Join-Path $projectRoot 'export_presets.cfg') -Destination $stagingRoot
-$buildPath = Join-Path $projectRoot ('builds/windows/' + $binaryName + '.exe')
-& $GodotPath --headless --path $stagingRoot --editor --import *> (Join-Path $projectRoot 'work/height-export-import.log')
-if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath (Join-Path $projectRoot 'work/height-export-import.log') -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw 'Height export import failed; inspect height-export-import.log' }
-& $GodotPath --headless --path $stagingRoot --export-release 'Windows Desktop' $buildPath *> (Join-Path $projectRoot 'work/height-export.log')
-if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath (Join-Path $projectRoot 'work/height-export.log') -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:' -Quiet)) { throw 'Height export failed; inspect height-export.log' }
-Write-Output "Exported: $buildPath"

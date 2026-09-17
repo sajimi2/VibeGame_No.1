@@ -12,3 +12,6 @@ work/
 Thumbs.db
 .DS_Store
 .codex/
+
+# Personal editor settings
+.vscode/

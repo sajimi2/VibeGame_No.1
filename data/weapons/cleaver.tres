@@ -1,11 +1,9 @@
-[gd_resource type="Resource" script_class="WeaponProfile" load_steps=4 format=3]
-
-[ext_resource type="Script" path="res://scripts/combat/weapon_profile.gd" id="1_profile"]
-[ext_resource type="Resource" path="res://data/attack_cleaver_light.tres" id="2_light"]
-[ext_resource type="Resource" path="res://data/attack_cleaver_heavy.tres" id="3_heavy"]
-
+[gd_resource type="Resource" script_class="TacticalWeaponData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
 [resource]
-script = ExtResource("1_profile")
-light_attack = ExtResource("2_light")
-heavy_attack = ExtResource("3_heavy")
-description = "横斩与重劈，蓄势收招 60% 移速，挥砍前移"
+script = ExtResource("1")
+damage = 26
+reach = 2.45
+duration = 0.48
+interval = 0.62
+visual_scale = Vector3(1.4, 1, 1.3)

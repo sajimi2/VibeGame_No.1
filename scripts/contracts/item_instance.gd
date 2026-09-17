@@ -5,6 +5,6 @@ extends Resource
 @export var instance_id: String = ""
 @export var definition_id: StringName = &""
 @export var rarity: int = 0
-## Allowed v0.1 keys: attack, armor, max_health, max_stamina, move_speed.
+## Snapshot-compatible modifier keys: attack, armor, max_health, max_stamina, move_speed.
 ## Values are additive floats. Valid ranges belong to the item catalog.
 @export var modifiers: Dictionary = {}

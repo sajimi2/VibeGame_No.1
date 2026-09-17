@@ -1,6 +1,6 @@
 # 立体战术原型计划
 
-现阶段：保留 scenes/tactical_height.tscn / play_height.bat 试验场；新增 scenes/battlefield.tscn / play_battlefield.bat 荒堡战场。原四关保留。最新实现和验证以 AI_SYNC.md 为准。
+现阶段：保留 scenes/tactical_height.tscn / play_height.bat 试验场；新增 scenes/battlefield.tscn / play_battlefield.bat 荒堡战场。旧 2D 四关保留在 Git 备份标签中，当前工作区仅维护 3D。最新实现和验证以 AI_SYNC.md 为准。
 
 用户最新优先级：地图服务于战斗，玩家与敌人的攻击动作、流畅度优先于地图探索。
 
@@ -20,6 +20,9 @@
 
 ## 本阶段新增
 玩家/敌人共用连续动作曲线，刀光、独立盾牌、拉弓放箭、收招输入缓冲；48×56 荒堡战场，断墙与巨石资产可在编辑器中摆放，寻路范围按地图设定。仍是守卫/弓手两种敌人，共 5 名。
+
+## 当前维护阶段
+整理职责、删除早期 Demo 遗留，保持现有战斗/任务/装备行为。源码布局见 ARCHITECTURE.md。
 
 ## 接下来
 先试玩战斗动作与节奏：攻击是否跟手、前摇是否清楚、挥出和命中是否对应、收招是否自然。根据实际交战调整断墙、巨石、坡道与敌人站位，减少无意义走路。

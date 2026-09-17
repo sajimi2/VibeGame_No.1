@@ -43,17 +43,9 @@ func definition(id: StringName) -> ItemDefinition:
 func ids() -> Array:
 	return _definitions.keys()
 
-## The default definition table, in a stable order for tests and for seeded drops. The first three
-## weapons are loot; the last two are the player's own starting knife and the village's great
-## cleaver (v0.2 阶段 2).
+## Only the two currently obtainable weapons belong to the active game catalog.
 static func default_ids() -> Array[StringName]:
-	return [
-		&"rusty_pick", &"bandit_cleaver", &"woodcutter_axe",
-		&"hunting_knife", &"great_cleaver",
-		&"leather_cap", &"iron_helm",
-		&"ragged_tunic", &"leather_vest", &"chainmail",
-		&"traveler_charm", &"hunter_talisman", &"worn_ring", &"veteran_medal",
-	]
+	return [&"hunting_knife", &"great_cleaver"]
 
 ## Every definition resolved, for building a catalog in one call.
 static func build() -> ItemCatalog:

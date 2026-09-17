@@ -1,9 +1,0 @@
-[gd_scene load_steps=3 format=3]
-
-[ext_resource type="Script" path="res://tests/stretch_probe.gd" id="1_probe"]
-[ext_resource type="PackedScene" path="res://scenes/arena.tscn" id="2_arena"]
-
-[node name="StretchProbe" type="Node"]
-script = ExtResource("1_probe")
-
-[node name="Arena" parent="." instance=ExtResource("2_arena")]

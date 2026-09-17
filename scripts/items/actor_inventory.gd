@@ -2,16 +2,13 @@ class_name ActorInventory
 extends InventoryPort
 ## Concrete InventoryPort: a fixed-size bag of 20 slots plus four equipment slots.
 ##
-## Invariants this class is responsible for (TASKS.md T04 acceptance):
+## Invariants this class is responsible for (shared inventory contract):
 ##   - a failed operation changes NOTHING (no partial mutation on any rejection path);
 ##   - an instance id is unique across bag and equipment;
 ##   - equipping swaps atomically, including when the bag is completely full;
 ##   - the inventory owns its ItemInstances, so a caller cannot mutate stored state afterwards;
 ##   - get_snapshot() returns deep copies, never live instances.
 ##
-## The shield is deliberately not an item (DESIGN: it is a fixed starting tool and does not drop
-## in v0.1), so it is not one of the equipment slots handled here.
-
 const BAG_CAPACITY := 20
 const SLOT_WEAPON := &"weapon"
 const SLOT_HEAD := &"head"
@@ -190,14 +187,13 @@ func is_bag_full() -> bool:
 func get_equipped(slot: StringName) -> ItemInstance:
 	return _equipment.get(slot)
 
-## Behaviour of the weapon currently in the weapon slot, or null when nothing is equipped (the
-## wielder then keeps its fallback moves: an unarmed player throws punches).
-func equipped_weapon_profile() -> WeaponProfile:
+## Equipped weapon parameters. Null lets the combat controller select its fallback profile.
+func equipped_weapon_profile() -> TacticalWeaponData:
 	return weapon_profile_of(get_equipped(SLOT_WEAPON))
 
 ## Behaviour a specific instance would provide if equipped. Null for non-weapons, empty slots and
 ## weapons that have no profile yet.
-func weapon_profile_of(item: ItemInstance) -> WeaponProfile:
+func weapon_profile_of(item: ItemInstance) -> TacticalWeaponData:
 	if item == null:
 		return null
 	var definition := _definition_for(item)

@@ -1,33 +1,33 @@
 param(
-    [string]$GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe'
+    [string]$GodotPath = $env:GODOT_BIN,
+    [ValidateSet('smoke','core','all')][string]$Suite = 'core',
+    [switch]$Rendered
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) { throw "Godot executable missing: $GodotPath" }
-$logRoot = Join-Path $projectRoot 'work'
+if (-not $GodotPath) { $GodotPath = 'D:\vibe coding\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe' }
+if (-not (Test-Path -LiteralPath $GodotPath -PathType Leaf)) { throw 'Set -GodotPath or GODOT_BIN to Godot 4.7.2.' }
+$logRoot = Join-Path $projectRoot 'work/checks'
 New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
-$stages = @(
-    @{ Name = 'import'; Args = @('--headless', '--path', $projectRoot, '--editor', '--import', '--log-file', (Join-Path $logRoot 'import.log')) },
-    @{ Name = 'startup'; Args = @('--headless', '--path', $projectRoot, '--quit-after', '3', '--log-file', (Join-Path $logRoot 'startup.log')) }
-)
-foreach ($stage in $stages) {
-    $stageArgs = $stage.Args
-    $output = & $GodotPath @stageArgs 2>&1
-    $code = $LASTEXITCODE
-    $output | Set-Content -LiteralPath (Join-Path $logRoot ($stage.Name + '-console.log')) -Encoding utf8
-    $errors = $output | Select-String -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:'
-    if ($code -ne 0 -or $errors) { $output | Write-Output; throw "Stage $($stage.Name) failed (exit $code)." }
-    Write-Output "$($stage.Name): PASS (exit $code)"
+function Invoke-GodotCheck([string]$Name, [string[]]$GodotArgs) {
+    $stdout = Join-Path $logRoot ($Name + '.log')
+    $stderr = Join-Path $logRoot ($Name + '.err.log')
+    $arguments = @('--path', ('"' + $projectRoot + '"')) + $GodotArgs
+    $process = Start-Process -FilePath $GodotPath -ArgumentList $arguments -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    if (-not $process.WaitForExit(300000)) { $process.Kill(); throw "Timed out: $Name (only this test process was stopped)." }
+    $process.WaitForExit()
+    $output = @(Get-Content -LiteralPath $stdout) + @(Get-Content -LiteralPath $stderr)
+    # A few pre-existing SceneTree fixtures report resource cleanup at exit; do not hide script/runtime errors.
+    $errors = $output | Where-Object { $_ -match 'SCRIPT ERROR:|Parse Error:|^ERROR:|^FAIL ' -and $_ -notmatch 'Resources still in use at exit' }
+    if ($process.ExitCode -ne 0 -or $errors) { $output | Write-Output; throw "Failed: $Name (exit $($process.ExitCode))" }
+    $summary = $output | Where-Object { $_ -match '\d+ (checks|traces), \d+ failures' }
+    Write-Output ("PASS $Name " + ($summary -join ' '))
 }
-$contractRoot = Join-Path $PSScriptRoot 'contracts'
-foreach ($contractFile in (Get-ChildItem -LiteralPath $contractRoot -Filter '*.gd')) {
-    $output = & $GodotPath --headless --path $projectRoot --script $contractFile.FullName --check-only 2>&1
-    $code = $LASTEXITCODE
-    $output | Set-Content -LiteralPath (Join-Path $logRoot ($contractFile.BaseName + '-parse.log')) -Encoding utf8
-    if ($code -ne 0 -or ($output | Select-String -Pattern 'SCRIPT ERROR:|Parse Error:|ERROR:')) {
-        $output | Write-Output
-        throw "Contract $($contractFile.Name) failed (exit $code)."
-    }
-    Write-Output "$($contractFile.Name): PASS (exit $code)"
-}
-Write-Output 'Only import/parse/headless startup checked. Gameplay and rendered visuals require separate validation.'
+Invoke-GodotCheck 'import' @('--headless','--editor','--import')
+$displayArgs = if ($Rendered) { @() } else { @('--headless') }
+Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_smoke.gd'))
+if ($Suite -eq 'smoke') { return }
+$tests = @('attack_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
+if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback') }
+foreach ($test in $tests) { Invoke-GodotCheck $test ($displayArgs + @('--script',"res://tests/tactical/${test}_test.gd")) }
+Write-Output 'Player saves were isolated by tactical/testing. Rendered visual review and subjective play feel are separate.'

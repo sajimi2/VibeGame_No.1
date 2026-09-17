@@ -1,38 +1,48 @@
-> 范围说明（2026-09-17）：以下正文是原 2D 四关的历史架构设计，不是当前 scripts/tactical 的完整实现说明。当前接手请先读 `../HANDOFF.md` 与 `../AGENTS.md`；旧 T01/端口冻结/审批条款不约束新的协作流程。
+# 当前 3D 架构
 
-# 架构与接口
+本文件描述现有代码，不规划新的框架。旧 2D 架构及任务派发文档在备份标签中。
 
-## 文件职责
-- scripts/contracts：带类型的抽象端口和数据对象，已建立。方法不含业务实现。
-- scripts/actors：CharacterBody2D 角色、输入适配器、行动状态机及 CombatantPort 实现。
-- scripts/combat：攻击定义、命中区域、投射物、伤害结算辅助。
-- scripts/items：物品定义、InventoryPort 实现和独立实例生成。
-- scripts/progression：ProgressionPort 实现及加点策略。
-- scripts/world：遭遇、交互、关卡流转、任务和掉落/经验分发。
-- scripts/ui：只发出请求和显示状态，不计算伤害、不发奖。
-- scripts/persistence：T07 存档版本、验证与恢复。
-- scenes：可复用场景；data：配置 Resources；tests：无界面的业务测试；reports：任务证据。
+## 装配与地图
+`scenes/battlefield.tscn` 保存地面、19 个主要掩体及可编辑尺寸；根脚本 `world/battlefield.gd` 继承 `world/level.gd`。`world/height_sandbox.gd` 是同一基类的另一地图实现。
 
-以上是目录约定，不要求预先创建空目录或提前实现未来模块。
+`level._ready()` 按原先次序：地形构建器 → 环境/光照 → 地图 → 效果 → 玩家 → 相机 → HUD → 战斗。`start_encounter()` 等待物理/普通帧后建立导航、敌人、任务、成长、结算。程序生成节点仍挂在原关卡根下，几何坐标和碰撞保持一致。
 
-## 通信
-PlayerInput / EnemyAI → ActorCommandPort → 角色移动与出招。
-Hitbox / Projectile → 目标 CombatantPort.receive_hit(DamageEvent) → HitResult。
-CombatantPort 信号 → UI；died → Encounter 奖励发放器 → Inventory/Progression。
-装备成功后由装配层重算角色属性（基础值 + 当前装备修饰），不在旧结果上反复累加。降低上限时钳制当前值，卸装备不得产生免费治疗。
-使用导出 NodePath/节点引用或父场景装配；禁止每帧全树扫描、跨场景硬编码路径、万能全局事件总线。第一版不需要 Autoload 单例。
+- `terrain_builder.gd`：输入关卡根与几何参数，输出 Mesh/Collision 节点，拥有材质缓存，不读取玩家/UI/任务。
+- 地图通过 `spawn_point / objective_point / navigation_bounds / enemy_layout / _build_environment` 提供差异。
+- `level.gd` 中的 `box/ramp/material/natural_ledge` 是薄的地图构造接口，具体实现统一委托给 terrain builder。
+- `battle_prop.gd` 保留 `@tool` 编辑能力；`StoneVisual/StoneCollision` 可在编辑器阶段生成。
+- Autoload 仅为 Godot AI 的运行工具辅助；游戏没有新增全局管理器。
 
-## 角色节点建议
-CharacterBody2D 根节点持有 CollisionShape2D、视觉节点，以及 ActorCommandPort 和 CombatantPort 两个具体子组件。输入/AI 作为可替换子节点。端口引用由角色场景连接；组件不假定父级名字。
-状态机单点管理互斥状态。移动与动作发生在 _physics_process；输入适配器对按键边缘仅发出一次 request_action。UI 占用输入时清空意图。
-攻击者每次被接受的攻击递增 attack_id，命中去重键为 (source_id, attack_id)。目标只需保留有限时长/数量去重记录；同一 ID 不得在残留判定有效时被重用。有效期结束禁用判定。
-source_id 为实例 ID，team_id 区分阵营。攻击范围是世界逻辑像素，不能随窗口缩放改变。
+## 攻击调用链
+`player_combat._unhandled_input → player.update_aim → attack → _physics_process → motion.melee → strike → space_trace.trace → enemy.receive_strike`。
 
-## 接口边界
-所有 *.gd 契约均有可解析的声明，抽象方法须由具体类实现。无默认假成功返回值。
-协议注释和本文件共同规定语义；若冲突先报告给 Codex。Godot Resource 为引用类型，实例装备须复制 modifiers，不能修改共享定义。
-Inventory 快照仅含可序列化值。装备变更只在成功后发信号，失败不改变状态。重载 UI 不得改变逻辑。
-Progression 的加点请求、SaveService 的具体保存签名暂未冻结，分别在 T05/T07 开始时由 Codex 补定，Harness 不得自行扩展公共协议。
+点击锁定方向；计时到有效窗口后按角度采样射线；`struck` 按实例 ID 去重。伤害由敌人按盾挡/身体/顶部决定。武器图形不是碰撞伤害源。弓箭先拉弓 0.14 秒，`arrow.gd` 连续检测飞行线段。
 
-## 避免过度设计
-先有可运行战斗场，再增加内容。禁止在 T01 搭 ECS、网络同步、通用技能编辑器、脚本化任务语言或插件系统。私有小型辅助类可自主添加。
+玩家移动独立在 `player._physics_process`；敌人每帧依次执行 `update_senses → choose_movement → move_and_slide → update_visuals`。这些是同一物理线程内的方法调用，不是多个并行任务。最后目击记忆只在真实看见玩家时更新；受到隐藏攻击时仅估计来袭方向。
+
+## 装备、显示与存档
+`camp_progress.setup(player, combat)` 只接收需要的系统；不再持有整个关卡。
+
+```text
+背包按钮 --equip_requested(id)--> camp_progress.equip
+ActorInventory.try_equip --inventory_changed--> camp_progress.changed
+                                              ├─ combat.apply_weapon(Resource)
+                                              ├─ player.max_hp
+                                              ├─ tactical_save.write_snapshot
+                                              └─ inventory_panel.refresh(显示数据)
+```
+
+- `ItemInstance` / `ItemDefinition` 是 Resource 数据；库存拥有深拷贝，快照无活对象引用。
+- `data/weapons/knife.tres`：16 伤害、1.45m、0.24s 动作、0.29s 间隔。
+- `data/weapons/cleaver.tres`：26 伤害、2.45m、0.48s 动作、0.62s 间隔。
+- 参数和背包说明从同一 Resource 读取；`apply_weapon` 由战斗模块设置自己的参数和模型比例。
+- `inventory_panel` 只接收显示数据并发出换装意图，负责背包输入和暂停；不写存档或战斗内部字段。
+- `tactical_save` 只负责 v1 JSON I/O；路径、字段和装备实例 ID 没有迁移。
+- `run_screen.setup(player, objective, progression, hint_provider)` 接收明确依赖，负责结果/重试。任务状态每局重置，成长快照跨重试保存。
+
+## 已知边界
+- 导航每个 X/Z 网格仅一个行走表面，不支持桥上桥下并行路径。
+- 敌人仍在一个脚本内维护状态和表现字段；此次先拆更新阶段，避免改动 AI 行为。
+- 角色字段仍存在直接读写，碰撞层仍有数字掩码；新增交互前要核对所有调用者。
+- 存档 I/O 已隔离，但异常 JSON 保护/原子写入仍是后续小修，不宣称此次已解决。
+- 近战视觉与射线命中需一起验证；本轮不改变时序、命中规则或武器手感。

@@ -1,17 +1,17 @@
 # OutpostRPG 协作规则
 
-这是个人 Godot 小体量游戏，用户决定方向并试玩。引擎为 Godot 4.7.2、GDScript、Compatibility。当前主线是固定斜角正交的三维战术原型，最新可编辑入口为 `scenes/battlefield.tscn`；保留 `scenes/tactical_height.tscn` 试验场及原 2D 四关，勿将三者混淆。
+这是个人 Godot 小体量游戏，用户决定方向并试玩。引擎为 Godot 4.7.2、GDScript、Compatibility。当前主线是固定斜角正交的三维战术原型，最新可编辑入口为 `scenes/battlefield.tscn`；保留 `scenes/tactical_height.tscn` 3D 试验场；旧 2D 四关和早期报告已按用户要求移出活跃工程，完整历史在备份标签中。F5 默认进入荒堡战场。
 
 ## 开始工作
 - 先读 `HANDOFF.md`（接手入口）、`AI_SYNC.md`（阶段状态），检查实际文件及 Git 差异；只按当前请求推进。
-- 当前方向看 `docs/TACTICAL_HEIGHT_PLAN.md`。`docs/DEVELOPMENT_PLAN_V02.md`、旧 `docs/ARCHITECTURE.md` 正文及 T01～T07 派发/审批约定属于旧 2D 阶段；不能用其旧任务顺序覆盖当前需求。
+- 当前方向看 `docs/TACTICAL_HEIGHT_PLAN.md`。架构看 `docs/ARCHITECTURE.md`；旧 T01～T07 文件在 Git 历史中，不恢复旧派发流程。
 - 保留所有已有未提交修改和已确认回退节点。未经本轮要求不重置、清理工作区或自动提交/推送。
 
 ## 用户理解与控制权
 - 用户有 C 和嵌入式基础，正在学习 Godot 的 Scene / Node / Signal / Resource / Autoload 与 GDScript；用当前项目的小例子解释，不把不熟悉 Godot 等同于不懂编程。
 - 优先最小可验证修改，不为规范而大规模重构。AI 可以承担重复实现、UI、工具、配置及 Debug；用户应理解 Player、战斗、状态机、核心数据、存档和全局管理的主流程。
 - 新增核心模块前先说明职责、输入输出、与现有模块的依赖，再实现。较大修改说明改了什么、为什么、数据流、谁调用谁、影响范围及验证结果。
-- 用户无法理解的核心逻辑先梳理，再决定是否加功能。当前交接的第一步是只读理解与讲解，非自动推进新玩法。
+- 用户无法理解的核心逻辑先梳理，再决定是否加功能。讲解应结合当前代码；按用户当轮授权决定只读或实现范围。
 - 常规小修在用户授权范围内自主完成，无需逐行请示；不因工具可用而推断获得批量节点改写、大范围重构或无人监督开发授权。
 - 避免继续扩大场景总控职责、跨层直接控制 UI、隐式硬引用和重复系统。发现现有耦合如实说明，按实际修改需要逐步处理，不先搭重型框架。
 
