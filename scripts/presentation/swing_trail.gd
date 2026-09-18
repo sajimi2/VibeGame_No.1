@@ -6,6 +6,8 @@ var surface := ImmediateMesh.new()
 ## 刀光使用世界坐标，不跟随父节点的后续变换。
 func _ready() -> void:
 	top_level=true
+	# top_level 只断开后续继承，仍保留入树时的变换；世界坐标顶点必须配单位变换。
+	global_transform=Transform3D.IDENTITY
 	mesh=surface
 	cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mat := StandardMaterial3D.new()

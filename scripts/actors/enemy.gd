@@ -242,6 +242,7 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_da
 	health_bar.set_health(hp,max_hp)
 	hurt = 0.15
 	knockback = Vector3(incoming.x,0,incoming.z).normalized()*2
+	if hp>0: notice_strike(toward_attacker)
 	if hp==0:
 		state="dead"
 		collision_layer=0
@@ -256,11 +257,23 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_da
 		hurt_recovery=true
 		reaction_angle=motion_angle
 		attack_time=0.35
-		# 隐藏来袭只推测攻击方向附近的位置，不能获取玩家藏身点。
-		if not target_visible: last_seen = global_position-Vector3(incoming.x,0,incoming.z).normalized()*2.5
-		search_time=5
 	effects.impact(global_position+Vector3.UP,damage,hp==0)
 	return "格挡" if blocking else "顶部" if top else "身体"
+
+## 受击感知独立于格挡和硬直；仅在当前确实可见时记录玩家位置，否则沿来袭方向短距离调查。
+func notice_strike(toward_attacker: Vector3) -> void:
+	var was_passive := state in ["guard","return"]
+	target_visible=can_see_target()
+	if target_visible:
+		last_seen=player.global_position
+		lost_time=0
+	else:
+		last_seen=global_position+toward_attacker*2.5
+	search_time=5
+	repath=0
+	if was_passive:
+		state="chase" if target_visible else "investigate"
+		effects.sound("alert",global_position)
 
 ## 检测相机到敌人的遮挡，只为存活且被挡住的敌人显示轮廓。
 func update_occlusion() -> void:

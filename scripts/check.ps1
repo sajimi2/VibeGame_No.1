@@ -28,7 +28,7 @@ Invoke-GodotCheck 'import' @('--headless','--editor','--import')
 [string[]]$displayArgs = if ($Rendered) { @() } else { @('--headless') }
 Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_smoke.gd'))
 if ($Suite -eq 'smoke') { return }
-$tests = @('attack_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
+$tests = @('guard_reaction','attack_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
 if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback') }
 foreach ($test in $tests) { Invoke-GodotCheck $test ($displayArgs + @('--script',"res://tests/tactical/${test}_test.gd")) }
 Write-Output 'Player saves were isolated by tactical/testing. Rendered visual review and subjective play feel are separate.'
