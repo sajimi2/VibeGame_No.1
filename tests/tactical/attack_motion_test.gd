@@ -59,8 +59,9 @@ func run() -> void:
 	check(guard.hp==before-combat.melee_damage,"progressive swing still deals damage only once")
 	# 冷却结束前的点击只应缓存并执行一次。
 	guard.hp=60
+	while combat.cooldown>0: await frames(1)
 	combat.attack(guard.position+Vector3.UP)
-	await frames(18)
+	while combat.cooldown>0.1: await frames(1)
 	mouse(MOUSE_BUTTON_LEFT,guard.position+Vector3.UP)
 	check(combat.queued_action==1,"late click is buffered during recovery")
 	await frames(8)
@@ -113,7 +114,7 @@ func run() -> void:
 	check(poses.size()>=10,"guard windup and recovery keep progressive body poses")
 	print("Guard step ",start," -> ",guard.position," state ",guard.state)
 	check(guard.position.distance_to(start)>0.05 and absf(guard.position.y)<0.1,"guard strike includes a short physical committed step")
-	check(absf(angle_difference(guard.shield_node.rotation.y,guard.sword.rotation.y))>0.05,"shield does not rotate with blade through the swing")
+	check(not guard.shield_node.global_basis.is_equal_approx(guard.sword.get_child(0).global_basis),"shield does not rotate with blade through the swing")
 	guard.ai_enabled=false
 	print("ATTACK_MOTION: %d checks, %d failures" % [checks,failures])
 	quit(1 if failures else 0)

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TacticalWeaponData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+weight_class = 2
+model_id = "sword"
+idle_action = "sword_ready"
+attack_sequence = PackedStringArray("sword_slash", "sword_thrust")
+damage = 20
+reach = 1.85
+duration = 0.56
+interval = 0.64
+visual_scale = Vector3(1, 1, 1)

@@ -14,6 +14,8 @@ var hit_mask := 8 | 16
 var hostile := false
 var pierced: Array[RID] = []
 var attachment: RefCounted
+var attached_time := 0.0
+const FADE_DURATION := 0.8
 
 ## 飞行箭与搭弓箭复用像素侧影；晚于角色物理更新附着，避免移动时落后一帧。
 func _ready() -> void:
@@ -29,12 +31,18 @@ func orient_flight() -> void:
 	global_basis = Basis.looking_at(forward,Vector3.RIGHT if absf(forward.dot(Vector3.UP)) > 0.99 else Vector3.UP)
 
 ## 把本帧运动拆成小时间步，以连续线段检查飞行轨迹并施加重力。
-## 角色身上的箭跟随到死亡/卸载；飞行或扎在场景中的箭保留原有五秒清理规则。
+## 玩家附着箭按命中后时间淡出，期间仍跟随；其余附着/飞行箭沿用原有清理规则。
 func _physics_process(delta: float) -> void:
 	lifetime += delta
 	if attachment != null:
 		if not attachment.follow(self): queue_free(); return
-		if attachment.persistent: return
+		if attachment.persistent:
+			attached_time += delta
+			if attachment.fade_after>=0 and attached_time>attachment.fade_after:
+				var progress: float = (attached_time-attachment.fade_after)/FADE_DURATION
+				if progress>=1: queue_free(); return
+				Art.set_opacity(shaft,1.0-smoothstep(0,1,progress))
+			return
 	if lifetime > 5: queue_free(); return
 	if stopped: return
 	var remaining := delta

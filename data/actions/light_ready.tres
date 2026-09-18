@@ -1,0 +1,22 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/action_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "light_ready"
+windup_end = 0.3
+active_end = 0.62
+lunge_speed = 0
+control_scale = 1
+sweep_from = -0.5
+sweep_to = 0.5
+times = PackedFloat32Array(0, 1)
+hands = PackedVector3Array(5, -4, 5, 5, -4, 5)
+supports = PackedVector3Array(-5, -2, 5, -5, -2, 5)
+chests = PackedVector3Array(0, 0, 1, 0, 0, 1)
+hips = PackedVector3Array(0, 0, 0, 0, 0, 0)
+blades = PackedVector3Array(-95, -10, 5, -95, -10, 5)
+stances = PackedFloat32Array(1.5, 1.5)
+twists = PackedFloat32Array(-8, -8)
+

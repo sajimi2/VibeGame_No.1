@@ -5,6 +5,7 @@ const FOOT_Y := 45.0
 const CROUCH_FRAMES := 6
 ## 关节先在身体局部空间计算；+Z 始终是胸口/脚尖前方，之后才按瞄准朝向投影。
 const BODY_FRONT := Vector3(0, 0, 1)
+const Actions = preload("res://scripts/combat/action_library.gd")
 
 ## 将角色局部关节投到固定斜视角纸片；每 30 度一个方向，脚底基准始终不变。
 static func project(point: Vector3, angle: float) -> Vector2:
@@ -13,7 +14,9 @@ static func project(point: Vector3, angle: float) -> Vector2:
 
 ## 生成站立、步行、疾跑、跳跃和上肢动作；移动方向独立于持械朝向。
 ## jump_frame：-1 无跳跃，0 蹬地、1 收腿上升、2 顶点、3 下落伸腿、4 落地缓冲。
-static func build(direction: int, step: int, crouch: bool, move_direction: int = -1, pose: int = 0, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1, crouch_frame: int = -1, running: bool = false, jump_frame: int = -1) -> Dictionary:
+static func build(direction: int, step: int, crouch: bool, move_direction: int = -1, pose: int = 0, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1, crouch_frame: int = -1, running: bool = false, jump_frame: int = -1, action_id: String = "", action_frame: int = 0) -> Dictionary:
+	var action := Actions.get_action(action_id)
+	var motion: Dictionary = action.sample(action_frame/32.0) if action != null else {}
 	var angle := posmod(direction, 12) * PI / 6
 	var amount := float(CROUCH_FRAMES if crouch else 0) / CROUCH_FRAMES if crouch_frame < 0 else clampf(float(crouch_frame) / CROUCH_FRAMES, 0, 1)
 	var phase := maxf(step, 0) / 8.0 * TAU
@@ -29,6 +32,9 @@ static func build(direction: int, step: int, crouch: bool, move_direction: int =
 	pelvis.y -= compression
 	chest.y -= compression
 	if run: chest += travel_axis * 2.8
+	if not motion.is_empty():
+		pelvis += motion.hip
+		chest += motion.chest
 	var neck := chest + Vector3(0, 2.7, 0.3)
 	var head := neck + Vector3(0, 3.4, 0.3)
 	var joints := {"pelvis": pelvis, "chest": chest, "neck": neck, "head": head}
@@ -43,6 +49,9 @@ static func build(direction: int, step: int, crouch: bool, move_direction: int =
 		var hip := pelvis + Vector3(side * 2.3, 0, 0)
 		var foot := Vector3(side * lerpf(2.5, 3.6, amount), 1.5 + lift, 0.5) + travel
 		if run: foot.y += absf(cos(cycle)) * 2.5
+		# 武器动作的支撑步叠在真实步态上；腾空时仍由原跳跃姿态控制双腿。
+		if not motion.is_empty() and jump_frame < 0:
+			foot += Vector3(side*0.3,0,side*motion.stance*(1.0-amount*0.5))
 		var knee := hip.lerp(foot, 0.52) + Vector3(0, -0.8 * amount, 6.5 * amount + 0.8)
 		# 移动方向只决定迈步落点，膝盖必须朝身体前方折，后退/横移时也不能翻转。
 		if run: knee += BODY_FRONT * maxf(0, sin(cycle)) * 3.5
@@ -68,8 +77,11 @@ static func build(direction: int, step: int, crouch: bool, move_direction: int =
 		var draw := 1.0 if draw_phase < 0 else draw_phase / 8.0
 		support = chest + Vector3(-1.3, -4.0, 8.0)
 		grip = support.lerp(chest + Vector3(2, -2.0, 1.0), draw)
+	if not motion.is_empty():
+		grip = chest + motion.hand
+		support = chest + motion.support
 	for side in [-1, 1]:
-		var shoulder := chest + Vector3(side * 4.8, -0.5, 0)
+		var shoulder := chest + Vector3(side * 4.8, -0.5, 0).rotated(Vector3.UP,motion.get("twist",0.0))
 		var hand := grip if side > 0 else support
 		var elbow := shoulder.lerp(hand, 0.5) + Vector3(side * 1.3, -2.3, -0.7)
 		joints["shoulder%d" % side] = shoulder
@@ -78,11 +90,13 @@ static func build(direction: int, step: int, crouch: bool, move_direction: int =
 	var pixels := {}
 	for key in joints: pixels[key] = project(joints[key], angle)
 	var far_side := -1 if sin(angle) < 0 else 1
+	var held_hand: Vector3 = joints["hand-1" if pose == 4 else "hand1"]
 	return {"joints": joints, "pixels": pixels, "angle": angle, "crouch": amount, "far_side": far_side,
+		"grip_depth":held_hand.rotated(Vector3.UP,angle).z*0.04,
 		"grip": pixels["hand-1" if pose == 4 else "hand1"]}
 
-## 从纸片纹理像素反求世界握点；朝相机微移，防止握柄与纸片产生深度闪烁。
-static func world_grip(sprite: Sprite3D, camera: Camera3D, pixel: Vector2) -> Vector3:
+## 屏幕握点与深度独立：沿相机视线移动不会错开手心，背向时能被纸片正确遮挡。
+static func world_grip(sprite: Sprite3D, camera: Camera3D, pixel: Vector2, depth: float = 0.018) -> Vector3:
 	var offset := Vector2(pixel.x - SIZE.x * 0.5, SIZE.y - pixel.y) * sprite.pixel_size
 	var up := Vector3.UP * preload("res://scripts/presentation/character_billboard.gd").height_scale(camera)
-	return sprite.global_position + camera.global_basis.x * offset.x + up * offset.y + camera.global_basis.z * 0.018
+	return sprite.global_position + camera.global_basis.x * offset.x + up * offset.y + camera.global_basis.z * depth

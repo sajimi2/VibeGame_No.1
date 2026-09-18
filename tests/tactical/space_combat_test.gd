@@ -115,7 +115,7 @@ func run():
  await capture("top_hit")
  lab.player.reset_position()
  # 把近战测试双方放到有效距离内，避免依赖展示地图的出生点。
- lab.player.position = Vector3(-6,0.1,5)
+ lab.player.position = Vector3(-5.3,0.1,5)
  lab.player.test_mode = false
  await frames(10)
  var near_dummy

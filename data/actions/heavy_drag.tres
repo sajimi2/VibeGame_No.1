@@ -1,0 +1,22 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/action_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "heavy_drag"
+ground_drag = true
+windup_end = 0.3
+active_end = 0.62
+lunge_speed = 0
+control_scale = 1
+sweep_from = -0.5
+sweep_to = 0.5
+times = PackedFloat32Array(0, 1)
+hands = PackedVector3Array(5, -13, -1, 5, -13, -1)
+supports = PackedVector3Array(-5, -10, 3, -5, -10, 3)
+chests = PackedVector3Array(0, -0.6, -0.8, 0, -0.6, -0.8)
+hips = PackedVector3Array(0, 0, 0, 0, 0, 0)
+blades = PackedVector3Array(-30, 180, -6, -30, 180, -6)
+stances = PackedFloat32Array(1, 1)
+twists = PackedFloat32Array(-10, -10)

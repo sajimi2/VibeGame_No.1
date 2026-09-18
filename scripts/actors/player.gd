@@ -20,6 +20,8 @@ var crouched := false
 var crouch_blend := 0.0
 var art_step := -1
 var grip_pixel := Vector2.ZERO
+var grip_depth := 0.018
+var equipment_speed_scale := 1.0
 var facing := Vector2(0, 1)
 var direction_index := 0
 var gait := 0.0
@@ -44,6 +46,10 @@ var attack_arm := -1
 var attack_weight := 0
 var bow_draw := -1
 var attack_facing := Vector2(0,1)
+var visual_action := ""
+var visual_action_frame := 0
+var sprint_blockers: Dictionary = {}
+var combat_movement: Callable
 var effects: Node3D
 var foot_distance := 0.0
 var landing_delay := 0.0
@@ -132,8 +138,10 @@ func _physics_process(delta: float) -> void:
 		move = Vector2(world_move.x, world_move.z)
 	# 疾跑只提高站立移动速度；仍允许移动攻击，下蹲和死亡不会带入疾跑速度。
 	var run_held := test_sprint if test_mode else Input.is_physical_key_pressed(KEY_SHIFT)
-	sprinting = run_held and not crouched and hp > 0 and move.length() > 0.1
+	sprinting = run_held and sprint_blockers.is_empty() and not crouched and hp > 0 and move.length() > 0.1
 	var speed := 2.0 if crouched else RUN_SPEED if sprinting else WALK_SPEED
+	var combat_move: Dictionary = combat_movement.call(delta) if combat_movement.is_valid() else {}
+	speed *= equipment_speed_scale*float(combat_move.get("control",1.0))
 	landing_delay=maxf(0,landing_delay-delta)
 	# 落地时直接响应输入；跳跃途中减缓水平速度变化，保留起跳惯性。
 	if is_on_floor() or not jumped:
@@ -143,9 +151,13 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x,move.x*speed,delta*3.0)
 		velocity.z = move_toward(velocity.z,move.y*speed,delta*3.0)
 	velocity.y -= 20 * delta
+	# 动作前冲与输入速度合并后仍走 move_and_slide，墙、巨石和坡道照常阻挡。
+	var impulse: Vector3 = combat_move.get("velocity",Vector3.ZERO) if hp>0 and is_on_floor() else Vector3.ZERO
+	velocity += impulse
 	var previous_position := global_position
 	var was_airborne := not is_on_floor()
 	move_and_slide()
+	velocity -= impulse
 	if jumped: jump_time += delta
 	if was_airborne and is_on_floor() and jumped:
 		jumped=false
@@ -173,7 +185,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		jump_frame = 0 if jumped and jump_time < 0.075 and velocity.y > 0 else 1 if velocity.y > 1.8 else 2 if velocity.y > -1.5 else 3
 	elif landing_delay > 0: jump_frame = 4
-	_refresh_art(posmod(int(gait / TAU * 8), 8) if planar_distance > 0.002 and is_on_floor() else -1)
+	_refresh_art(posmod(int(gait / TAU * 8), 8) if move.length()>0.1 and planar_distance > 0.002 and is_on_floor() else -1)
 	_update_occlusion()
 	if global_position.y < -5: reset_position()
 
@@ -186,11 +198,19 @@ func _refresh_art(step: int) -> void:
 		Billboard.align(item, camera)
 	var running := sprinting and step >= 0
 	var state := FrameSpec.character(direction_index,step,crouched,movement_direction,attack_pose,attack_arm,attack_weight,bow_draw,crouch_frame,running,jump_frame)
+	state = FrameSpec.with_action(state,visual_action,visual_action_frame)
 	var frame := Art.frame(art_id,state)
 	sprite.texture = frame.texture
 	outline.texture = Art.outline_texture(sprite.texture)
 	grip_pixel = frame.grip
+	grip_depth = frame.depth
 	Billboard.sync_shadow(world_shadow, sprite)
+
+## 限制按来源独立登记；换回轻武器只解除装备限制，不能误解除将来技能/状态的限制。
+func set_sprint_block(source: StringName, blocked: bool) -> void:
+	if blocked: sprint_blockers[source] = true
+	else: sprint_blockers.erase(source)
+	if not sprint_blockers.is_empty(): sprinting = false
 
 ## 敌方箭共用身体附着接口；根节点不旋转，因此用实际身体朝向提供独立坐标系。
 func projectile_attachment_frame(_region: String) -> Transform3D:
@@ -202,6 +222,10 @@ func projectile_attachment_point(_region: String, point: Vector3, _incoming: Vec
 
 func projectile_anchor_alive() -> bool:
 	return hp > 0
+
+## 插在玩家身上的箭短暂停留后淡出；敌人未提供该策略时继续保留至死亡。
+func projectile_attachment_duration() -> float:
+	return 4.0
 
 ## 从相机向角色发射射线；被实体或树冠遮挡时显示轮廓。
 func _update_occlusion() -> void:

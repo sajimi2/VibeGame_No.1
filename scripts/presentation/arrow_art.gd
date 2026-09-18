@@ -48,3 +48,9 @@ static func model(asset_id: String = "arrow") -> MeshInstance3D:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	node.material_override = mat
 	return node
+
+## 每支箭拥有独立材质；淡出时改用透明混合，不能让 alpha scissor 在半透明时突然整支裁掉。
+static func set_opacity(node: MeshInstance3D, opacity: float) -> void:
+	var mat := node.material_override as StandardMaterial3D
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color.a = clampf(opacity,0,1)

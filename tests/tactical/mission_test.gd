@@ -71,7 +71,8 @@ func run() -> void:
 	check(not player.request_jump(),"dead jump rejected")
 	await place(Vector3(-4,0.02,3.2))
 	player.test_motion=Vector2(0,-1)
-	await frames(9)
+	# 按助跑距离起跳；轻刀加速后固定帧数会把起跳点推到围栏边缘。
+	while player.position.z>2.64: await frames(1)
 	player.request_jump()
 	await frames(26)
 	check(player.position.z<1.8,"jump crosses low broken fence")

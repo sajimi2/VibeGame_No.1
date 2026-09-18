@@ -25,7 +25,8 @@ func run() -> void:
 	check(get_nodes_in_group("tactical_enemies").size() == 5, "three guards and two archers")
 	check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "fixed orthographic camera")
 	check(not scene.progression.persist, "startup does not access player progress")
-	check(scene.combat.melee_damage == 16 and scene.combat.attack_interval == 0.29, "knife resource applied")
+	var knife := preload("res://data/weapons/knife.tres")
+	check(scene.combat.melee_damage == knife.damage and is_equal_approx(scene.combat.attack_interval,knife.interval), "knife resource applied")
 	check(scene.player.safe_zone, "spawn is inside safe camp")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw

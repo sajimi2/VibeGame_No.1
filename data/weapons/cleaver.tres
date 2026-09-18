@@ -2,8 +2,12 @@
 [ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
 [resource]
 script = ExtResource("1")
+weight_class = 1
+model_id = "cleaver"
+idle_action = "heavy_drag"
+attack_sequence = PackedStringArray("heavy_swing")
 damage = 26
 reach = 2.45
-duration = 0.48
-interval = 0.62
+duration = 0.8
+interval = 0.9
 visual_scale = Vector3(1.4, 1, 1.3)

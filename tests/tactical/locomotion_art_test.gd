@@ -80,6 +80,8 @@ func place() -> void:
 ## 用游戏实际输入与物理位移测速度，再检查跳跃整段的握柄投影和阴影帧。
 func movement() -> void:
 	var player = lab.player
+	# 中型装备是未加速的移动基准；轻型增益由 weapon_choreography 实测。
+	lab.combat.apply_weapon(load("res://data/weapons/sword.tres"))
 	await place()
 	var origin: Vector3 = player.position
 	player.test_motion = Vector2.RIGHT

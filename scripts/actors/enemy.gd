@@ -6,6 +6,7 @@ const Art = preload("res://scripts/presentation/directional_art.gd")
 const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Billboard = preload("res://scripts/presentation/character_billboard.gd")
 const FrameSpec = preload("res://scripts/art/frame_spec.gd")
+const Actions = preload("res://scripts/combat/action_library.gd")
 ## 留空时按守卫/弓手选择；新敌人可指定来源资源中的稳定资产 ID。
 @export var art_id := ""
 var player: CharacterBody3D
@@ -58,6 +59,7 @@ var trail: MeshInstance3D
 var marker: Label3D
 var ai_enabled := true
 var navigation_excluded: Array[RID] = []
+var death_visual := preload("res://scripts/presentation/death_visual.gd").new()
 
 ## 创建身体、武器、血条和投影，并加入敌人分组供战斗与结算查询。
 func _ready() -> void:
@@ -100,7 +102,7 @@ func _ready() -> void:
 	add_child(marker)
 	sword = Node3D.new()
 	add_child(sword)
-	var held: MeshInstance3D = preload("res://scripts/presentation/weapon_art.gd").bow() if ranged else preload("res://scripts/presentation/weapon_art.gd").sword()
+	var held: MeshInstance3D = WeaponArt.bow() if ranged else WeaponArt.melee_model("sword")
 	sword.add_child(held)
 	if not ranged:
 		var shield=preload("res://scripts/presentation/weapon_art.gd")
@@ -132,22 +134,16 @@ func can_see_target() -> bool:
 
 ## 固定帧内先感知、再推进状态，最后移动与更新表现；死亡后只保留倒地外观。
 func _physics_process(delta: float) -> void:
+	if hp <= 0:
+		death_visual.update(self,delta)
+		return
+	if death_visual.started: death_visual.restore(self)
 	if not ai_enabled: return
 	clock+=delta
 	cooldown=maxf(0,cooldown-delta)
 	hurt=maxf(0,hurt-delta)
 	block_flash=maxf(0,block_flash-delta)
 	health_bar.set_health(hp,max_hp)
-	if hp<=0:
-		sword.hide()
-		trail.hide()
-		if is_instance_valid(shield_node): shield_node.hide()
-		world_shadow.hide()
-		outline.hide()
-		marker.text=""
-		sprite.rotation.z=-PI*0.45
-		sprite.modulate=Color(0.6,0.6,0.6,0.6)
-		return
 	var before := global_position
 	update_senses(delta)
 	var move := choose_movement(delta)
@@ -193,7 +189,21 @@ func update_visuals(travel: float) -> void:
 		WeaponArt.set_bow_draw(sword.get_child(0),draw,nocked)
 		draw_phase=roundi(draw*8)
 	motion_angle=motion.angle
-	var frame := Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",FrameSpec.character(direction,step,false,direction,pose,motion.arm,motion.weight,draw_phase),true)
+	var art_state := FrameSpec.character(direction,step,false,direction,pose,motion.arm,motion.weight,draw_phase)
+	var blade_pose := Vector3(0,motion.angle,0)
+	if not ranged and not hurt_recovery:
+		# 保留守卫决策/伤害时序，将原前摇、挥出、收招映射到共用曲线；左手用剑盾变体。
+		var action := Actions.get_action("shield_thrust" if thrust else "shield_slash")
+		var phase := 0.0
+		if state=="windup": phase = (1.0-attack_time/action_duration)*action.windup_end
+		elif state=="recover" and not hurt_recovery:
+			var elapsed := recovery_duration-attack_time
+			phase = lerpf(action.windup_end,action.active_end,clampf(elapsed/0.16,0,1)) if elapsed<0.16 else lerpf(action.active_end,1,clampf((elapsed-0.16)/(recovery_duration-0.16),0,1))
+		else: action = Actions.get_action("shield_ready")
+		art_state = FrameSpec.with_action(art_state,action.id,roundi(phase*32))
+		blade_pose = action.sample(phase).blade
+		motion_angle = blade_pose.y
+	var frame := Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",art_state,true)
 	sprite.texture=frame.texture
 	outline.texture=Art.outline_texture(sprite.texture)
 	Billboard.align(sprite, camera)
@@ -207,17 +217,16 @@ func update_visuals(travel: float) -> void:
 	if is_instance_valid(shield_node):
 		shield_node.position=Vector3(0,1.1,0)
 		shield_node.look_at(global_position+Vector3.UP*1.1+facing)
+		shield_node.global_position = Pose.world_grip(sprite,camera,frame.support,frame.support_depth)-shield_node.global_basis*WeaponArt.SHIELD_CENTER
 	sword.position=Vector3(0,1.1,0)
 	if facing.length()>0.01: sword.look_at(global_position+Vector3.UP*1.1+facing)
-	if not ranged:
-		sword.rotate_object_local(Vector3.UP,motion.angle)
 	# 人物纹理和武器共享同一手心像素，世界握点随相机投影转换。
-	sword.global_position = Pose.world_grip(sprite, camera, frame.grip)
+	sword.global_position = Pose.world_grip(sprite, camera, frame.grip, frame.depth)
 	var active := not ranged and state=="recover" and not hurt_recovery and recovery_duration-attack_time<0.16
 	var held: Node3D = sword.get_child(0)
 	if not ranged:
 		# 只倾斜武器模型；朝向与手心位置继续由本帧姿态决定。
-		held.rotation.x = move_toward(held.rotation.x, -0.5 if state not in ["windup", "recover"] else 0.0, get_physics_process_delta_time() * 6.0)
+		held.rotation = blade_pose
 	trail.sample_blade(active,held.to_global(Vector3(0,0,-1.32)),held.to_global(Vector3(0,0,-1.7)))
 
 ## 执行一次已蓄势的攻击：弓手生成箭，守卫沿锁定方向采样近战射线。

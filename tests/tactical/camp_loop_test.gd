@@ -46,7 +46,7 @@ func run() -> void:
 	check(quest.completed and quest.interact(),"return and hand-in grants reward")
 	check(progress.level==2 and player.max_hp==105,"reward raises level and maximum health")
 	check(progress.inventory.has_instance("camp_reward_cleaver"),"reward weapon goes into bag")
-	check(not progress.grant_reward() and progress.inventory.bag_used()==1,"reward cannot be duplicated")
+	check(not progress.grant_reward() and progress.inventory.bag_used()==2,"reward cannot be duplicated beside starter sword")
 	var fast: float=lab.combat.attack_interval
 	check(progress.equip("camp_reward_cleaver"),"equip reward at camp")
 	check(lab.combat.melee_range>2.3 and lab.combat.attack_interval>fast and lab.combat.melee_damage==26,"heavy weapon changes reach speed and damage")
@@ -105,7 +105,9 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	check(progress.open and paused,"I opens bag and pauses gameplay")
-	progress.view.content.get_child(progress.view.content.get_child_count()-1).get_child(0).pressed.emit()
+	# 背包新增宝剑后格序会变化；按物品标签点击真实按钮，不依赖第一格是猎刀。
+	for button in progress.view.content.get_child(progress.view.content.get_child_count()-1).get_children():
+		if button.text=="猎刀": button.pressed.emit(); break
 	check(progress.inventory.get_equipped(&"weapon").definition_id==&"hunting_knife", "bag button swaps equipped weapon")
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw

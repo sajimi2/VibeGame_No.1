@@ -39,6 +39,12 @@ func _ready() -> void:
 			xp = clampi(int(data.get("xp", 0)), 0, 60)
 			if data.get("inventory") is Dictionary:
 				inventory.restore_from_snapshot(data.inventory)
+	# 新旧进度都补一把可试用宝剑；先检查稳定实例 ID，重启不会重复发放或替换装备。
+	if not inventory.has_instance("camp_sword"):
+		var sword := ItemInstance.new()
+		sword.instance_id = "camp_sword"
+		sword.definition_id = &"arming_sword"
+		inventory.try_add(sword)
 	# 初始装备与读档完成后再连接信号，避免恢复一半时就保存或刷新界面。
 	inventory.inventory_changed.connect(changed)
 	view = InventoryView.new()
@@ -99,7 +105,7 @@ func refresh() -> void:
 	for id in catalog.ids():
 		var definition := catalog.definition(id)
 		var profile := definition.weapon_profile
-		summaries.append("%s：%d 伤害 · %.2fm · %.2fs 间隔" % [definition.display_name, profile.damage, profile.reach, profile.interval])
+		summaries.append("%s（%s）：%d 伤害 · %.2fm · %.2fs 间隔" % [definition.display_name,profile.weight_label(),profile.damage,profile.reach,profile.interval])
 	view.refresh({
 		"level": level, "xp": xp,
 		"equipped_name": catalog.definition(item.definition_id).display_name if item else "无",

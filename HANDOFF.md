@@ -1,7 +1,7 @@
 # OutpostRPG 接手入口
 
 1. 读 `AGENTS.md`、`README.md`、`AI_SYNC.md`；架构看 `docs/ARCHITECTURE.md`，方向看 `docs/TACTICAL_HEIGHT_PLAN.md`。
-2. 先查看 Git 工作区；保留他人未提交修改。当前重构分支为 `codex/3d-maintainability`。
+2. 先查看 Git 工作区；保留他人未提交修改。已验收的 3D 维护与武器动作按用户要求合入 `main`，后续美术实验单独开分支；以实际 Git 分支及 AI_SYNC 最新记录为准。
 3. 最新入口为 `scenes/battlefield.tscn`，F5 已对齐；3D 试验场 `scenes/tactical_height.tscn` 仍可 F6。旧 2D 已经用户明确同意从工作区移除。
 4. 清理前完整快照 `9c4dc82` 已推送 GitHub，标签 `backup/pre-3d-cleanup-20260917`；该节点包含原 2D、最新 3D、旧报告和插件。个人配置与构建缓存不在 Git 中。
 5. 新代码路径按职责组织，原 `scripts/tactical/` 已迁移；见架构文档。不可按已删除的 T01–T07 顺序推进。

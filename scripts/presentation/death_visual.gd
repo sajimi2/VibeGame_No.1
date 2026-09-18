@@ -1,0 +1,72 @@
+extends RefCounted
+## 倒地只操作表现节点，尸体根节点保留给击败统计；渐隐完成后不再生成帧或更新变换。
+const Art = preload("res://scripts/presentation/directional_art.gd")
+const Billboard = preload("res://scripts/presentation/character_billboard.gd")
+const Spec = preload("res://scripts/art/frame_spec.gd")
+var elapsed := 0.0
+var started := false
+var finished := false
+var direction := 0
+var ground_point := Vector3.ZERO
+var ground_normal := Vector3.UP
+var fall_direction := Vector3.FORWARD
+
+func update(actor: CharacterBody3D, delta: float) -> void:
+	if finished: return
+	if not started:
+		started = true
+		var view: Vector3 = actor.facing.rotated(Vector3.UP,-actor.camera.rotation.y)
+		direction = posmod(roundi(atan2(view.x,view.z)/(PI/6)),12)
+		# 尸体沿真实地面法线放倒，坡道上不把半截身体埋进坡面。
+		ground_point = actor.global_position
+		var ray := PhysicsRayQueryParameters3D.create(ground_point+Vector3.UP*0.4,ground_point+Vector3.DOWN,1|32,[actor.get_rid()])
+		var floor_hit := actor.get_world_3d().direct_space_state.intersect_ray(ray)
+		if not floor_hit.is_empty():
+			ground_point = floor_hit.position
+			ground_normal = floor_hit.normal
+		var impact: Vector3 = actor.knockback if actor.knockback.length()>0.01 else -actor.facing
+		fall_direction = (impact-ground_normal*impact.dot(ground_normal)).normalized()
+		actor.sword.hide()
+		actor.trail.hide()
+		if is_instance_valid(actor.shield_node): actor.shield_node.hide()
+		actor.marker.hide()
+		actor.health_bar.hide()
+		actor.outline.hide()
+	elapsed += delta
+	var fall := clampf(elapsed/0.85,0,1)
+	# 专用姿态先卸力下沉，随后伸开四肢；末帧不复用蹲姿，避免倒地后仍像坐着。
+	var asset: String = actor.art_id if not actor.art_id.is_empty() else "archer" if actor.ranged else "guard"
+	var state := Spec.with_action(Spec.character(direction,-1,false),"death_fall",roundi(fall*32))
+	actor.sprite.texture = Art.frame(asset,state,true).texture
+	actor.sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	var upright := Basis(Vector3.UP,actor.camera.rotation.y)
+	var right := fall_direction.cross(ground_normal).normalized()
+	var lying := Basis(right,fall_direction,ground_normal)
+	actor.sprite.global_basis = upright.slerp(lying,smoothstep(0.2,1.0,fall))
+	actor.sprite.scale = Vector3(1,lerpf(Billboard.height_scale(actor.camera),1,fall),1)
+	actor.sprite.global_position = ground_point+ground_normal*0.035
+	actor.sprite.modulate = Color(0.72,0.70,0.68,1)
+	Billboard.sync_shadow(actor.world_shadow,actor.sprite)
+	actor.world_shadow.visible = fall < 1
+	if elapsed > 2.8:
+		actor.sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISABLED
+		actor.sprite.modulate.a = 1.0-clampf((elapsed-2.8)/1.2,0,1)
+	if elapsed >= 4.0:
+		finished = true
+		actor.hide()
+
+## 重试通常重建场景；测试或未来复活流程恢复表现时可复用这个入口。
+func restore(actor: CharacterBody3D) -> void:
+	started = false
+	finished = false
+	elapsed = 0
+	ground_normal = Vector3.UP
+	actor.show()
+	actor.sprite.transform = Transform3D.IDENTITY
+	actor.sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	actor.sprite.modulate = Color.WHITE
+	actor.sword.show()
+	actor.trail.show()
+	actor.marker.show()
+	actor.health_bar.show()
+	if is_instance_valid(actor.shield_node): actor.shield_node.show()

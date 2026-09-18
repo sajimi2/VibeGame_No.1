@@ -87,9 +87,35 @@ func body(target: CharacterBody3D, player: bool = false) -> void:
 		await frames(2)
 		all_match = all_match and same_transform(target.projectile_attachment_frame("身体").affine_inverse()*arrow.global_transform,initial)
 	check(all_match,"身体箭在十二朝向移动中保持附着")
+	if player: await player_fade(target,arrow,initial)
 	target.position = Vector3(15,0,18)
-	arrow.queue_free()
+	if is_instance_valid(arrow): arrow.queue_free()
 	await frames(2)
+
+## 真命中后计时，淡出中转身依旧附着；生命只扣一次，材质不影响别的箭。
+func player_fade(target: CharacterBody3D, arrow: Node3D, initial: Transform3D) -> void:
+	var hp: int = target.hp
+	var other := ArrowArt.model()
+	check(arrow.attachment.fade_after==4.0,"仅玩家声明四秒附着停留时间")
+	while arrow.attached_time<3.9: await frames(1)
+	check(is_instance_valid(arrow) and arrow.shaft.material_override.albedo_color.a==1,"停留阶段箭仍完整显示")
+	if DisplayServer.get_name()!="headless":
+		lab.camera.size = 5
+		await frames(2)
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://work/player_arrow_hold.png")
+	while arrow.attached_time<4.4: await frames(1)
+	target.facing = Vector2(1,0)
+	target.position += Vector3(0.1,0,0.1)
+	await frames(1)
+	check(arrow.shaft.material_override.albedo_color.a>0.15 and arrow.shaft.material_override.albedo_color.a<0.6 and same_transform(target.projectile_attachment_frame("身体").affine_inverse()*arrow.global_transform,initial),"淡出中保持半透明并跟随玩家转身")
+	check(other.material_override.albedo_color.a==1 and other.material_override.transparency==BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR,"一支箭淡出不会修改别的箭材质")
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://work/player_arrow_fade.png")
+	await frames(35)
+	check(not is_instance_valid(arrow) and target.hp==hp,"淡出结束清理节点，不重复扣血")
+	other.free()
 
 ## 保存真实盾箭十二朝向截图；临时冻结测试镜头，避免跟随远处玩家把守卫拍出画面。
 func capture_rotations(guard: CharacterBody3D, arrow: Node3D, label: String = "shield") -> void:
@@ -163,6 +189,21 @@ func depth_render() -> void:
 	behind.save_png("res://work/arrow_depth_behind.png")
 	check(count_arrow(front)>60,"实际渲染：墙前可见箭头、木杆与尾羽像素")
 	check(count_arrow(behind)==0,"实际渲染：墙后箭矢完全遮住，不穿墙显示")
+	arrow.position.z = 1
+	ArrowArt.set_opacity(arrow,0.5)
+	await frames(2)
+	await RenderingServer.frame_post_draw
+	var faded := viewport.get_texture().get_image()
+	var dimmer := 0
+	for y in front.get_height():
+		for x in front.get_width():
+			var color := front.get_pixel(x,y)
+			if color.r>0.5 and color.g<0.02 and color.b>0.5 and faded.get_pixel(x,y).r<color.r*0.9 and faded.get_pixel(x,y).r>0.1: dimmer+=1
+	check(dimmer>40,"实际渲染：箭像素逐渐变淡而非整支突然裁掉")
+	arrow.position.z = -1
+	await frames(2)
+	await RenderingServer.frame_post_draw
+	check(count_arrow(viewport.get_texture().get_image())==0,"半透明阶段仍被墙正确遮挡")
 	viewport.queue_free()
 	await process_frame
 

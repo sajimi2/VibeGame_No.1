@@ -34,14 +34,19 @@ static func draw_arm(image: Image, data: Dictionary, side: int, coat: Color, ski
 	stroke(image, hand, hand, skin, 2)
 
 ## 按关节画成年人的长腿、收腰躯干与较小头部；前后手臂依据朝向分层遮挡。
-static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1, crouch_frame: int = -1, running: bool = false, jump_frame: int = -1, asset_id: String = "") -> Texture2D:
+static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1, crouch_frame: int = -1, running: bool = false, jump_frame: int = -1, asset_id: String = "", action_id: String = "", action_frame: int = 0) -> Texture2D:
 	var id := asset_id if not asset_id.is_empty() else "guard" if enemy else "player"
 	var state := Spec.character(direction,step,crouch,move_direction,pose,arm_phase,weight,draw_phase,crouch_frame,running,jump_frame)
+	state = Spec.with_action(state,action_id,action_frame)
+	pose = state.pose
+	arm_phase = state.arm
+	weight = state.weight
+	draw_phase = state.draw
 	var imported := Store.lookup(id,Spec.key(state))
 	if not imported.is_empty(): return outline_texture(imported.texture) if outline else imported.texture
-	var key := str([direction, step, crouch, outline, move_direction, pose, enemy, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame])
+	var key := str([direction, step, crouch, outline, move_direction, pose, enemy, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame, action_id, action_frame])
 	if cache.has(key): return cache[key]
-	var data := Pose.build(direction, step, crouch, move_direction, pose, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame)
+	var data := Pose.build(direction, step, crouch, move_direction, pose, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame, action_id, action_frame)
 	var p: Dictionary = data.pixels
 	var angle: float = data.angle
 	var back := cos(angle) < -0.25
@@ -123,12 +128,15 @@ static func texture(direction: int, step: int, crouch: bool, outline: bool = fal
 
 ## 纹理与握点一起解析，回导后手绘外观、持械位置、遮挡轮廓和阴影使用同一帧。
 static func frame(asset_id: String, state: Dictionary, enemy: bool = false) -> Dictionary:
-	var tex := texture(state.direction,state.step,state.crouch>0,false,state.move,state.pose,enemy,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump,asset_id)
-	var grip: Vector2 = Pose.build(state.direction,state.step,state.crouch>0,state.move,state.pose,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump).grip
+	state = Spec.with_action(state,state.get("action",""),state.get("action_frame",0))
+	var tex := texture(state.direction,state.step,state.crouch>0,false,state.move,state.pose,enemy,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump,asset_id,state.get("action",""),state.get("action_frame",0))
+	var pose := Pose.build(state.direction,state.step,state.crouch>0,state.move,state.pose,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump,state.get("action",""),state.get("action_frame",0))
+	var grip: Vector2 = pose.grip
 	var imported := Store.lookup(asset_id,Spec.key(state))
 	var anchor = imported.get("anchors",{}).get("grip")
 	if anchor is Array: grip = Vector2(anchor[0],anchor[1])
-	return {"texture":tex,"grip":grip}
+	return {"texture":tex,"grip":grip,"depth":pose.grip_depth,
+		"support":pose.pixels["hand-1"],"support_depth":pose.joints["hand-1"].rotated(Vector3.UP,pose.angle).z*0.04}
 
 ## 轮廓由当前透明像素重建，不能继续引用程序旧轮廓，否则手绘形体会穿帮。
 static func outline_texture(texture_value: Texture2D) -> Texture2D:

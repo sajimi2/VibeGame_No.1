@@ -4,6 +4,6 @@
 script = ExtResource("1")
 damage = 16
 reach = 1.45
-duration = 0.24
-interval = 0.29
+duration = 0.38
+interval = 0.42
 visual_scale = Vector3(0.85, 1, 0.76)

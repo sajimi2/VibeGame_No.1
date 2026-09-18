@@ -42,9 +42,9 @@ func definition(id: StringName) -> ItemDefinition:
 func ids() -> Array:
 	return _definitions.keys()
 
-## 当前玩法目录只收录可获得的猎刀和大砍刀。
+## 当前可获得的轻刀、中型宝剑与重刀；定义 ID 保持稳定以兼容存档。
 static func default_ids() -> Array[StringName]:
-	return [&"hunting_knife", &"great_cleaver"]
+	return [&"hunting_knife", &"arming_sword", &"great_cleaver"]
 
 ## 一次创建并加载当前物品目录。
 static func build() -> ItemCatalog:

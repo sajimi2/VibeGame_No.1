@@ -143,10 +143,12 @@ func runtime_integration() -> void:
 	player.sprinting = true
 	player.jump_frame = -1
 	player.crouch_blend = 0
+	# 此用例验证旧版十字段帧；新编排帧由 weapon_choreography 另测实际接入。
+	player.visual_action = ""
 	player._refresh_art(5)
 	check(player.sprite.texture.get_image().get_pixel(16,20).is_equal_approx(Color8(175,65,211)) and player.grip_pixel == Vector2(18,23),"实际 Player 接入回导纹理与握点")
 	check(player.world_shadow.texture == player.sprite.texture and player.outline.texture == Art.outline_texture(player.sprite.texture),"实际投影和遮挡轮廓使用手绘帧形体")
-	var enemy_doc := make_document(sources[1],"idle")
+	var enemy_doc := make_document(sources[1],"idle",{"action":"shield_ready"})
 	enemy_doc.image.set_pixel(16,20,Color.MAGENTA)
 	file = enemy_doc.export_to(directory)
 	Store.import_package(file.json)
