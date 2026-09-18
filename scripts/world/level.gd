@@ -9,7 +9,7 @@ var terrain: RefCounted
 var hud: CanvasLayer
 var stylized := true
 var combat: Node3D
-var last_feedback := "空格短跳 · E 取得密函 · 留意弓箭手的瞄准动作"
+var last_feedback := "Shift 疾跑 · 空格跳跃 · E 取得密函 · 留意弓箭手的瞄准动作"
 var encounter_enabled := true
 var progression: Node
 var progress_enabled := true

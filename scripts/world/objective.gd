@@ -77,7 +77,7 @@ func interact() -> bool:
 		return inform("奖励已领取，按 I 打开背包" if claimed else "先到高地取得密函，再回营地交付" if not completed else "背包已满，请腾出位置后交付")
 	if carried or completed: return inform("密函已在身上，返回营地按 E 交付")
 	if player.global_position.distance_to(pickup_point)>1.4: return inform("请靠近高地上的密函小箱子，再按 E")
-	var ray := PhysicsRayQueryParameters3D.create(player.global_position+Vector3.UP*0.6,pickup_point+Vector3.UP*0.5,1)
+	var ray := PhysicsRayQueryParameters3D.create(player.global_position+Vector3.UP*0.6,pickup_point+Vector3.UP*0.5,1|4)
 	if not get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): return inform("密函被障碍物挡住了，请绕到箱子旁")
 	accepted=true
 	carried=true

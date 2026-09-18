@@ -48,8 +48,8 @@ func run() -> void:
 		await frames(1)
 		peak=maxf(peak,player.position.y)
 		if i==10: check(not player.request_jump(),"airborne double jump rejected")
-	check(peak>0.55 and peak<0.8,"short jump height bounded")
-	await frames(12)
+	check(peak>0.95 and peak<1.15,"jump height remains bounded around one metre")
+	await frames(22)
 	check(player.is_on_floor() and not player.jumped,"lands and clears airborne state")
 	var key := InputEventKey.new()
 	key.physical_keycode=KEY_SPACE

@@ -33,14 +33,14 @@ func run() -> void:
 	var corrected: Vector3=lab.combat.assisted_point(raw,cursor)
 	check(corrected.distance_to(body)<0.01 and lab.combat.assist_target==guard,"small visible miss assists torso")
 	check(lab.combat.assisted_point(raw,cursor+Vector2(50,0))==raw,"far cursor does not lock")
-	var shift := InputEventKey.new()
-	shift.physical_keycode=KEY_SHIFT
-	shift.pressed=true
-	Input.parse_input_event(shift)
+	var control := InputEventKey.new()
+	control.physical_keycode=KEY_CTRL
+	control.pressed=true
+	Input.parse_input_event(control)
 	await frames(1)
-	check(lab.combat.assisted_point(raw,cursor)==raw,"Shift disables assist")
-	shift.pressed=false
-	Input.parse_input_event(shift)
+	check(lab.combat.assisted_point(raw,cursor)==raw,"Ctrl disables assist")
+	control.pressed=false
+	Input.parse_input_event(control)
 	await frames(1)
 	guard.state="recover"
 	player.test_mode=false

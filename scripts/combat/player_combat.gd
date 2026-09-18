@@ -3,6 +3,7 @@ extends Node3D
 const Trace = preload("res://scripts/combat/space_trace.gd")
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
+const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Arrow = preload("res://scripts/combat/arrow.gd")
 var actor: CharacterBody3D
 var notify: Callable
@@ -160,7 +161,7 @@ func _physics_process(delta: float) -> void:
 		actor.attack_arm=motion.arm
 		actor.attack_weight=motion.weight
 		hand.rotate_object_local(Vector3.UP,motion.angle)
-		hand.translate_object_local(Vector3(0,0,-motion.extension))
+		# 握点由纸片关节给出，不能再独立平移武器，否则手与柄会脱开。
 		if elapsed>=windup and previous_angle<rad_to_deg(0.8):
 			var angle := rad_to_deg(motion.angle) if elapsed<windup+active else rad_to_deg(0.8)
 			strike(previous_angle,angle)
@@ -182,9 +183,17 @@ func _physics_process(delta: float) -> void:
 				pending_arrow=null
 				actor.effects.sound("bow",actor.global_position)
 
+	# 战斗在玩家移动后更新；同帧刷新上肢与握点，避免武器领先纸片一帧。
+	var view := Vector3(actor.facing.x, 0, actor.facing.y).rotated(Vector3.UP, -actor.camera.rotation.y)
+	if swing_time > 0 or bow_time > 0:
+		view = locked_direction.rotated(Vector3.UP, -actor.camera.rotation.y)
+	actor.direction_index = posmod(roundi(atan2(view.x, view.z) / (PI / 6)), 12)
+	actor._refresh_art(actor.art_step)
+	hand.global_position = Pose.world_grip(actor.sprite, actor.camera, actor.grip_pixel)
+	# 待机垂剑与攻击平举平滑衔接，防止动作起止处突然折转。
+	weapon.rotation.x = move_toward(weapon.rotation.x, -0.5 if swing_time <= 0 and bow_time <= 0 else 0.0, delta * 6.0)
 	var active := swing_time>attack_duration*0.39 and swing_time<attack_duration*0.75
-	var blade_direction := -hand.global_basis.z
-	trail.sample_blade(active,muzzle()+blade_direction*melee_range*0.76,muzzle()+blade_direction*melee_range)
+	trail.sample_blade(active, weapon.to_global(Vector3(0, 0, -1.32)), weapon.to_global(Vector3(0, 0, -1.7)))
 
 ## 在前后两次刀刃角度间补采样射线，防止挥刀过快漏判。
 ## struck 按实例 ID 去重，使同一挥刀对每个目标或布帘只生效一次。
@@ -207,10 +216,10 @@ func strike(from_angle: float, to_angle: float) -> void:
 			var region: String = target.receive_strike(hit.position, hit.normal, direction, melee_damage) if target.is_in_group("tactical_enemies") else target.receive_strike(hit.position, hit.normal, direction)
 			if notify.is_valid(): notify.call("近战命中：" + region)
 
-## 在光标附近选择可见且射线可达的敌人，返回轻微修正后的目标点；Shift 临时关闭辅助。
+## 在光标附近选择可见且射线可达的敌人，返回轻微修正后的目标点；Ctrl 临时关闭辅助。
 func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
 	assist_target=null
-	if not assist_enabled or actor.camera==null or Input.is_physical_key_pressed(KEY_SHIFT): return raw
+	if not assist_enabled or actor.camera==null or Input.is_physical_key_pressed(KEY_CTRL): return raw
 	var best := 26.0
 	var result := raw
 	for enemy in get_tree().get_nodes_in_group("tactical_enemies"):

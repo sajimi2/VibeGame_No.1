@@ -23,7 +23,7 @@ func setup(caption: String) -> void:
 	status.add_theme_font_size_override("font_size", 16)
 	add_child(status)
 	notice = Label.new()
-	notice.text = "WASD 移动 · 空格短跳 · C 下蹲 · 左键挥刀 · 右键射箭 · E 交互 · I 背包\nShift 精确射击 · R 重新出发（保留装备） · Esc 退出 · F1 标注 · B 明暗对比"
+	notice.text = "WASD 移动 · Shift 疾跑 · 空格跳跃 · C 下蹲 · 左键挥刀 · 右键射箭 · E 交互 · I 背包\nCtrl 精确射击 · R 重新出发（保留装备） · Esc 退出 · F1 标注 · B 明暗对比"
 	notice.position = Vector2(16, 662)
 	notice.add_theme_font_size_override("font_size", 14)
 	notice.add_theme_color_override("font_shadow_color", Color.BLACK)

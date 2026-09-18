@@ -1,107 +1,151 @@
 extends RefCounted
-## 程序生成 32×48 像素人物：十二朝向，八相位步态由移动距离驱动。
+## 32×48 像素人物使用共享关节姿态，保留十二朝向、八相位步态及按需纹理缓存。
+const Pose = preload("res://scripts/presentation/character_pose.gd")
+const Spec = preload("res://scripts/art/frame_spec.gd")
+const Store = preload("res://scripts/art/atlas_store.gd")
 static var cache: Dictionary = {}
 
-## 用像素矩形采样线段，并裁剪到图像边界。
+## 居中采样像素线段，用于有厚度的四肢；裁剪只保护画布，不缩放角色。
 static func stroke(image: Image, start: Vector2, finish: Vector2, color: Color, width: int = 2) -> void:
-	var length := maxi(1,ceili(start.distance_to(finish)*2))
-	for i in length+1:
-		var point := start.lerp(finish,float(i)/length)
-		var rect := Rect2i(roundi(point.x),roundi(point.y),width,width).intersection(Rect2i(0,0,image.get_width(),image.get_height()))
-		if rect.has_area(): image.fill_rect(rect,color)
+	var length := maxi(1, ceili(start.distance_to(finish) * 2))
+	for i in length + 1:
+		var point := start.lerp(finish, float(i) / length) - Vector2.ONE * floorf(width / 2.0)
+		var rect := Rect2i(roundi(point.x), roundi(point.y), width, width).intersection(Rect2i(Vector2i.ZERO, image.get_size()))
+		if rect.has_area(): image.fill_rect(rect, color)
 
-## 按朝向、步态、姿态等参数生成角色纹理并缓存；相同组合直接复用。
-static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1) -> Texture2D:
-	if move_direction < 0: move_direction = direction
-	var key := "%s/%s/%s/%s/%s/%s/%s/%s/%s/%s" % [direction,step,crouch,outline,move_direction,pose,enemy,arm_phase,weight,draw_phase]
+## 以整数像素填充多边形，保留明确的肩、腰、下摆轮廓。
+static func polygon(image: Image, points: PackedVector2Array, color: Color) -> void:
+	var bounds := Rect2(points[0], Vector2.ZERO)
+	for point in points: bounds = bounds.expand(point)
+	for y in range(maxi(0, floori(bounds.position.y)), mini(image.get_height(), ceili(bounds.end.y) + 1)):
+		for x in range(maxi(0, floori(bounds.position.x)), mini(image.get_width(), ceili(bounds.end.x) + 1)):
+			if Geometry2D.is_point_in_polygon(Vector2(x, y), points): image.set_pixel(x, y, color)
+
+## 上臂与前臂分开着色，肘部保持弯曲；手心像素就是武器握点。
+static func draw_arm(image: Image, data: Dictionary, side: int, coat: Color, skin: Color) -> void:
+	var p: Dictionary = data.pixels
+	var shoulder: Vector2 = p["shoulder%d" % side]
+	var elbow: Vector2 = p["elbow%d" % side]
+	var hand: Vector2 = p["hand%d" % side]
+	stroke(image, shoulder, elbow, Color("29333a"), 4)
+	stroke(image, shoulder, elbow, coat, 2)
+	stroke(image, elbow, hand, Color("423f38"), 3)
+	stroke(image, elbow, elbow.lerp(hand, 0.6), Color("887257"), 2)
+	stroke(image, hand, hand, skin, 2)
+
+## 按关节画成年人的长腿、收腰躯干与较小头部；前后手臂依据朝向分层遮挡。
+static func texture(direction: int, step: int, crouch: bool, outline: bool = false, move_direction: int = -1, pose: int = 0, enemy: bool = false, arm_phase: int = -1, weight: int = 0, draw_phase: int = -1, crouch_frame: int = -1, running: bool = false, jump_frame: int = -1, asset_id: String = "") -> Texture2D:
+	var id := asset_id if not asset_id.is_empty() else "guard" if enemy else "player"
+	var state := Spec.character(direction,step,crouch,move_direction,pose,arm_phase,weight,draw_phase,crouch_frame,running,jump_frame)
+	var imported := Store.lookup(id,Spec.key(state))
+	if not imported.is_empty(): return outline_texture(imported.texture) if outline else imported.texture
+	var key := str([direction, step, crouch, outline, move_direction, pose, enemy, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame])
 	if cache.has(key): return cache[key]
-	var image := Image.create(32,48,false,Image.FORMAT_RGBA8)
-	var angle := direction*PI/6
-	var walk_angle := move_direction*PI/6
-	var phase := maxf(step,0)/8.0*TAU
-	var walking := step>=0
-	var back := direction in [4,5,6,7,8]
-	var ink := Color("283239")
-	var coat := Color("526f7a") if not enemy else Color("88574f")
-	var light := Color("84a1a2") if not enemy else Color("b08064")
-	var leather := Color("6e5239")
-	var skin := Color("d1ac83")
-	var hip_y := 36 if crouch else 32
-	var head_y := 16 if crouch else 6
-	var shoulder_y := 26 if crouch else 21
-	var width := roundi(14-4*absf(sin(angle)))
-	var body_shift := roundi(sin(angle)*weight)
-	var left := (32-width)/2 as int
-	left+=body_shift
-	# 双脚交替支撑，脚底锚点保持在地面，膝部随步态活动。
-	for leg in 2:
-		var cycle := phase+leg*PI
-		var stride := cos(cycle)*(3.5 if walking else 0.0)
-		var lift := maxf(0,sin(cycle))*(4.0 if walking else 0.0)
-		var hip := Vector2(13+leg*4,hip_y)
-		var foot := Vector2(hip.x+sin(walk_angle)*stride,45-lift)
-		var knee := hip.lerp(foot,0.55)+Vector2(sin(walk_angle)*maxf(0,sin(cycle))*0.6,-lift*0.15)
-		stroke(image,hip,knee,ink,4)
-		stroke(image,hip+Vector2.ONE,knee,Color("526168"),2)
-		stroke(image,knee,foot-Vector2(0,2),Color("36454c"),3)
-		stroke(image,foot-Vector2(1,0),foot+Vector2(2,0),Color("332f2a"),3)
-	# 绘制外衣、肩部披片、腰带、扣环和侧袋。
-	image.fill_rect(Rect2i(left,shoulder_y,width,hip_y-shoulder_y+2),ink)
-	image.fill_rect(Rect2i(left+1,shoulder_y+1,width-2,hip_y-shoulder_y),coat)
-	image.fill_rect(Rect2i(left+2,shoulder_y,width-4,3),light)
-	image.fill_rect(Rect2i(left,hip_y-2,width,3),leather)
-	image.fill_rect(Rect2i(left+width-3,hip_y-2,4,5),Color("493d31"))
-	if not back: image.fill_rect(Rect2i(15,hip_y-2,2,2),Color("c3a267"))
+	var data := Pose.build(direction, step, crouch, move_direction, pose, arm_phase, weight, draw_phase, crouch_frame, running, jump_frame)
+	var p: Dictionary = data.pixels
+	var angle: float = data.angle
+	var back := cos(angle) < -0.25
+	var image := Image.create(32, 48, false, Image.FORMAT_RGBA8)
+	var ink := Color("29333a")
+	var coat := Color("536f76") if not enemy else Color("79534a")
+	var light := Color("80918b") if not enemy else Color("a7846b")
+	var skin := Color("c6a17c")
+	var far_side: int = data.far_side
+	for side in [far_side, -far_side]:
+		var hip: Vector2 = p["hip%d" % side]
+		var knee: Vector2 = p["knee%d" % side]
+		var foot: Vector2 = p["foot%d" % side]
+		var toe: Vector2 = p["toe%d" % side]
+		var trouser := Color("65706b") if side != far_side else Color("424f50")
+		stroke(image, hip, knee, ink, 5)
+		stroke(image, hip, knee, trouser, 3)
+		stroke(image, knee, foot, ink, 4)
+		stroke(image, knee, foot, trouser.darkened(0.13), 2)
+		stroke(image, foot + Vector2(0, -2), toe, Color("343932"), 3)
+		stroke(image, foot, toe, Color("6d6651"), 1)
+	draw_arm(image, data, far_side, coat.darkened(0.15), skin.darkened(0.1))
+	var joints: Dictionary = data.joints
+	var chest: Vector3 = joints.chest
+	var pelvis: Vector3 = joints.pelvis
+	var body := PackedVector2Array([
+		Pose.project(chest + Vector3(-4.8, 0, 0), angle), Pose.project(chest + Vector3(4.8, 0, 0), angle),
+		Pose.project(pelvis + Vector3(3.4, 0, 0), angle), Pose.project(pelvis + Vector3(-3.4, 0, 0), angle)])
+	# 侧身仍需躯干厚度，不能把人物画成一条线。
+	var breadth := maxi(5, roundi(10 * absf(cos(angle)) + 5 * absf(sin(angle))))
+	body[0].x = p.chest.x - breadth * 0.5
+	body[1].x = p.chest.x + breadth * 0.5
+	body[2].x = p.pelvis.x + breadth * 0.34
+	body[3].x = p.pelvis.x - breadth * 0.34
+	polygon(image, body, coat)
+	stroke(image, body[0], body[3], ink, 1)
+	stroke(image, body[1], body[2], ink, 1)
+	stroke(image, body[0] + Vector2(1, 1), body[1] - Vector2(1, -1), light, 2)
+	stroke(image, body[3], body[2], Color("564839"), 3)
+	if back:
+		stroke(image, p.chest + Vector2(-2, 3), p.pelvis + Vector2(-1, -3), Color("807458"), 2)
 	else:
-		image.fill_rect(Rect2i(12,shoulder_y+4,8,7),leather)
-		image.fill_rect(Rect2i(13,shoulder_y+4,6,2),Color("957447"))
-	# 用削角轮廓和朝向相关的鼻耳表现头部。
-	image.fill_rect(Rect2i(11,head_y,10,14),ink)
-	image.fill_rect(Rect2i(10,head_y+3,12,8),ink)
-	image.fill_rect(Rect2i(12,head_y+1,8,5),Color("65503c") if not enemy else Color("758489"))
-	image.fill_rect(Rect2i(12,head_y+6,8,6),skin if not back else Color("554735"))
-	image.fill_rect(Rect2i(12,head_y+1,7,2),Color("957349") if not enemy else Color("adb4ac"))
-	if back and absf(sin(angle))>0.2:
-		image.fill_rect(Rect2i(11 if sin(angle)<0 else 20,head_y+8,1,3),skin)
+		stroke(image, p.chest + Vector2(-2, 2), p.pelvis + Vector2(1, -2), Color("9a8967"), 1)
+		stroke(image, p.pelvis, p.pelvis, Color("bca16b"), 2)
+	stroke(image, p.chest + Vector2(0, -1), p.neck, skin.darkened(0.15), 3)
+	# 七像素高的头部取代原先十四像素的方头，保留侧脸、耳部和后脑差异。
+	var center: Vector2 = p.head
+	var head_width := 3.2 if absf(sin(angle)) < 0.8 else 2.6
+	for y in range(-4, 4):
+		for x in range(-4, 5):
+			if pow(x / head_width, 2) + pow(y / 4.0, 2) > 1.05: continue
+			var at := Vector2i(center) + Vector2i(x, y)
+			if not Rect2i(0, 0, 32, 48).has_point(at): continue
+			var color := skin if not back else Color("534a3b")
+			if y <= -1: color = Color("777e75") if enemy else Color("615341")
+			if y <= -3: color = Color("a0a597") if enemy else Color("857253")
+			if x == -3 or y == 3: color = color.darkened(0.2)
+			image.set_pixelv(at, color)
 	if not back:
-		var nose := 15+roundi(sin(angle)*5)
-		image.fill_rect(Rect2i(nose,head_y+8,2,3),skin.lightened(0.12))
-		image.fill_rect(Rect2i(clampi(nose,12,19),head_y+7,1,1),ink)
-	var hand_angle := angle
-	if pose == 1: hand_angle -= 0.9
-	if pose == 2: hand_angle += 0.8
-	if pose == 3: hand_angle += 0.4
-	if arm_phase>=0: hand_angle=angle+lerpf(-0.9,0.8,arm_phase/24.0)
-	for arm in 2:
-		var shoulder := Vector2(left-1 if arm==0 else left+width-1,shoulder_y+2)
-		var hand := shoulder+Vector2(0,8)
-		if pose > 0:
-			hand = Vector2(15+sin(hand_angle)*9+(arm*2-1),shoulder_y+6+cos(hand_angle)*4)
-			if pose == 4:
-				var draw := 1.0 if draw_phase<0 else draw_phase/8.0
-				var front := Vector2(15+sin(angle)*10,shoulder_y+4+cos(angle)*4)
-				hand=front if arm==0 else front.lerp(Vector2(15-sin(angle)*2,shoulder_y+2),draw)
-			hand.x+=body_shift
-		elif arm==1:
-			# 两次攻击之间保持持械准备姿势，避免手臂从垂下位置瞬间跳到握柄处。
-			hand=Vector2(16+sin(angle)*7,shoulder_y+6+cos(angle)*3)
-		elif walking:
-			hand += Vector2(sin(walk_angle)*sin(phase+arm*PI)*3,cos(walk_angle)*cos(phase+arm*PI)*2)
-		var elbow := shoulder.lerp(hand,0.55)+Vector2(-1 if arm==0 else 1,1)
-		stroke(image,shoulder,elbow,ink,4)
-		stroke(image,shoulder+Vector2.ONE,elbow,coat,2)
-		stroke(image,elbow,hand,leather,3)
-		stroke(image,hand,hand+Vector2(1,0),skin,2)
+		var nose := center + Vector2(roundi(sin(angle) * 3), 1)
+		stroke(image, nose, nose + Vector2(signf(sin(angle)), 0), skin.lightened(0.08), 1)
+		stroke(image, nose + Vector2(-signf(sin(angle)), -1), nose + Vector2(-signf(sin(angle)), -1), ink, 1)
+	else:
+		stroke(image, center + Vector2(signf(sin(angle)) * 2, 1), center + Vector2(signf(sin(angle)) * 2, 2), skin.darkened(0.1), 1)
+	draw_arm(image, data, -far_side, coat.lightened(0.03), skin)
 	if outline:
-		var border := Image.create(32,48,false,Image.FORMAT_RGBA8)
-		for y in range(1,48):
-			for x in range(1,31):
-				if image.get_pixel(x,y).a>0: continue
-				if image.get_pixel(x-1,y).a>0 or image.get_pixel(x+1,y).a>0 or image.get_pixel(x,y-1).a>0 or (y<47 and image.get_pixel(x,y+1).a>0): border.set_pixel(x,y,Color("ffe3a0"))
+		var border := Image.create(32, 48, false, Image.FORMAT_RGBA8)
+		for y in range(1, 47):
+			for x in range(1, 31):
+				if image.get_pixel(x, y).a > 0: continue
+				for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+					if image.get_pixelv(Vector2i(x, y) + neighbor).a > 0:
+						border.set_pixel(x, y, Color("ffe3a0"))
+						break
 		image = border
 	var result := ImageTexture.create_from_image(image)
 	cache[key] = result
 	return result
+
+## 纹理与握点一起解析，回导后手绘外观、持械位置、遮挡轮廓和阴影使用同一帧。
+static func frame(asset_id: String, state: Dictionary, enemy: bool = false) -> Dictionary:
+	var tex := texture(state.direction,state.step,state.crouch>0,false,state.move,state.pose,enemy,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump,asset_id)
+	var grip: Vector2 = Pose.build(state.direction,state.step,state.crouch>0,state.move,state.pose,state.arm,state.weight,state.draw,state.crouch,state.run,state.jump).grip
+	var imported := Store.lookup(asset_id,Spec.key(state))
+	var anchor = imported.get("anchors",{}).get("grip")
+	if anchor is Array: grip = Vector2(anchor[0],anchor[1])
+	return {"texture":tex,"grip":grip}
+
+## 轮廓由当前透明像素重建，不能继续引用程序旧轮廓，否则手绘形体会穿帮。
+static func outline_texture(texture_value: Texture2D) -> Texture2D:
+	var key := "outline:"+str(texture_value.get_instance_id())
+	if cache.has(key): return cache[key]
+	var image := texture_value.get_image()
+	var border := Image.create(image.get_width(),image.get_height(),false,Image.FORMAT_RGBA8)
+	for y in range(1,image.get_height()-1):
+		for x in range(1,image.get_width()-1):
+			if image.get_pixel(x,y).a > 0: continue
+			for neighbor in [Vector2i(-1,0),Vector2i(1,0),Vector2i(0,-1),Vector2i(0,1)]:
+				if image.get_pixelv(Vector2i(x,y)+neighbor).a > 0:
+					border.set_pixel(x,y,Color("ffe3a0"))
+					break
+	cache[key] = ImageTexture.create_from_image(border)
+	return cache[key]
+
 
 ## 程序生成像素树纹理，根部位置用于对齐地面。
 static func tree() -> Texture2D:

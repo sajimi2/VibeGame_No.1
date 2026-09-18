@@ -1,5 +1,9 @@
 extends RefCounted
 ## 玩家和敌人共用的低面数 3D 武器模型。
+const ArrowArt = preload("res://scripts/presentation/arrow_art.gd")
+const SHIELD_CENTER := Vector3(0.36,-0.12,-0.25)
+const SHIELD_SIZE := Vector3(0.48,0.65,0.11)
+
 static func material(color: String) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color=Color(color)
@@ -45,7 +49,8 @@ static func bow() -> MeshInstance3D:
 	grip.size=Vector3(0.10,0.24,0.10)
 	root.mesh=grip
 	root.material_override=material("513d30")
-	root.position.z=-0.33
+	# 原点即握柄中心，与纸片手心对齐；弓身不能再额外前移。
+	root.position.z=0
 	var string := ImmediateMesh.new()
 	string.surface_begin(Mesh.PRIMITIVE_LINES)
 	string.surface_add_vertex(Vector3(0,-0.63,0.02))
@@ -58,7 +63,9 @@ static func bow() -> MeshInstance3D:
 	thread.mesh=string
 	thread.material_override=material("d6cba6")
 	root.add_child(thread)
-	var nocked := block(root,Vector3(0.026,0.026,0.65),Vector3(0,0,-0.25),"d7c499")
+	var nocked := ArrowArt.model()
+	root.add_child(nocked)
+	nocked.position.z = 0.18 - ArrowArt.LENGTH
 	nocked.name="NockedArrow"
 	for i in 10:
 		var a := Vector3(0,-0.63+i*0.126,-0.22*cos((-0.63+i*0.126)/1.26*PI))
@@ -76,4 +83,4 @@ static func set_bow_draw(root: Node3D, amount: float, nocked: bool=true) -> void
 	for point in [Vector3(0,-0.63,0.02),Vector3(0,0,0.02+amount*0.30),Vector3(0,0,0.02+amount*0.30),Vector3(0,0.63,0.02)]: string.surface_add_vertex(point)
 	string.surface_end()
 	root.get_node("NockedArrow").visible=nocked
-	root.get_node("NockedArrow").position.z=-0.27+amount*0.30
+	root.get_node("NockedArrow").position.z=0.02+amount*0.30-ArrowArt.LENGTH

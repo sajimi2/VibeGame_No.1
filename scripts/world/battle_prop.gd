@@ -1,6 +1,6 @@
 @tool
 extends StaticBody3D
-## 可在编辑器摆放的程序资产；显示网格与碰撞共用三角面。
+## 可在编辑器摆放的程序资产；射线贴合石面，角色移动使用无倒扣的实体碰撞。
 @export_enum("Boulder", "Broken wall") var kind: int = 0:
 	set(value):
 		kind=value
@@ -28,13 +28,14 @@ func rebuild() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	collision_layer=13
+	collision_layer=12 if kind == 0 else 13
 	collision_mask=0
 	var rng := RandomNumberGenerator.new()
 	rng.seed=variation
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	surface.set_smooth_group(-1)
+	# 只柔化巨石的显示法线，墙面保留棱角；顶点位置及碰撞三角面不变。
+	surface.set_smooth_group(0 if kind == 0 else -1)
 	if kind==0: rock(surface,rng)
 	else: ruin(surface,rng)
 	surface.generate_normals()
@@ -48,30 +49,30 @@ func rebuild() -> void:
 	collider.name="StoneCollision"
 	collider.shape=mesh.create_trimesh_shape()
 	add_child(collider)
+	if kind == 0: add_rock_locomotion(mesh)
 	add_to_group("battle_cover")
 
-## 生成石材像素纹理，结合顶点颜色呈现明暗变化。
-func stone_material() -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo=true
-	mat.diffuse_mode=BaseMaterial3D.DIFFUSE_TOON
-	mat.specular_mode=BaseMaterial3D.SPECULAR_DISABLED
-	mat.cull_mode=BaseMaterial3D.CULL_DISABLED
-	mat.texture_filter=BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.uv1_triplanar=true
-	mat.uv1_scale=Vector3.ONE*0.45
-	var image := Image.create(32,32,false,Image.FORMAT_RGB8)
-	for y in 32:
-		for x in 32:
-			var cx := int(x/2)
-			var cy := int(y/2)
-			var field := sin(cx*0.48+sin(cy*0.37)*1.7)+cos(cy*0.54+sin(cx*0.28))
-			var color := Color("e1e5db") if field< -1.25 else Color("f3f5ef") if field>1.2 else Color.WHITE
-			# 稀疏连贯的矿脉纹理，避免重复棋盘格。
-			if kind==0 and x>9 and x<24 and y==int(17+sin(x*0.28)*3): color=Color("c9cfc1")
-			image.set_pixel(x,y,color)
-	mat.albedo_texture=ImageTexture.create_from_image(image)
-	return mat
+## 石面用于视线和箭矢；移动凸包把外凸点向下补到地面，消除蹲姿能钻入的倒扣。
+## 不把石面底部三角形叠到地板上，避免贴地滑动反复消耗碰撞迭代而无法退出。
+func add_rock_locomotion(mesh: ArrayMesh) -> void:
+	var body := StaticBody3D.new()
+	body.name = "MovementBody"
+	# 第六层仅供移动与导航使用，箭矢/视线不碰这个简化凸包。
+	body.collision_layer = 32
+	body.collision_mask = 0
+	var points := mesh.get_faces()
+	var expanded := points.duplicate()
+	for point in points: expanded.append(Vector3(point.x, -0.08, point.z))
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = expanded
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	body.add_child(collider)
+	add_child(body)
+
+## 表现层统一色阶与像素密度，几何构建器只负责形状和碰撞。
+func stone_material() -> ShaderMaterial:
+	return preload("res://scripts/presentation/stone_palette.gd").material(kind == 0)
 
 func triangle(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
 	surface.set_color(color)

@@ -2,6 +2,8 @@ extends Node
 ## 每个 X/Z 网格只记录一个行走表面，不支持桥上桥下的多层路径。
 ## 用实际碰撞检测高度、净空和连通性，避免路径跨墙。
 const CELL := 0.6
+## 地形层与巨石移动代理层必须和角色一致；不采样只用于箭矢/视线的凹凸石面。
+const MOVEMENT_MASK := 1 | 32
 var graph := AStar3D.new()
 var cells: Dictionary = {}
 var world: World3D
@@ -16,10 +18,10 @@ func build(source: World3D, bounds: Rect2 = Rect2(-15,-15.6,30,31.2)) -> void:
 	capsule.height = 1.6
 	var clearance := PhysicsShapeQueryParameters3D.new()
 	clearance.shape = capsule
-	clearance.collision_mask = 1
+	clearance.collision_mask = MOVEMENT_MASK
 	for z in range(roundi(bounds.position.y/CELL),roundi(bounds.end.y/CELL)+1):
 		for x in range(roundi(bounds.position.x/CELL),roundi(bounds.end.x/CELL)+1):
-			var ray := PhysicsRayQueryParameters3D.create(Vector3(x*CELL,8,z*CELL),Vector3(x*CELL,-2,z*CELL),1)
+			var ray := PhysicsRayQueryParameters3D.create(Vector3(x*CELL,8,z*CELL),Vector3(x*CELL,-2,z*CELL),MOVEMENT_MASK)
 			var hit := world.direct_space_state.intersect_ray(ray)
 			if hit.is_empty() or hit.normal.y<0.75: continue
 			var point: Vector3 = hit.position
@@ -43,20 +45,20 @@ func traversable(a: Vector3, b: Vector3, excluded: Array[RID] = []) -> bool:
 	if distance>0.01 and absf(a.y-b.y)/distance>0.75: return false
 	var side := (b-a).cross(Vector3.UP).normalized()*0.31
 	for shift in [Vector3.ZERO,side,-side]:
-		var ray := PhysicsRayQueryParameters3D.create(a+shift+Vector3.UP*0.30,b+shift+Vector3.UP*0.30,1,excluded)
+		var ray := PhysicsRayQueryParameters3D.create(a+shift+Vector3.UP*0.30,b+shift+Vector3.UP*0.30,MOVEMENT_MASK,excluded)
 		if not world.direct_space_state.intersect_ray(ray).is_empty(): return false
 	# 贴地射线配合支撑面采样，区分连续坡面与竖直台阶，避免路线切过坡道侧壁。
-	var foot := PhysicsRayQueryParameters3D.create(a+Vector3.UP*0.01,b+Vector3.UP*0.01,1,excluded)
+	var foot := PhysicsRayQueryParameters3D.create(a+Vector3.UP*0.01,b+Vector3.UP*0.01,MOVEMENT_MASK,excluded)
 	var foot_hit := world.direct_space_state.intersect_ray(foot)
 	if not foot_hit.is_empty() and foot_hit.normal.y<0.75: return false
 	var steps := maxi(2,ceili(distance/0.035))
-	var support := PhysicsRayQueryParameters3D.create(a+Vector3.UP*0.2,a-Vector3.UP*0.2,1,excluded)
+	var support := PhysicsRayQueryParameters3D.create(a+Vector3.UP*0.2,a-Vector3.UP*0.2,MOVEMENT_MASK,excluded)
 	var initial := world.direct_space_state.intersect_ray(support)
 	if initial.is_empty(): return false
 	var previous: float = initial.position.y
 	for i in range(1,steps+1):
 		var p := a.lerp(b,float(i)/steps)
-		var ray := PhysicsRayQueryParameters3D.create(p+Vector3.UP*0.6,p-Vector3.UP*0.6,1,excluded)
+		var ray := PhysicsRayQueryParameters3D.create(p+Vector3.UP*0.6,p-Vector3.UP*0.6,MOVEMENT_MASK,excluded)
 		var hit := world.direct_space_state.intersect_ray(ray)
 		if hit.is_empty() or hit.normal.y<0.75: return false
 		# 逐段检查支撑面的局部坡度，允许平地与坡道转折，不假定整段是同一斜面。

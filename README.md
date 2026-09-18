@@ -6,7 +6,8 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 - 在 Godot 打开 `project.godot`，**F5 直接运行最新战场**；`play.bat dev` / `play_battlefield.bat dev` 同样运行源码。
 - `scenes/tactical_height.tscn` 是保留的 3D 高度/布帘/坡道试验场，F6 或 `play_height.bat dev`。
 - 不带 `dev` 的批处理运行 `builds/windows` 中的导出包；修改源码后须重新导出。EXE 与同名 PCK 必须配套。
-- WASD 移动，Space 短跳，C 下蹲，左键近战，右键弓箭，E 交互，I 背包，Shift 暂停辅瞄，R 重试。
+- WASD 移动，Shift 疾跑，Space 跳跃，C 下蹲，左键近战，右键弓箭，E 交互，I 背包，Ctrl 暂停辅瞄，R 重试。
+- 图集工作台：打开 `tools/art_preview.tscn`，按 **F6**。查看玩家/守卫/弓手/箭矢，导出原尺寸 PNG + JSON；编辑 PNG 后载入 JSON、校准握点、应用，再 F5 查看游戏效果。使用与扩展说明见 [美术资产](docs/ART_PIPELINE.md)。
 
 ## 阅读代码
 先读 [当前架构](docs/ARCHITECTURE.md)。生命周期入口是 `scripts/world/level.gd`，地图参数是 `scripts/world/battlefield.gd`。
@@ -17,6 +18,7 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 | `scripts/actors/` | 玩家移动/姿态；敌人感知、状态机、移动和攻击 |
 | `scripts/combat/` | 玩家输入和攻击时序、命中检测、弹道、武器参数类型 |
 | `scripts/presentation/` | 程序美术、武器模型、刀光、声音与投影 |
+| `scripts/art/`、`data/art_sources/` | 资产来源协议、稳定帧键、图集拼装、校验和手绘覆盖持久化 |
 | `scripts/items/`、`scripts/contracts/` | 库存、物品定义和快照结构 |
 | `scripts/progression/`、`scripts/persistence/` | 装备/首通成长与 JSON 存档 I/O |
 | `scripts/ui/` | HUD、背包、结算界面 |

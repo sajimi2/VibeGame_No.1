@@ -1,5 +1,5 @@
 extends Node3D
-## 统一控制太阳光，并用不可见立体代理为纸片角色和树投影。
+## 统一控制太阳光和树木投影；人物按自身当前帧投影，由 character_billboard 维护。
 var sun: DirectionalLight3D
 var environment: Environment
 var hour := 10.5
@@ -56,13 +56,6 @@ static func tree_shadow(parent: Node3D, position: Vector3) -> Node3D:
 		crown.rings=4
 		caster(root,crown,center)
 	return root
-
-## 用胶囊代理角色体积，参与世界太阳投影。
-static func actor_shadow(parent: Node3D) -> MeshInstance3D:
-	var capsule := CapsuleMesh.new()
-	capsule.radius=0.23
-	capsule.height=1.65
-	return caster(parent,capsule,Vector3(0,0.825,0))
 
 ## 创建世界画面调色层并返回材质，让时间控制器更新统一色调。
 static func pixel_pass(parent: Node) -> ShaderMaterial:

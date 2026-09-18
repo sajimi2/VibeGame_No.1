@@ -1,6 +1,9 @@
 extends Node3D
 ## 箭的飞行与连续碰撞；玩家和弓手复用，通过 hostile 区分伤害对象。
 const Trace = preload("res://scripts/combat/space_trace.gd")
+const Art = preload("res://scripts/presentation/arrow_art.gd")
+const Attachment = preload("res://scripts/combat/impact_attachment.gd")
+@export var art_id := "arrow"
 var velocity := Vector3.ZERO
 var lifetime := 0.0
 var stopped := false
@@ -10,24 +13,28 @@ var notify: Callable
 var hit_mask := 8 | 16
 var hostile := false
 var pierced: Array[RID] = []
+var attachment: RefCounted
 
-## 创建箭杆模型，节点原点作为飞行和碰撞检测的箭尖。
+## 飞行箭与搭弓箭复用像素侧影；晚于角色物理更新附着，避免移动时落后一帧。
 func _ready() -> void:
-	shaft = MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.035, 0.035, 0.65)
-	shaft.mesh = mesh
-	shaft.position.z = 0.325 # 节点位置代表箭尖，箭杆向后延伸。
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color("ffe1a0")
-	shaft.material_override = mat
+	process_physics_priority = 20
+	shaft = Art.model(art_id)
 	add_child(shaft)
+	orient_flight()
+
+## -Z 朝向速度、原点留在箭尖；近乎垂直的射击改用备用上方向以避免退化基底。
+func orient_flight() -> void:
+	if velocity.length_squared() < 0.0001: return
+	var forward := velocity.normalized()
+	global_basis = Basis.looking_at(forward,Vector3.RIGHT if absf(forward.dot(Vector3.UP)) > 0.99 else Vector3.UP)
 
 ## 把本帧运动拆成小时间步，以连续线段检查飞行轨迹并施加重力。
-## 命中实体后停下，依据敌我属性调用伤害接口；箭在寿命结束后释放。
+## 角色身上的箭跟随到死亡/卸载；飞行或扎在场景中的箭保留原有五秒清理规则。
 func _physics_process(delta: float) -> void:
 	lifetime += delta
+	if attachment != null:
+		if not attachment.follow(self): queue_free(); return
+		if attachment.persistent: return
 	if lifetime > 5: queue_free(); return
 	if stopped: return
 	var remaining := delta
@@ -44,15 +51,19 @@ func _physics_process(delta: float) -> void:
 			global_position = hit.position
 			result = hit
 			stopped = true
+			orient_flight()
+			var region := "身体"
 			if hostile and hit.collider.has_method("receive_damage"):
 				hit.collider.receive_damage(15,velocity.normalized())
 			elif hit.collider.has_method("receive_strike"):
-				var region: String = hit.collider.receive_strike(hit.position, hit.normal, velocity)
+				region = hit.collider.receive_strike(hit.position, hit.normal, velocity)
 				if notify.is_valid(): notify.call("弓箭命中：" + region)
 			elif notify.is_valid(): notify.call("箭被实体挡住")
+			if hit.collider is Node3D:
+				attachment = Attachment.new()
+				attachment.bind(self,hit.collider,region,velocity)
 		elif hit.get("blocked", false): stopped = true
 		else: global_position = finish
 		velocity += Vector3.DOWN * 9.8 * dt
 		remaining -= dt
-	if velocity.normalized().cross(Vector3.UP).length() > 0.01:
-		shaft.look_at(global_position + velocity, Vector3.UP)
+	if not stopped: orient_flight()

@@ -1,0 +1,7 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/art/character_source.gd" id="1"]
+[resource]
+script = ExtResource("1")
+asset_id = "guard"
+title = "守卫"
+enemy_palette = true

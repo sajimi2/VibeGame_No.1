@@ -31,7 +31,7 @@ func _ready() -> void:
 ## 向下采样支撑面，使阴影片位置和朝向贴合坡面；没有地面时隐藏。
 func _physics_process(_delta: float) -> void:
 	var anchor: Vector3 = get_parent().global_position
-	var query := PhysicsRayQueryParameters3D.create(anchor+Vector3.UP*0.25,anchor+Vector3.DOWN*3,1)
+	var query := PhysicsRayQueryParameters3D.create(anchor+Vector3.UP*0.25,anchor+Vector3.DOWN*3,1|32)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	patch.visible = not hit.is_empty()
 	if hit.is_empty(): return

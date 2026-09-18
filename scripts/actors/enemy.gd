@@ -3,6 +3,11 @@ extends CharacterBody3D
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
 const Art = preload("res://scripts/presentation/directional_art.gd")
+const Pose = preload("res://scripts/presentation/character_pose.gd")
+const Billboard = preload("res://scripts/presentation/character_billboard.gd")
+const FrameSpec = preload("res://scripts/art/frame_spec.gd")
+## 留空时按守卫/弓手选择；新敌人可指定来源资源中的稳定资产 ID。
+@export var art_id := ""
 var player: CharacterBody3D
 var camera: Camera3D
 var routes: Node
@@ -43,7 +48,7 @@ var gait := 0.0
 var clock := 0.0
 var knockback := Vector3.ZERO
 var locked_direction := Vector3.FORWARD
-var world_shadow: MeshInstance3D
+var world_shadow: Sprite3D
 var outline: Sprite3D
 var occluded := false
 var sprite: Sprite3D
@@ -60,7 +65,7 @@ func _ready() -> void:
 	add_to_group("tactical_enemies")
 	navigation_excluded.append(get_rid())
 	collision_layer = 1|16
-	collision_mask = 1|2
+	collision_mask = 1|2|32
 	floor_snap_length = 0.35
 	floor_constant_speed = true
 	floor_max_angle = deg_to_rad(42)
@@ -75,7 +80,7 @@ func _ready() -> void:
 	sprite.texture = Art.texture(0,-1,false,false,0,0,true)
 	sprite.pixel_size = 0.04
 	sprite.offset = Vector2(0,24)
-	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -86,7 +91,7 @@ func _ready() -> void:
 	outline.modulate = Color("f1a36e")
 	outline.visible = false
 	add_child(outline)
-	world_shadow=preload("res://scripts/presentation/world_lighting.gd").actor_shadow(self)
+	world_shadow=Billboard.shadow(self)
 	marker = Label3D.new()
 	marker.position.y = 2.45
 	marker.pixel_size = 0.015
@@ -101,8 +106,8 @@ func _ready() -> void:
 		var shield=preload("res://scripts/presentation/weapon_art.gd")
 		shield_node=Node3D.new()
 		add_child(shield_node)
-		shield.block(shield_node,Vector3(0.48,0.65,0.11),Vector3(0.36,-0.12,-0.25),"596f72")
-		shield.block(shield_node,Vector3(0.50,0.07,0.13),Vector3(0.36,-0.12,-0.25),"c3a873")
+		shield.block(shield_node,WeaponArt.SHIELD_SIZE,WeaponArt.SHIELD_CENTER,"596f72")
+		shield.block(shield_node,Vector3(0.50,0.07,0.13),WeaponArt.SHIELD_CENTER,"c3a873")
 	trail=preload("res://scripts/presentation/swing_trail.gd").new()
 	add_child(trail)
 	health_bar=preload("res://scripts/presentation/enemy_health.gd").new()
@@ -188,8 +193,12 @@ func update_visuals(travel: float) -> void:
 		WeaponArt.set_bow_draw(sword.get_child(0),draw,nocked)
 		draw_phase=roundi(draw*8)
 	motion_angle=motion.angle
-	sprite.texture=Art.texture(direction,step,false,false,direction,pose,true,motion.arm,motion.weight,draw_phase)
-	outline.texture=Art.texture(direction,step,false,true,direction,pose,true,motion.arm,motion.weight,draw_phase)
+	var frame := Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",FrameSpec.character(direction,step,false,direction,pose,motion.arm,motion.weight,draw_phase),true)
+	sprite.texture=frame.texture
+	outline.texture=Art.outline_texture(sprite.texture)
+	Billboard.align(sprite, camera)
+	Billboard.align(outline, camera)
+	Billboard.sync_shadow(world_shadow, sprite)
 	update_occlusion()
 	sprite.modulate=Color(1.8,1.5,1.2) if hurt>0 else Color("bbd1b5") if ranged else Color.WHITE
 	marker.text={"guard":"弓箭手" if ranged else "守卫","chase":"!","windup":"瞄准！" if ranged else "突刺！" if thrust else "横斩！","nock":"搭箭…","recover":"收招 · 破绽","investigate":"? 调查","search":"? 搜索","return":"返回"}.get(state,state)
@@ -202,11 +211,14 @@ func update_visuals(travel: float) -> void:
 	if facing.length()>0.01: sword.look_at(global_position+Vector3.UP*1.1+facing)
 	if not ranged:
 		sword.rotate_object_local(Vector3.UP,motion.angle)
-		sword.translate_object_local(Vector3(0,0,-motion.extension))
+	# 人物纹理和武器共享同一手心像素，世界握点随相机投影转换。
+	sword.global_position = Pose.world_grip(sprite, camera, frame.grip)
 	var active := not ranged and state=="recover" and not hurt_recovery and recovery_duration-attack_time<0.16
-	var reach := 2.55 if thrust else 1.85
-	var blade_direction := -sword.global_basis.z
-	trail.sample_blade(active,sword.global_position+blade_direction*reach*0.78,sword.global_position+blade_direction*reach)
+	var held: Node3D = sword.get_child(0)
+	if not ranged:
+		# 只倾斜武器模型；朝向与手心位置继续由本帧姿态决定。
+		held.rotation.x = move_toward(held.rotation.x, -0.5 if state not in ["windup", "recover"] else 0.0, get_physics_process_delta_time() * 6.0)
+	trail.sample_blade(active,held.to_global(Vector3(0,0,-1.32)),held.to_global(Vector3(0,0,-1.7)))
 
 ## 执行一次已蓄势的攻击：弓手生成箭，守卫沿锁定方向采样近战射线。
 func perform_attack() -> void:
@@ -259,6 +271,30 @@ func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_da
 		attack_time=0.35
 	effects.impact(global_position+Vector3.UP,damage,hp==0)
 	return "格挡" if blocking else "顶部" if top else "身体"
+
+## 身体朝向是 facing 而非根节点 rotation；盾箭直接使用盾节点，保证两者转身时相对位置不变。
+func projectile_attachment_frame(region: String) -> Transform3D:
+	if region == "格挡" and is_instance_valid(shield_node): return shield_node.global_transform
+	return Transform3D(Basis(Vector3.UP,atan2(facing.x,facing.z)),global_position)
+
+## 盾挡判定仍走角色胶囊；只把视觉箭尖沿来袭线落到盾面，并限制在可见盾牌边缘以内。
+func projectile_attachment_point(region: String, point: Vector3, incoming: Vector3) -> Vector3:
+	if region != "格挡" or not is_instance_valid(shield_node):
+		return preload("res://scripts/combat/impact_attachment.gd").body_point(global_position,point)
+	var local := shield_node.to_local(point)
+	var direction := shield_node.global_basis.inverse() * incoming.normalized()
+	var center := WeaponArt.SHIELD_CENTER
+	var half := WeaponArt.SHIELD_SIZE * 0.5
+	var front := center.z - half.z - 0.035
+	if absf(direction.z) > 0.001: local += direction * ((front-local.z)/direction.z)
+	local.x = clampf(local.x,center.x-half.x+0.035,center.x+half.x-0.035)
+	local.y = clampf(local.y,center.y-half.y+0.035,center.y+half.y-0.035)
+	local.z = front
+	return shield_node.to_global(local)
+
+## 死亡外观会隐藏盾并翻倒纸片，清理附着箭以免留在已不存在的站立姿态上。
+func projectile_anchor_alive() -> bool:
+	return hp > 0
 
 ## 受击感知独立于格挡和硬直；仅在当前确实可见时记录玩家位置，否则沿来袭方向短距离调查。
 func notice_strike(toward_attacker: Vector3) -> void:

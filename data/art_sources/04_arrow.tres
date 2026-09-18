@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/art/arrow_source.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+asset_id = "arrow"
+title = "箭矢"
+cell_size = Vector2i(32, 12)
+direction_count = 1
