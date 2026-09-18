@@ -3,6 +3,8 @@ extends Node3D
 const Trace = preload("res://scripts/combat/space_trace.gd")
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
+const PixelWeapon = preload("res://scripts/presentation/pixel_weapon.gd")
+var sunlight: DirectionalLight3D
 const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Arrow = preload("res://scripts/combat/arrow.gd")
 const Actions = preload("res://scripts/combat/action_library.gd")
@@ -55,6 +57,7 @@ func setup(body: CharacterBody3D, callback: Callable) -> void:
 	bow = preload("res://scripts/presentation/weapon_art.gd").bow()
 	bow.hide()
 	hand.add_child(bow)
+	PixelWeapon.attach(bow,actor.camera,sunlight)
 	arrows = Node3D.new()
 	arrows.name = "Arrows"
 	get_parent().add_child(arrows)
@@ -349,3 +352,4 @@ func apply_weapon(profile: TacticalWeaponData) -> void:
 	attack_duration = profile.duration
 	attack_interval = profile.interval
 	weapon.scale = profile.visual_scale
+	PixelWeapon.attach(weapon,actor.camera,sunlight)

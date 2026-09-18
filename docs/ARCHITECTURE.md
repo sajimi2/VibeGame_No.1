@@ -32,6 +32,8 @@
 
 人物表现由 `presentation/character_pose.gd` 提供关节和手心数据，`directional_art.gd` 绘制像素纸片；玩家战斗更新动作后同帧刷新纸片，并把世界武器握柄对齐该手心。刀光取实际模型端点，命中仍走原射线。石材像素纹理和 Shader 在 `stone_palette.gd` / `pixel_stone.gdshader`，与 `battle_prop.gd` 的几何、碰撞分开。资产入口和调研见 ART_PIPELINE.md。
 
+玩家换装/建弓、敌人建剑盾/弓时调用 `PixelWeaponVisual.attach(model,camera,sun)`；它随模型释放，读取最终变换，交给 `pixel_frame_gpu` 在独立小尺寸 SubViewport 输出颜色/深度，原模型仅投影。屏外、隐藏和同姿态停止出图。`weapon_sprite_baker` 只负责几何采集及显式 `capture_frame()` 离线导出，CPU 图像缓存不进入游戏刷新。弓以 `pixel_revision` 更新弦形，已有像素箭通过 `pixel_bake_ignore` 排除重复烘焙。`swing_trail` 复用 GPU 后端把世界轨迹转为像素刀光并逐块消退。二者不参与伤害计算，详见 WEAPON_PIXEL_EXPERIMENT.md。
+
 `character_billboard.gd` 只接收 Sprite3D 与相机，统一直立纸片的深度/高度补偿并同步剪影投影，不读取战斗、UI 或存档。疾跑/跳跃状态由玩家物理过程产生，姿态生成器据此改变关节；阴影和武器握点均跟随同一帧。玩家 Shift 疾跑、Ctrl 精确射击；步行 4.2m/s、疾跑 6.8m/s、起跳 6.6m/s。
 
 ## 美术帧与命中附着

@@ -8,6 +8,7 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 - 不带 `dev` 的批处理运行 `builds/windows` 中的导出包；修改源码后须重新导出。EXE 与同名 PCK 必须配套。
 - WASD 移动，Shift 疾跑，Space 跳跃，C 下蹲，左键近战，右键弓箭，E 交互，I 背包，Ctrl 暂停辅瞄，R 重试。
 - 图集工作台：打开 `tools/art_preview.tscn`，按 **F6**。查看玩家/守卫/弓手/箭矢，导出原尺寸 PNG + JSON；编辑 PNG 后载入 JSON、校准握点、应用，再 F5 查看游戏效果。使用与扩展说明见 [美术资产](docs/ART_PIPELINE.md)。
+- F5 已启用玩家匕首/宝剑/大砍刀/弓、守卫剑盾、弓手弓及刀光的像素表现。模型对照工具：打开 `tools/weapon_pixel_lab.tscn`，按 **F6**；1 宝剑、2 大砍刀、3 匕首、Tab 原版/像素对照、V 导出当前帧。工具场景不读写进度，说明见 [武器像素化](docs/WEAPON_PIXEL_EXPERIMENT.md)。
 
 ## 阅读代码
 先读 [当前架构](docs/ARCHITECTURE.md)。生命周期入口是 `scripts/world/level.gd`，地图参数是 `scripts/world/battlefield.gd`。

@@ -38,6 +38,7 @@ static func model(asset_id: String = "arrow") -> MeshInstance3D:
 			surface.add_vertex(points[index])
 	surface.generate_normals()
 	var node := MeshInstance3D.new()
+	node.set_meta("pixel_bake_ignore",true) # 已是带透明纹理的像素箭，不能再次当无纹理网格烘焙。
 	node.mesh = surface.commit()
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = texture(asset_id)

@@ -79,6 +79,7 @@ func _ready() -> void:
 	_build_targets()
 	combat = preload("res://scripts/combat/player_combat.gd").new()
 	add_child(combat)
+	combat.sunlight = sunlight
 	combat.setup(player, func(message: String): last_feedback = message)
 	# 延迟调用让当前装配先结束，随后再等待物理世界同步。
 	if encounter_enabled: start_encounter.call_deferred()
@@ -134,6 +135,7 @@ func start_encounter() -> void:
 		enemy.position=enemy.home+Vector3.UP*0.05
 		enemy.player=player
 		enemy.camera=camera
+		enemy.sunlight=lighting.sun
 		enemy.routes=routes
 		enemy.effects=effects
 		add_child(enemy)

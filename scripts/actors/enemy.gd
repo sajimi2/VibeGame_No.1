@@ -2,6 +2,8 @@ extends CharacterBody3D
 ## 守卫和弓手共用的状态机，负责感知、决策、移动、攻击及受击。
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
+const PixelWeapon = preload("res://scripts/presentation/pixel_weapon.gd")
+var sunlight: DirectionalLight3D
 const Art = preload("res://scripts/presentation/directional_art.gd")
 const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Billboard = preload("res://scripts/presentation/character_billboard.gd")
@@ -104,12 +106,14 @@ func _ready() -> void:
 	add_child(sword)
 	var held: MeshInstance3D = WeaponArt.bow() if ranged else WeaponArt.melee_model("sword")
 	sword.add_child(held)
+	PixelWeapon.attach(held,camera,sunlight)
 	if not ranged:
-		var shield=preload("res://scripts/presentation/weapon_art.gd")
 		shield_node=Node3D.new()
 		add_child(shield_node)
-		shield.block(shield_node,WeaponArt.SHIELD_SIZE,WeaponArt.SHIELD_CENTER,"596f72")
-		shield.block(shield_node,Vector3(0.50,0.07,0.13),WeaponArt.SHIELD_CENTER,"c3a873")
+		var shield := WeaponArt.shield()
+		shield_node.add_child(shield)
+		shield.position = WeaponArt.SHIELD_CENTER
+		PixelWeapon.attach(shield,camera,sunlight)
 	trail=preload("res://scripts/presentation/swing_trail.gd").new()
 	add_child(trail)
 	health_bar=preload("res://scripts/presentation/enemy_health.gd").new()
