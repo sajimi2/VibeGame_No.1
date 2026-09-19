@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/enemy_tuning.gd" id="1"]
+[resource]
+script = ExtResource("1")
+guard_health = 80
+archer_health = 52
+damage_scale = 1.3
+windup_scale = 0.85
+recovery_scale = 0.78
+cooldown_scale = 0.8
+chase_speed = 3.3
+leash_distance = 18.0

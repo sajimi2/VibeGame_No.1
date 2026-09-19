@@ -1,6 +1,7 @@
 extends Node3D
 ## 玩家攻击控制器：把输入转换为动作时序、射线命中和投射物。
 const Trace = preload("res://scripts/combat/space_trace.gd")
+const MeleeQuery = preload("res://scripts/combat/melee_query.gd")
 const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
 const PixelWeapon = preload("res://scripts/presentation/pixel_weapon.gd")
@@ -27,6 +28,7 @@ var queued_action := 0
 var queued_point := Vector3.ZERO
 var buffer_time := 0.0
 var struck: Dictionary = {}
+var attack_hits := 0
 var locked_direction := Vector3.FORWARD
 var weapon: MeshInstance3D
 var bow: MeshInstance3D
@@ -116,6 +118,7 @@ func attack(point: Vector3) -> bool:
 	actor.effects.sound("swing",actor.global_position)
 	previous_angle = rad_to_deg(attack_action.sweep_from)
 	struck.clear()
+	attack_hits=0
 	return true
 
 ## 锁定目标并创建暂不运动的箭，等拉弓前摇结束后才放行。
@@ -234,7 +237,7 @@ func align_impact(phase: float) -> void:
 	var height: float = hand.global_position.y-actor.global_position.y
 	if absf(height)>=length: return
 	var point := hand.global_position+forward*sqrt(length*length-height*height)
-	var query := PhysicsRayQueryParameters3D.create(point+Vector3.UP,point+Vector3.DOWN*3.0,1|32,[actor.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(point+Vector3.UP,point+Vector3.DOWN*3.0,1|32,MeleeQuery.actor_exclusions(actor))
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty() or hit.normal.y<0.65 or absf(hit.position.y-actor.global_position.y)>0.6: return
 	var target: Vector3 = hit.position+Vector3.UP*0.03
@@ -249,6 +252,13 @@ func align_impact(phase: float) -> void:
 	if phase>=impact and not impact_emitted:
 		impact_emitted = true
 		dust.burst(target,forward)
+		ground_strike(target)
+
+## 只有刀尖确认落地后调用；直接命中过的目标不再受冲击伤害，盾挡仍走统一受击接口。
+func ground_strike(point: Vector3) -> void:
+	if attack_action.impact_radius<=0: return
+	for hit in MeleeQuery.impact(actor,point,attack_action.impact_radius,attack_action.impact_height_tolerance):
+		apply_melee_hit(hit,hit.incoming,attack_action.impact_damage_scale)
 
 ## 玩家在同帧移动前查询下一步动作曲线；战斗不直接移动角色，前冲不会绕过碰撞。
 func movement_sample(delta: float) -> Dictionary:
@@ -289,19 +299,25 @@ func strike(from_angle: float, to_angle: float) -> void:
 	for sample in samples + 1:
 		var angle := lerpf(from_angle, to_angle, float(sample) / samples)
 		var direction := locked_direction.rotated(Vector3.UP, deg_to_rad(angle))
-		var hit := Trace.trace(get_world_3d(), muzzle(), muzzle() + direction * melee_range)
-		for cloth in hit.get("penetrated", []):
+		var scan := MeleeQuery.sweep(get_world_3d(),muzzle(),muzzle()+direction*melee_range,actor.get_rid())
+		for cloth in scan.cloths:
 			if not struck.has(cloth.get_instance_id()):
 				struck[cloth.get_instance_id()] = true
 				Trace.apply_cloth(cloth)
-		if not hit.has("collider"): continue
-		var target: Object = hit.collider
-		if struck.has(target.get_instance_id()): continue
-		struck[target.get_instance_id()] = true
-		if target.has_method("receive_strike"):
-			melee_hits += 1
-			var region: String = target.receive_strike(hit.position, hit.normal, direction, melee_damage) if target.is_in_group("tactical_enemies") else target.receive_strike(hit.position, hit.normal, direction)
-			if notify.is_valid(): notify.call("近战命中：" + region)
+		for hit in scan.hits: apply_melee_hit(hit,direction)
+
+## 全挥刀共享数量与去重；先命中者占用名额，格挡也计入，不能用格挡绕过上限。
+func apply_melee_hit(hit: Dictionary, direction: Vector3, damage_scale: float = 1.0) -> void:
+	var target: Node=hit.collider
+	if not target.has_method("receive_strike") or struck.has(target.get_instance_id()): return
+	if attack_action!=null and attack_hits>=attack_action.max_targets: return
+	if target.is_in_group("tactical_enemies") and target.hp<=0: return
+	struck[target.get_instance_id()]=true
+	attack_hits+=1
+	melee_hits+=1
+	var force: float=attack_action.knockback_strength if attack_action!=null else 2.0
+	var region: String=target.receive_strike(hit.position,hit.normal,direction,roundi(melee_damage*damage_scale),force) if target.is_in_group("tactical_enemies") else target.receive_strike(hit.position,hit.normal,direction)
+	if notify.is_valid(): notify.call("近战命中 %d 个目标：%s"%[attack_hits,region])
 
 ## 在光标附近选择可见且射线可达的敌人，返回轻微修正后的目标点；Ctrl 临时关闭辅助。
 func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
@@ -311,7 +327,8 @@ func assisted_point(raw: Vector3, cursor: Vector2) -> Vector3:
 	var result := raw
 	for enemy in get_tree().get_nodes_in_group("tactical_enemies"):
 		if enemy.hp<=0: continue
-		var target: Vector3=enemy.global_position+Vector3.UP*1.0
+		# 按真实体型选择躯干，避免把史莱姆辅助瞄准到旧人形胸高的空中。
+		var target: Vector3=enemy.global_position+Vector3.UP*(enemy.body_height*.6)
 		if actor.camera.is_position_behind(target) or muzzle().distance_to(target)>16: continue
 		var distance: float=actor.camera.unproject_position(target).distance_to(cursor)
 		if distance>=best: continue

@@ -16,6 +16,13 @@ var home := Vector3(2,0,-0.5)
 var hp := 60
 var max_hp := 60
 var ranged := false
+## 外形差异由演员提供；默认值保持已有剑盾守卫和弓手。
+var body_height := 1.65
+var body_radius := 0.29
+var uses_equipment := true
+var can_block := true
+var tuning: Resource = preload("res://scripts/combat/enemy_tuning.gd").new()
+var returning_to_post := false
 var attack_cycle := 0
 var action_duration := 0.32
 var recovery_duration := 0.75
@@ -70,10 +77,10 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(42)
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
-	capsule.height = 1.65
-	capsule.radius = 0.29
+	capsule.height = body_height
+	capsule.radius = body_radius
 	shape.shape = capsule
-	shape.position.y = 0.825
+	shape.position.y = body_height/2
 	add_child(shape)
 	marker = Label3D.new()
 	marker.position.y = 2.45
@@ -83,17 +90,18 @@ func _ready() -> void:
 	add_child(marker)
 	sword = Node3D.new()
 	add_child(sword)
-	var held: MeshInstance3D = WeaponArt.bow() if ranged else WeaponArt.melee_model("sword")
-	sword.add_child(held)
-	PixelWeapon.attach(held,camera,sunlight)
-	if not ranged:
+	if uses_equipment:
+		var held: MeshInstance3D = WeaponArt.bow() if ranged else WeaponArt.melee_model("sword")
+		sword.add_child(held)
+		PixelWeapon.attach(held,camera,sunlight)
+	if not ranged and uses_equipment and can_block:
 		shield_node=Node3D.new()
 		add_child(shield_node)
 		var shield := WeaponArt.shield()
 		shield_node.add_child(shield)
 		shield.position = WeaponArt.SHIELD_CENTER
 		PixelWeapon.attach(shield,camera,sunlight)
-	trail=preload("res://scripts/presentation/swing_trail.gd").new()
+	trail=preload("res://scripts/presentation/swing_trail.gd").new() if uses_equipment else MeshInstance3D.new()
 	add_child(trail)
 	health_bar=preload("res://scripts/presentation/enemy_health.gd").new()
 	add_child(health_bar)
@@ -106,7 +114,7 @@ func _ready() -> void:
 ## 综合安全区、距离、朝向和遮挡判断视野；近距离警觉仍需通过遮挡检查。
 func can_see_target() -> bool:
 	if player.hp<=0 or player.safe_zone: return false
-	var eye := global_position+Vector3.UP*1.4
+	var eye := global_position+Vector3.UP*(body_height*.85)
 	var target := player.global_position+Vector3.UP*(0.65 if player.crouched else 1.2)
 	var offset := target-eye
 	if offset.length()>sight_range(): return false
@@ -141,7 +149,7 @@ func _physics_process(delta: float) -> void:
 		var active_time := recovery_duration-attack_time
 		if active_time<0.18:
 			committed_step=Vector3(locked_direction.x,0,locked_direction.z).normalized()*sin(active_time/0.18*PI)*(1.8 if thrust else 1.0)
-	velocity=committed_step+move*(2.75 if state=="chase" else 1.8)+knockback+Vector3.UP*(velocity.y-20*delta)
+	velocity=committed_step+move*(tuning.chase_speed if state=="chase" else 1.8)+knockback+Vector3.UP*(velocity.y-20*delta)
 	knockback=knockback.move_toward(Vector3.ZERO,delta*14)
 	move_and_slide()
 	var travel := Vector2(position.x-before.x,position.z-before.z).length()
@@ -220,6 +228,7 @@ func perform_attack() -> void:
 		# 朝前摇时锁定的位置放箭；玩家躲入遮挡后，不继续跟踪其新位置。
 		var arrow := preload("res://scripts/combat/arrow.gd").new()
 		arrow.hostile=true
+		arrow.hostile_damage=roundi(15*tuning.damage_scale)
 		arrow.hit_mask=1|2|8|16
 		arrow.pierced.append(get_rid())
 		get_parent().add_child(arrow)
@@ -233,21 +242,21 @@ func perform_attack() -> void:
 		var ray := PhysicsRayQueryParameters3D.create(start,start+locked_direction.rotated(Vector3.UP,angle)*(2.55 if thrust else 1.85),1|2|8,[get_rid()])
 		var hit := get_world_3d().direct_space_state.intersect_ray(ray)
 		if not hit.is_empty() and hit.collider==player:
-			player.receive_damage(25 if thrust else 20,locked_direction)
+			player.receive_damage(roundi((25 if thrust else 20)*tuning.damage_scale),locked_direction)
 			break
 
 ## 接收命中法线、来袭方向及基础伤害，计算盾挡或顶部倍率并扣血。
-## 同时处理死亡、击退和打断动作，返回命中部位供反馈显示。
-func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_damage: int = 20) -> String:
+## 同时处理死亡、击退和打断；可选击退力度仍交给碰撞移动，盾挡按原比例削弱。
+func receive_strike(_point: Vector3, normal: Vector3, incoming: Vector3, base_damage: int = 20, knockback_strength: float = 2.0) -> String:
 	if hp<=0: return "已倒下"
 	var top := normal.y>0.65 and incoming.y<-0.05
 	var toward_attacker := Vector3(-incoming.x,0,-incoming.z).normalized()
-	var blocking := not ranged and not top and state in ["guard","chase","return"] and facing.dot(toward_attacker)>0.5
+	var blocking := can_block and not ranged and not top and state in ["guard","chase","return"] and facing.dot(toward_attacker)>0.5
 	var damage := maxi(1,roundi(base_damage*0.3)) if blocking else roundi(base_damage*1.5) if top else base_damage
 	hp = maxi(0,hp-damage)
 	health_bar.set_health(hp,max_hp)
 	hurt = 0.15
-	knockback = Vector3(incoming.x,0,incoming.z).normalized()*2
+	knockback = Vector3(incoming.x,0,incoming.z).normalized()*knockback_strength
 	if hp>0: notice_strike(toward_attacker)
 	if hp==0:
 		state="dead"
@@ -307,7 +316,7 @@ func notice_strike(toward_attacker: Vector3) -> void:
 
 ## 检测相机到敌人的遮挡，只为存活且被挡住的敌人显示轮廓。
 func update_occlusion() -> void:
-	var target := global_position+Vector3.UP*0.95
+	var target := global_position+Vector3.UP*(body_height*.58)
 	var origin := camera.project_ray_origin(camera.unproject_position(target))
 	var query := PhysicsRayQueryParameters3D.create(origin,target,1|4,[get_rid()])
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
@@ -341,6 +350,22 @@ func sight_range() -> float:
 
 ## 只在真实看见玩家时更新最后目击位置；失去视野超过宽限时间后转为调查。
 func update_senses(delta: float) -> void:
+	# 超出岗位半径或玩家回到营地时先收招归队；回到岗位附近才重新感知，避免边缘反复横跳。
+	if tuning.leash_distance>0:
+		if global_position.distance_to(home)>tuning.leash_distance or (player.safe_zone and state not in ["guard","return"]):
+			returning_to_post=true
+		if returning_to_post:
+			if global_position.distance_to(home)<0.8:
+				returning_to_post=false
+			else:
+				target_visible=false
+				lost_time+=delta
+				if state!="return": repath=0.0
+				state="return"
+				strike_pending=false
+				volley_left=0
+				hurt_recovery=false
+				return
 	target_visible=can_see_target()
 	if target_visible:
 		lost_time=0
@@ -371,7 +396,7 @@ func choose_movement(delta: float) -> Vector3:
 				attack_time=0.65
 			else:
 				state="recover"
-				attack_time=1.35 if ranged else 0.8 if thrust else 0.65
+				attack_time=(1.35 if ranged else 0.8 if thrust else 0.65)*tuning.recovery_scale
 				recovery_duration=attack_time
 	elif state=="nock":
 		attack_time-=delta
@@ -380,8 +405,8 @@ func choose_movement(delta: float) -> Vector3:
 				locked_target=player.global_position+Vector3.UP*(0.55 if player.crouched else 1.0)
 				facing=Vector3(last_seen.x-global_position.x,0,last_seen.z-global_position.z).normalized()
 				state="windup"
-				attack_time=0.45
-				action_duration=0.45
+				attack_time=0.45*tuning.windup_scale
+				action_duration=attack_time
 				draw_from=0.35
 			else:
 				volley_left=0
@@ -403,13 +428,13 @@ func choose_movement(delta: float) -> Vector3:
 			thrust=not ranged and attack_cycle%2==1
 			attack_cycle+=1
 			volley_left=1 if ranged else 0
-			attack_time=0.9 if ranged else 0.5 if thrust else 0.32
+			attack_time=(0.9 if ranged else 0.5 if thrust else 0.32)*tuning.windup_scale
 			action_duration=attack_time
 			hurt_recovery=false
 			draw_from=0.0
 			locked_target=player.global_position+Vector3.UP*(0.55 if player.crouched else 1.0)
 			locked_direction=(last_seen+Vector3.UP-(global_position+Vector3.UP*1.1)).normalized()
-			cooldown=2.0 if ranged else 1.15
+			cooldown=(2.0 if ranged else 1.15)*tuning.cooldown_scale
 	elif state in ["chase","investigate","return"]:
 		var goal := home if state=="return" else last_seen
 		retreat_timer-=delta
@@ -419,16 +444,7 @@ func choose_movement(delta: float) -> Vector3:
 				retreat_timer=1.0
 				repath=0
 			goal=retreat_goal
-		repath-=delta
-		if repath<=0:
-			route=routes.path(global_position,goal,navigation_excluded)
-			route_index=0
-			if route.size()>1 and routes.traversable(global_position,route[1],navigation_excluded): route_index=1
-			repath=0.45
-		if route_index<route.size():
-			var offset := route[route_index]-global_position
-			if Vector2(offset.x,offset.z).length()<0.10: route_index+=1
-			else: move=Vector3(offset.x,0,offset.z).normalized()
+		move=route_step(goal,delta)
 		if state=="investigate":
 			search_time-=delta
 			if global_position.distance_to(last_seen)<0.7 or route.is_empty(): state="search"
@@ -440,3 +456,17 @@ func choose_movement(delta: float) -> Vector3:
 		if search_time<=0: state="return"
 	elif state=="guard": facing=Vector3(sin(clock*0.5)*0.7,0,1).normalized()
 	return move
+
+## 共同导航只给出水平运动方向；攻击状态、速度和碰撞由各演员推进。
+func route_step(goal: Vector3, delta: float) -> Vector3:
+	repath-=delta
+	if repath<=0:
+		route=routes.path(global_position,goal,navigation_excluded)
+		route_index=0
+		if route.size()>1 and routes.traversable(global_position,route[1],navigation_excluded): route_index=1
+		repath=0.45
+	if route_index<route.size():
+		var offset := route[route_index]-global_position
+		if Vector2(offset.x,offset.z).length()<0.10: route_index+=1
+		else: return Vector3(offset.x,0,offset.z).normalized()
+	return Vector3.ZERO

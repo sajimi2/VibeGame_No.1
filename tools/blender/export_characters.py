@@ -6,7 +6,7 @@ import bpy
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = {name: ROOT / f'assets/characters/blender/{name}_rig.blend'
-           for name in ('player', 'guard', 'archer', 'skeleton')}
+           for name in ('player', 'guard', 'archer', 'skeleton', 'goblin', 'golem', 'slime')}
 
 
 def export_character(asset):
@@ -14,7 +14,7 @@ def export_character(asset):
     bpy.ops.wm.open_mainfile(filepath=str(SOURCES[asset]), load_ui=False, use_scripts=False)
     rig = next(obj for obj in bpy.context.scene.objects if obj.type == 'ARMATURE')
     meshes = [obj for obj in bpy.context.scene.objects
-              if obj.type == 'MESH' and obj.get('art_part') in ('upper', 'lower')]
+              if obj.type == 'MESH' and obj.get('art_part') in ('upper', 'lower', 'full')]
     if not meshes or not bpy.data.actions:
         raise RuntimeError(f'{asset} 缺少身体网格或动作，停止导出')
     bpy.ops.object.select_all(action='DESELECT')
@@ -40,6 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('assets', nargs='*', metavar='character')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else [])
     if any(asset not in SOURCES for asset in args.assets):
-        parser.error('角色必须是 player、guard、archer 或 skeleton')
+        parser.error('角色必须是 ' + '、'.join(SOURCES))
     for asset in args.assets or list(SOURCES):
         export_character(asset)

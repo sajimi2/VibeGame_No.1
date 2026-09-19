@@ -10,6 +10,12 @@ extends Resource
 @export var eases := PackedFloat32Array()
 @export var sweep_from := -0.5
 @export var sweep_to := 0.5
+## 同一动作共享目标上限；落地冲击与刀刃使用同一次去重记录。
+@export_range(1,16) var max_targets := 1
+@export var knockback_strength := 2.0
+@export var impact_radius := 0.0
+@export var impact_damage_scale := 0.75
+@export var impact_height_tolerance := 0.55
 @export var times := PackedFloat32Array([0,1])
 @export var blades := PackedVector3Array()
 

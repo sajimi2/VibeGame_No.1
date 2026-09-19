@@ -50,6 +50,7 @@ func bake(asset: String) -> bool:
 	root.add_child(rig)
 	await process_frame
 	manifest={"version":2,"asset":asset,"cell":frame_size,"pixel_size":Spec.pixel(asset),"pitch":Spec.PITCH,"entries":{},"pages":[],"source_scene":Spec.source_scene(asset),"animation_library":Spec.source_model(asset)}
+	manifest.parts=Spec.parts(asset)
 	page=0
 	count=0
 	duplicates.clear()
@@ -106,6 +107,8 @@ func _capture(part: String, action: String, direction: int, move: int, phase: in
 	var frame:=packed.get_region(Rect2i(0,0,frame_size,frame_size))
 	var area:=frame.get_used_rect()
 	if not area.has_area() or area.position.x<=0 or area.position.y<=0 or area.end.x>=frame_size or area.end.y>=frame_size:
+		frame.save_png(staging_folder+"/rejected_frame.png")
+		print("REJECTED_FRAME ",action," direction=",direction," phase=",phase," bounds=",area)
 		push_error("出图为空或超出采样框："+action+"；原有效图集保留。")
 		return false
 	var trim:=area.grow(1)

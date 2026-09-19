@@ -28,6 +28,7 @@ func sample(clip: String, phase: float) -> Dictionary:
 		match animation.track_get_type(track):
 			Animation.TYPE_POSITION_3D: rig_skeleton.set_bone_pose_position(index,animation.position_track_interpolate(track,time))
 			Animation.TYPE_ROTATION_3D: rig_skeleton.set_bone_pose_rotation(index,animation.rotation_track_interpolate(track,time).normalized())
+			Animation.TYPE_SCALE_3D: rig_skeleton.set_bone_pose_scale(index,animation.scale_track_interpolate(track,time))
 	_sync()
 	return anchors()
 

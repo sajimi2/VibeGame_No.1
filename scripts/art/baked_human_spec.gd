@@ -3,27 +3,38 @@ extends RefCounted
 const CELL := 96
 const PITCH := -35.0
 const CENTER := Vector3(0,0.88,0)
+const CREATURES := ["goblin","golem","slime"]
 const ACTIONS := {
 	"player":["light_ready","light_rise","light_stab","sword_ready","sword_slash","sword_thrust","heavy_drag","heavy_swing","bow_ready","bow_draw","hurt","death_fall"],
 	"guard":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
 	"skeleton":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
-	"archer":["bow_ready","bow_draw","hurt","death_fall"]}
+	"archer":["bow_ready","bow_draw","hurt","death_fall"],
+	"goblin":["idle","walk","attack","hurt","death_fall"],
+	"golem":["idle","walk","attack","hurt","death_fall"],
+	"slime":["idle","walk","attack","hurt","death_fall"]}
 const LABELS := {"light_ready":"反持戒备","light_rise":"匕首上挥","light_stab":"匕首下刺","sword_ready":"双手持剑","sword_slash":"宝剑横斩","sword_thrust":"宝剑突刺","heavy_drag":"重刀拖地","heavy_swing":"重刀前劈","shield_ready":"剑盾戒备","shield_slash":"剑盾横斩","shield_thrust":"剑盾突刺","bow_ready":"持弓戒备","bow_draw":"拉弓/释放","hurt":"受击卸力","death_fall":"死亡倒地"}
 
 static func folder(asset: String) -> String: return "res://assets/characters/"+asset+"_baked"
-static func ready(asset: String) -> String: return "shield_ready" if asset in ["guard","skeleton"] else "bow_ready" if asset=="archer" else "light_ready"
+static func ready(asset: String) -> String: return "idle" if asset in CREATURES else "shield_ready" if asset in ["guard","skeleton"] else "bow_ready" if asset=="archer" else "light_ready"
+static func parts(asset: String) -> Array: return ["full"] if asset in CREATURES else ["upper","lower"]
 ## 分辨率属于单个资产；保持采样范围不变，提高像素密度不会放大世界中的人物。
 static func cell(_asset: String) -> int: return CELL
 static func pixel(asset: String) -> float: return 2.56/float(cell(asset))
 static func source_model(asset: String) -> String: return "res://assets/characters/"+asset+"_source.glb"
 static func source_scene(asset: String) -> String: return "res://assets/characters/"+asset+"_rig.tscn"
 static func phases(action: String) -> int:
+	if action in ["idle","walk"]: return 12
 	return 1 if action.ends_with("ready") or action=="heavy_drag" else 9 if action in ["bow_draw","hurt"] else 33
 static func key(part: String, action: String, direction: int, move := 0, phase := 0) -> String:
 	return "%s/%s/%d/%d/%d" % [part,action,direction,move,phase]
 
 ## 不生成动作×步态的笛卡尔积；腾空/下蹲替换腿部，攻击上身继续使用动作帧。
 static func select(state: Dictionary, asset := "player") -> Dictionary:
+	if asset in CREATURES:
+		var clip: String=state.get("action","idle")
+		if clip.is_empty(): clip="idle"
+		if clip not in ACTIONS[asset]: return {}
+		return {"full":key("full",clip,state.get("direction",0),0,clampi(int(state.get("action_frame",0)),0,phases(clip)-1))}
 	var action: String=state.get("action","")
 	if action.is_empty(): action="bow_draw" if state.get("pose",0)==4 else ready(asset)
 	if action not in ACTIONS.get(asset,[]): return {}
@@ -53,6 +64,9 @@ static func select(state: Dictionary, asset := "player") -> Dictionary:
 ## 作业清单也是预览与验证的枚举入口，避免烘焙范围与选帧条件各写一套。
 static func jobs(asset: String) -> Array[Dictionary]:
 	var result: Array[Dictionary]=[]
+	if asset in CREATURES:
+		for clip in ACTIONS[asset]: result.append({"part":"full","id":clip,"clip":clip,"frames":phases(clip),"moves":1})
+		return result
 	for action in ACTIONS[asset]:
 		for part in ["upper","lower"]:
 			result.append({"part":part,"id":action,"clip":action,"frames":phases(action),"moves":1})

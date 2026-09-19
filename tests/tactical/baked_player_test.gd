@@ -111,7 +111,7 @@ func validate_asset(asset: String) -> void:
 		var image:=images[int(entry.page)].get_region(Rect2i(entry.rect[0],entry.rect[1],entry.rect[2],entry.rect[3]))
 		var area:=image.get_used_rect()
 		nonempty=nonempty and area.has_area() and area.position.x>0 and area.position.y>0 and area.end.x<image.get_width() and area.end.y<image.get_height()
-		if key.begins_with("upper/"+Spec.ready(asset)+"/"): directions[hash(image.get_data())]=true
+		if key.begins_with(("full/" if asset in Spec.CREATURES else "upper/")+Spec.ready(asset)+"/") and key.ends_with("/0/0"): directions[hash(image.get_data())]=true
 	check(nonempty and directions.size()==12,asset+" 全帧非空/未裁边，十二朝向确实不同")
 	var coverage:=true
 	for direction in 12:
@@ -121,14 +121,14 @@ func validate_asset(asset: String) -> void:
 					var state:=Frame.character(direction,posture%8,posture in range(1,7),move,0,-1,0,posture%9,posture if posture in range(1,7) else 0,posture==7,posture-8 if posture in range(8,13) else -1)
 					state=Frame.with_action(state,action,Spec.phases(action)-1)
 					var selected:=Spec.select(state,asset)
-					coverage=coverage and manifest.entries.has(selected.upper) and manifest.entries.has(selected.lower)
+					for part in Spec.parts(asset): coverage=coverage and manifest.entries.has(selected[part])
 	check(coverage,asset+" 全朝向/移动方向、蹲跳/攻击组合没有旧帧回退")
 	var source:=Source.new()
 	source.rig_id=asset
 	source.asset_id=asset+"_baked"
 	var contract:=true
 	for clip in source.animations():
-		for part in ["full","upper","lower"]:
+		for part in (["full"] if asset in Spec.CREATURES else ["full","upper","lower"]):
 			var keys: Dictionary={}
 			for phase in clip.frames:
 				var sample: Dictionary=source.sample(clip.id,3,phase,{"part":part,"ready":Spec.ready(asset),"move":6,"gait":-1})

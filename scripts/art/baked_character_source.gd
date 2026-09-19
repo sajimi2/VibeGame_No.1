@@ -14,12 +14,18 @@ var depths: Array[Image]=[]
 func _init() -> void: cell_size=Vector2i.ONE*Spec.CELL
 
 func animations() -> Array:
+	if rig_id in Spec.CREATURES:
+		var clips: Array=[]
+		var names := {"idle":"待机","walk":"移动","attack":"突刺" if rig_id=="goblin" else "砸地" if rig_id=="golem" else "冲撞","hurt":"受击","death_fall":"死亡"}
+		for clip in Spec.ACTIONS[rig_id]: clips.append({"id":clip,"label":names[clip],"frames":Spec.phases(clip)})
+		return clips
 	var result: Array=[{"id":"idle","label":"站立","frames":1},{"id":"walk","label":"行走","frames":8},{"id":"run","label":"疾跑","frames":8},{"id":"crouch","label":"蹲起","frames":7},{"id":"crouch_walk","label":"蹲行","frames":8},{"id":"jump","label":"跳跃","frames":5}]
 	for action in Spec.ACTIONS[rig_id]:
 		if Spec.phases(action)>1: result.append({"id":action,"label":Spec.LABELS[action],"frames":Spec.phases(action)})
 	return result
 
 func options() -> Array:
+	if rig_id in Spec.CREATURES: return []
 	var ready_ids: Array=[]
 	var titles: Array=[]
 	for action in Spec.ACTIONS[rig_id]:
@@ -44,6 +50,7 @@ func _load() -> void:
 
 ## 图集与实体预览共用状态组装，保证后退、蹲跳和移动攻击取到同一动作组合。
 func preview_state(animation: String, direction: int, phase: int, settings: Dictionary) -> Dictionary:
+	if rig_id in Spec.CREATURES: return {"direction":direction,"action":animation,"action_frame":phase,"asset":rig_id}
 	var moving: bool=animation in ["walk","run","crouch_walk"]
 	var bend:=phase if animation=="crouch" else 6 if animation=="crouch_walk" else 0
 	var state:=Frame.character(direction,phase if moving else int(settings.get("gait",-1)),bend>0,(direction+int(settings.get("move",0)))%12,0,-1,0,-1,bend,animation=="run",phase if animation=="jump" else -1)
@@ -61,6 +68,10 @@ func sample(animation: String, direction: int, phase: int, settings: Dictionary)
 	_load()
 	var state:=preview_state(animation,direction,phase,settings)
 	var selection:=Spec.select(state,rig_id)
+	if rig_id in Spec.CREATURES:
+		var key: String=selection.full
+		var override:=Store.lookup(asset_id,key,cell_size)
+		return {"key":key,"binding":key,"texture":override.texture if not override.is_empty() else ImageTexture.create_from_image(layer_image(key)),"anchors":{}}
 	var part: String=settings.get("part","full")
 	if part!="full":
 		var key: String=selection[part]
@@ -114,7 +125,7 @@ func layer_image(key: String, is_depth:=false) -> Image:
 
 ## 手绘补色保留源表面深度；轮廓/体积应改源模型后重烘焙，不能给新增像素捏造深度。
 func validate_edit(document: RefCounted) -> String:
-	if document.settings.get("part","full")=="full": return "完整合成图用于查看/导出。回导补色请选择上身或下身；形体与遮挡请修改 3D 源模型后重新烘焙。"
+	if rig_id not in Spec.CREATURES and document.settings.get("part","full")=="full": return "完整合成图用于查看/导出。回导补色请选择上身或下身；形体与遮挡请修改 3D 源模型后重新烘焙。"
 	for index in document.cells.size():
 		var cell: Dictionary=document.cells[index]
 		var original:=layer_image(cell.get("binding",cell.key))

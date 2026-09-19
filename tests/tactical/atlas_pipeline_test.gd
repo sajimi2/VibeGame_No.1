@@ -42,7 +42,7 @@ func run() -> void:
 	Store.root_path=directory+"/overrides"
 	Store.reload_catalog()
 	sources=Registry.list_sources()
-	check(sources.size()==5 and sources.filter(func(s): return s.asset_id.ends_with("_baked")).size()==4,"只发现四种当前烘焙角色和箭矢，没有过时二维人物入口")
+	check(sources.size()==8 and sources.filter(func(s): return s.asset_id.ends_with("_baked")).size()==7,"七种当前烘焙角色和箭矢，没有过时二维人物入口")
 	var source: Resource=sources[0]
 	var document:=make_document(source,"idle",{"part":"upper","ready":"light_ready","move":0,"gait":-1})
 	check(document.image.get_size()==Vector2i(1152,96),"十二朝向原尺寸为 1152×96")
@@ -115,5 +115,27 @@ func run() -> void:
 	var code:=OS.execute(OS.get_executable_path(),["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/tactical/atlas_pipeline_test.gd","--","verify",Store.root_path],output,true)
 	check(code==0,"新引擎进程读取持久化覆盖成功")
 	check(Store.restore_asset("player_baked")==OK and Store.lookup("player_baked",document.cells[3].binding).is_empty() and not Store.lookup("arrow","profile").is_empty(),"恢复玩家不影响箭矢覆盖")
+	# 整身物种不依赖握点或上/下身选择，仍必须通过同一套真实磁盘回导。
+	for id in ["goblin","golem","slime"]:
+		var creature_source: Resource=sources.filter(func(s):return s.asset_id==id+"_baked")[0]
+		var creature_doc:=make_document(creature_source,"hurt")
+		var point:=Vector2i(-1,-1)
+		for y in 96:
+			for x in 96:
+				if creature_doc.image.get_pixel(x,y).a>.5: point=Vector2i(x,y); break
+			if point.x>=0: break
+		creature_doc.image.set_pixelv(point,Color.MAGENTA)
+		var imported:=Store.import_package(creature_doc.export_to(directory).json)
+		var frame: Dictionary=creature_source.sample("hurt",0,0,{})
+		check(not imported.has("error") and frame.texture.get_image().get_pixelv(point)==Color.MAGENTA,id+" 整身补色真实导出、回导并读取")
+		var descriptor: Dictionary=creature_source.model_preview("attack",0,0,{})
+		var rig: Node3D=load(descriptor.scene).instantiate()
+		root.add_child(rig)
+		rig.apply_state(descriptor.state)
+		var before_geometry: Array=rig.geometry("full")
+		rig.apply_state(creature_source.preview_state("attack",0,18,{}))
+		check(not before_geometry.is_empty() and before_geometry!=rig.geometry("full"),id+" 三维源预览读取动作后实体表面确实变化")
+		rig.queue_free()
+		Store.restore_asset(id+"_baked")
 	print("ATLAS_PIPELINE: %d checks, %d failures"%[checks,failures])
 	quit(1 if failures else 0)

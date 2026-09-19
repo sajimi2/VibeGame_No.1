@@ -7,6 +7,12 @@
 
 `level._ready()` 按原先次序：地形构建器 → 环境/光照 → 地图 → 效果 → 玩家 → 相机 → HUD → 战斗。`start_encounter()` 等待物理/普通帧后建立导航、敌人、任务、成长、结算。程序生成节点仍挂在原关卡根下，几何坐标和碰撞保持一致。
 
+`scenes/waystation_blockout.tscn` 是独立 F6 驿站试玩场景：静态建筑、地面、坡道及其碰撞直接保存在场景，可由编辑器调整。`world/waystation_blockout.gd` 继承关卡装配，默认提供十名既有敌人的站位与难度资源，装配完成后补入隔离的临时装备。任务、奖励和进度持久化关闭；出生营地恢复生命。`combat_enabled=false` 恢复无战斗空间勘察及 M/1–5 快捷键，战斗模式禁用这些跳转/冻结入口。彩带仍是路线提示，红柱战斗时隐藏，捷径门尚未实现开关。
+
+`enemy_layout()` 每条站位可传只读 `enemy_tuning` 资源；`level.start_encounter()` 在敌人入树前应用血量与参数，`enemy` 状态机统一读取追击速度、前摇/收招/冷却倍率和伤害倍率，敌方箭在发射时复制最终伤害。未提供资源时保持旧默认值。驿站使用 `data/encounters/waystation_hard.tres`；其 18m 离岗半径及玩家回营地触发归队，回到岗位附近再解除锁定，不改变视线检测、受击打断或盾挡规则。
+
+灰盒中的 `presentation/interior_roof.gd` 由关卡注入玩家，只根据建筑局部 AABB（包含楼层高度）更新独立屋顶材质。进入后约 0.4 秒像素渐隐，离开恢复，门槛采用 0.22m 退出缓冲；各屋顶互不影响。屋顶当前为表现网格，不加入地面导航或角色移动碰撞；墙体碰撞继续保留。西侧野地复用 `battle_prop` 的断墙/巨石及移动凸包，树冠体块仅显示、树干阻挡移动。
+
 - `terrain_builder.gd`：输入关卡根与几何参数，输出 Mesh/Collision 节点，拥有材质缓存，不读取玩家/UI/任务。
 - 地图通过 `spawn_point / objective_point / navigation_bounds / enemy_layout / _build_environment` 提供差异。
 - `level.gd` 中的 `box/ramp/material/natural_ledge` 是薄的地图构造接口，具体实现统一委托给 terrain builder。
@@ -14,9 +20,11 @@
 - Autoload 仅为 Godot AI 的运行工具辅助；游戏没有新增全局管理器。
 
 ## 攻击调用链
-`player_combat._unhandled_input → player.update_aim → attack（选择动作资源）→ _physics_process（动作窗口）→ strike → space_trace.trace → enemy.receive_strike`。
+`player_combat._unhandled_input → player.update_aim → attack（选择动作资源）→ _physics_process（动作窗口）→ strike → melee_query.sweep → space_trace.trace → enemy.receive_strike`。
 
-点击锁定方向；计时到有效窗口后按角度采样射线；`struck` 按实例 ID 去重。伤害由敌人按盾挡/身体/顶部决定。武器图形不是碰撞伤害源。弓箭先拉弓 0.14 秒，`arrow.gd` 连续检测飞行线段。
+点击锁定方向；计时到有效窗口后按角度采样射线，经 `melee_query.sweep` 逐个收集身体，墙/石材仍截断。`struck` 按实例 ID 去重，`attack_hits` 统计整次动作的目标数，格挡也占名额。伤害由敌人按盾挡/身体/顶部决定。武器图形不是碰撞伤害源。弓箭继续沿用首个不可穿透命中，先拉弓 0.14 秒，`arrow.gd` 连续检测飞行线段。
+
+群攻按 `action_profile` 的 `max_targets/knockback_strength/impact_radius` 配置：宝剑横斩 100°/最多三人，突刺和匕首默认一人；重刀正面窄劈后，`align_impact` 确认真正接地，再由 `melee_query.impact` 查落点 1.25m 内、脚底高度差不超过 0.55m 且未隔墙的敌人，近者优先。刀刃与冲击合计最多四人，直接命中者不叠加冲击伤害。角色胶囊不参与落点/墙体查询，避免把敌人头顶当成地面。冲击调用相同受击接口，因此逐人保留盾挡、打断和碰撞击退；`receive_strike` 新增可选击退力度，旧调用仍默认 2m/s。
 
 `data/weapons` 选择轻/中/重类别、待机动作与攻击序列；`data/actions` 中的 `action_profile` 提供刀刃曲线、分段速度曲线、有效窗口与前冲速度；身体动作保存于 Blender。`action_library` 只负责查资源，不操作演员。战斗模块推进时间，`baked_human` 按同一动作相位播放已烘焙的身体帧，武器按动作资源旋转；玩家在移动前通过注入的 `combat_movement` 查询速度增量，统一走 `move_and_slide()`。重刀前冲没有直接改位置。
 
@@ -37,6 +45,10 @@
 `baked_human` 拥有上下身、逐像素深度、遮挡轮廓和剪影阴影；演员通过 `apply_frame` 和 `set_occluded` 更新表现。疾跑/跳跃状态由玩家物理过程产生，阴影和世界武器握点均跟随同一帧。玩家 Shift 疾跑、Ctrl 精确射击；步行 4.2m/s、疾跑 6.8m/s、起跳 6.6m/s。
 
 ## 美术帧与命中附着
+
+新物种由关卡出生数据中的 `creature` 选择 `data/enemies` 配置，`level` 仍只负责装配玩家、相机、效果和导航依赖。`actors/creature` 继承敌人的感知、路径、受击和死亡接口，独立推进蓄势/有效/收招/后撤；旧守卫和弓手的出招仍走 `enemy`。生命与碰撞尺寸由物种配置提供，关卡伤害倍率继续来自 `enemy_tuning`。`attack_warning` 只画已锁定的方向/落点，伤害由实体射线、范围遮挡或真实碰撞结算。
+
+哥布林矛与身体一起烘焙；石头人、史莱姆不装备用剑盾。三者清单声明 `parts=["full"]`，播放器复用同一深度/阴影路径；`creature_rig` 在制作端按保存的整身动作采样，史莱姆允许缩放骨骼轨道。现有四种类人仍用上/下身分层与外置武器，不强迫软体提供人形握点。哥布林短矛暂未作为玩家可装备或掉落物。
 
 `data/art_sources/*.tres → atlas_source → atlas_document → tools/art_preview` 是工具侧数据流：来源提供动作/选项/帧，文档拼图并导出 PNG + JSON，界面只负责交互。`atlas_store` 按资产 ID 和规范帧键查询手绘覆盖，不依赖场景、UI 或战斗；回导通过校验后写自包含 `.res` 与 `catalog.tres`。角色工作台与运行时按同一帧键优先取补色覆盖，否则读取已烘焙图页；纹理、握点、轮廓和阴影共用同一结果。覆盖必须匹配资产与格子尺寸，旧 32×48/64² 稿不会被错误套入 96²。详见 ART_PIPELINE.md。
 
@@ -67,10 +79,10 @@ ActorInventory.try_equip --inventory_changed--> camp_progress.changed
 
 ## 已知边界
 
-四角色均采用 Blender 保存的模型/骨骼/动作，经 GLB 和开发期 GPU 烘焙后，输出 96×96 颜色/深度/双手握点；`baked_human` 只分层播放。制作步骤见 [ART_PIPELINE.md](ART_PIPELINE.md)。关卡总控不管理图集，运行时不实例化角色骨架、模型生成器或角色烘焙视口。守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。武器与刀光仍有独立实时 GPU 像素化，不能混称为全离线。
+七种角色均采用 Blender 保存的模型/骨骼/动作，经 GLB 和开发期 GPU 烘焙后，输出 96×96 颜色/深度，四种类人另有双手握点；`baked_human` 只按清单播放整身或分层帧。制作步骤见 [ART_PIPELINE.md](ART_PIPELINE.md)。关卡总控不管理图集，运行时不实例化角色骨架、模型生成器或角色烘焙视口。守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。可装备武器与刀光仍有独立实时 GPU 像素化，不能混称为全离线。
 
 - 导航每个 X/Z 网格仅一个行走表面，不支持桥上桥下并行路径。
-- 敌人仍在一个脚本内维护状态和表现字段；此次先拆更新阶段，避免改动 AI 行为。
+- 旧守卫/弓手仍在 `enemy` 内维护状态和表现；新物种的 `creature` 复用其基础字段与公共方法。继承关系仍有耦合，新增不同生命周期时需核对死亡、装备占位与受击接口。
 - 角色字段仍存在直接读写，碰撞层仍有数字掩码；新增交互前要核对所有调用者。
 - 存档 I/O 已隔离，但异常 JSON 保护/原子写入仍是后续小修，不宣称此次已解决。
 - 近战命中仍为按角度扫射线，而非逐刀刃骨骼碰撞；动作编排改变了时序和前冲，需结合实际试玩验收。未来技能可复用动作资源及限制来源，但尚未实现技能系统。

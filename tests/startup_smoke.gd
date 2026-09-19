@@ -23,6 +23,10 @@ func run() -> void:
 	for i in 3: await physics_frame
 	check(is_instance_valid(scene.run_flow), "runtime assembly completes")
 	check(get_nodes_in_group("tactical_enemies").size() == 5, "three guards and two archers")
+	var defaults_ok := true
+	for enemy in get_nodes_in_group("tactical_enemies"):
+		defaults_ok=defaults_ok and enemy.max_hp==(40 if enemy.ranged else 60) and enemy.tuning.damage_scale==1.0 and enemy.tuning.windup_scale==1.0 and enemy.tuning.leash_distance==0.0
+	check(defaults_ok,"原战场沿用生命、伤害、前摇和追击范围默认值")
 	check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "fixed orthographic camera")
 	check(not scene.progression.persist, "startup does not access player progress")
 	var knife := preload("res://data/weapons/knife.tres")

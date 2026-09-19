@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/creature_profile.gd" id="1"]
+[resource]
+script = ExtResource("1")
+art_id = "slime"
+title = "史莱姆"
+attack_kind = "charge"
+health = 36
+height = 0.68
+radius = 0.33
+speed = 1.5
+damage = 12
+trigger_range = 3.2
+reach = 3.5
+windup = 0.7
+active_time = 0.48
+recovery = 0.75
+rest_time = 0.65
+attack_speed = 7.2

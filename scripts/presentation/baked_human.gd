@@ -18,6 +18,7 @@ var pixel_size := Spec.pixel("player")
 var pages: Array[Texture2D] = []
 var depths: Array[Texture2D] = []
 var layers: Dictionary = {}
+var parts: Array = ["upper","lower"]
 var enabled := true
 var active := false
 var last_keys := {}
@@ -42,11 +43,12 @@ func setup(player: CharacterBody3D, asset := "player") -> bool:
 			depth_pages.append(load(folder+"/"+str(page)+"_depth.png"))
 		shared[asset]={"manifest":data,"pages":colors,"depths":depth_pages}
 	manifest=shared[asset].manifest
+	parts=manifest.get("parts",["upper","lower"])
 	frame_size=int(manifest.cell)
 	pixel_size=float(manifest.pixel_size)
 	pages=shared[asset].pages
 	depths=shared[asset].depths
-	for part in ["upper","lower"]:
+	for part in parts:
 		var body := _card(false)
 		var outline := _card(true)
 		var shadow := Sprite3D.new()
@@ -80,17 +82,16 @@ func _card(outline: bool) -> MeshInstance3D:
 ## 选帧、世界握点与阴影同帧刷新；人物只有这一条播放路径，缺失资产由验证阻止发布。
 func apply_frame(state: Dictionary) -> bool:
 	var selected := Spec.select(state,asset_id) if enabled and actor.camera!=null else {}
-	active=not selected.is_empty() and manifest.entries.has(selected.upper) and manifest.entries.has(selected.lower) and absf(rad_to_deg(actor.camera.rotation.x)-Spec.PITCH)<0.1
+	active=not selected.is_empty() and parts.all(func(part):return selected.has(part) and manifest.entries.has(selected[part])) and absf(rad_to_deg(actor.camera.rotation.x)-Spec.PITCH)<0.1
 	visible=active
 	if not active: return false
 	if store_revision!=Store.revision:
 		store_revision=Store.revision
 		for layer in layers.values(): layer.key=""
 	last_keys=selected
-	var lower: Dictionary=manifest.entries[selected.lower]
-	var pelvis := _vector(lower.pelvis)
+	var pelvis := Vector3.ZERO if parts==["full"] else _vector(manifest.entries[selected.lower].pelvis)
 	var yaw := Basis(Vector3.UP,actor.camera.rotation.y+int(state.direction)*PI/6)
-	for part in ["lower","upper"]:
+	for part in parts:
 		var layer: Dictionary=layers[part]
 		var entry: Dictionary=manifest.entries[selected[part]]
 		var pivot: Vector3=pelvis if part=="upper" else Spec.CENTER
@@ -144,6 +145,15 @@ func apply_frame(state: Dictionary) -> bool:
 				shadow_texture.atlas=override.texture
 				shadow_texture.region=region
 				layer.shadow.texture=shadow_texture
+	# 整身图集共用颜色、深度、阴影与补色路径，不伪造空的上下身层。
+	if parts==["full"]:
+		var layer: Dictionary=layers.full
+		var outline: ShaderMaterial=layer.outline.material_override
+		outline.set_shader_parameter("other_atlas",layer.body.material_override.get_shader_parameter("color_atlas"))
+		outline.set_shader_parameter("other_rect",layer.body.material_override.get_shader_parameter("frame_rect"))
+		outline.set_shader_parameter("other_scale",Vector2.ONE)
+		outline.set_shader_parameter("other_shift",Vector2.ZERO)
+		return true
 	# 轮廓读取两层的联合覆盖；相邻纸片的枢轴差转换为同一像素网格偏移。
 	for part in ["lower","upper"]:
 		var layer: Dictionary=layers[part]

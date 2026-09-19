@@ -28,8 +28,8 @@ Invoke-GodotCheck 'import' @('--headless','--editor','--import')
 [string[]]$displayArgs = if ($Rendered) { @() } else { @('--headless') }
 Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_smoke.gd'))
 if ($Suite -eq 'smoke') { return }
-$tests = @('baked_player','skeleton_pipeline','pixel_weapon','weapon_choreography','atlas_pipeline','arrow_attachment','locomotion_art','rock_collision','guard_reaction','attack_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
-if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback') }
+$tests = @('baked_player','skeleton_pipeline','pixel_weapon','weapon_choreography','atlas_pipeline','arrow_attachment','locomotion_art','rock_collision','guard_reaction','attack_motion','melee_aoe','creature_encounter','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
+if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback','waystation_blockout','waystation_combat') }
 foreach ($test in $tests) {
     # 绕石压力测试含数万物理帧，用固定 60Hz 加速离线模拟；画面由 locomotion_art 单独验证。
     [string[]]$testDisplay = if ($test -eq 'rock_collision') { @('--headless','--fixed-fps','60') } else { $displayArgs }

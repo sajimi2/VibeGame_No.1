@@ -129,10 +129,12 @@ func start_encounter() -> void:
 	add_child(routes)
 	routes.build(get_world_3d(),navigation_bounds())
 	for spec in enemy_layout():
-		var enemy=preload("res://scripts/actors/enemy.gd").new()
+		var enemy=preload("res://scripts/actors/creature.gd").new() if spec.has("creature") else preload("res://scripts/actors/enemy.gd").new()
+		if spec.has("creature"): enemy.profile=load("res://data/enemies/"+str(spec.creature)+".tres")
 		enemy.art_id=spec.get("art_id","")
 		enemy.ranged=spec.get("ranged",false)
-		enemy.max_hp=40 if enemy.ranged else 60
+		enemy.tuning=spec.get("tuning",enemy.tuning)
+		enemy.max_hp=enemy.tuning.archer_health if enemy.ranged else enemy.tuning.guard_health
 		enemy.hp=enemy.max_hp
 		enemy.home=spec.position
 		enemy.position=enemy.home+Vector3.UP*0.05

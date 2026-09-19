@@ -12,6 +12,7 @@ var shaft: MeshInstance3D
 var notify: Callable
 var hit_mask := 8 | 16
 var hostile := false
+var hostile_damage := 15
 var pierced: Array[RID] = []
 var attachment: RefCounted
 var attached_time := 0.0
@@ -62,7 +63,7 @@ func _physics_process(delta: float) -> void:
 			orient_flight()
 			var region := "身体"
 			if hostile and hit.collider.has_method("receive_damage"):
-				hit.collider.receive_damage(15,velocity.normalized())
+				hit.collider.receive_damage(hostile_damage,velocity.normalized())
 			elif hit.collider.has_method("receive_strike"):
 				region = hit.collider.receive_strike(hit.position, hit.normal, velocity)
 				if notify.is_valid(): notify.call("弓箭命中：" + region)
