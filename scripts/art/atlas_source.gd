@@ -8,3 +8,6 @@ extends Resource
 func animations() -> Array: return []
 func options() -> Array: return []
 func sample(_animation: String, _direction: int, _phase: int, _options: Dictionary) -> Dictionary: return {}
+
+## 可选的工具预览协议：提供源场景、姿态与显示层；纯二维来源返回空值。
+func model_preview(_animation: String, _direction: int, _phase: int, _options: Dictionary) -> Dictionary: return {}

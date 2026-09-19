@@ -61,6 +61,10 @@ var trail: MeshInstance3D
 var marker: Label3D
 var ai_enabled := true
 var navigation_excluded: Array[RID] = []
+var art_provider: Callable
+var baked_visual: Node3D
+var grip_pixel := Vector2.ZERO
+var grip_depth := 0.018
 var death_visual := preload("res://scripts/presentation/death_visual.gd").new()
 
 ## 创建身体、武器、血条和投影，并加入敌人分组供战斗与结算查询。
@@ -119,6 +123,10 @@ func _ready() -> void:
 	health_bar=preload("res://scripts/presentation/enemy_health.gd").new()
 	add_child(health_bar)
 	health_bar.set_health(hp,max_hp)
+	baked_visual=preload("res://scripts/presentation/baked_human.gd").new()
+	baked_visual.name="BakedHuman"
+	add_child(baked_visual)
+	baked_visual.setup(self,art_id if not art_id.is_empty() else "archer" if ranged else "guard")
 
 ## 综合安全区、距离、朝向和遮挡判断视野；近距离警觉仍需通过遮挡检查。
 func can_see_target() -> bool:
@@ -207,14 +215,21 @@ func update_visuals(travel: float) -> void:
 		art_state = FrameSpec.with_action(art_state,action.id,roundi(phase*32))
 		blade_pose = action.sample(phase).blade
 		motion_angle = blade_pose.y
-	var frame := Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",art_state,true)
-	sprite.texture=frame.texture
-	outline.texture=Art.outline_texture(sprite.texture)
-	Billboard.align(sprite, camera)
-	Billboard.align(outline, camera)
-	Billboard.sync_shadow(world_shadow, sprite)
+	if hurt_recovery:
+		art_state=FrameSpec.with_action(art_state,"hurt",clampi(roundi((1-attack_time/.35)*8),0,8))
+	Billboard.align(sprite,camera)
+	Billboard.align(outline,camera)
 	update_occlusion()
-	sprite.modulate=Color(1.8,1.5,1.2) if hurt>0 else Color("bbd1b5") if ranged else Color.WHITE
+	sprite.modulate=Color(1.8,1.5,1.2) if hurt>0 else Color.WHITE
+	baked_visual.tint=sprite.modulate
+	var frame: Dictionary
+	if art_provider.is_valid() and art_provider.call(art_state):
+		frame=baked_visual.current_frame
+	else:
+		frame=Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",art_state,true)
+		sprite.texture=frame.texture
+		outline.texture=Art.outline_texture(sprite.texture)
+		Billboard.sync_shadow(world_shadow,sprite)
 	marker.text={"guard":"弓箭手" if ranged else "守卫","chase":"!","windup":"瞄准！" if ranged else "突刺！" if thrust else "横斩！","nock":"搭箭…","recover":"收招 · 破绽","investigate":"? 调查","search":"? 搜索","return":"返回"}.get(state,state)
 	if block_flash>0: marker.text="格挡 · 绕侧/等收招"
 	marker.modulate=Color("f1a36e") if state=="windup" else Color("e5d5ac")
@@ -330,7 +345,7 @@ func update_occlusion() -> void:
 	var origin := camera.project_ray_origin(camera.unproject_position(target))
 	var query := PhysicsRayQueryParameters3D.create(origin,target,1|4,[get_rid()])
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
-	outline.visible = occluded and hp>0
+	outline.visible = occluded and hp>0 and sprite.visible
 
 ## 弓手从附近可达导航点中选择撤退位置，兼顾远离玩家、掩体和移动成本。
 func find_retreat() -> Vector3:

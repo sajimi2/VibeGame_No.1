@@ -18,4 +18,8 @@
 
 从工程根执行 `./scripts/check.ps1 -Suite core`；`-Suite all` 跑边界项目，`-Suite smoke -Rendered` 检查渲染启动。可加 `-GodotPath` 或设置 `GODOT_BIN`。
 
+角色离线专项使用 --script res://tests/tactical/baked_player_test.gd（实际渲染建议 --disable-vsync）。覆盖三角色全部分层帧、标准动画编辑、固定骨长、相对方向/蹲跳/攻击组合、实际握点/墙挡/死亡、工作台 UI 与回导。已纳入 core；测试不会重新生成源资产，修改源模型/动画后须先烘焙并导入。流程与边界见 docs/PLAYER_RIG_EXPERIMENT.md。
+
+该专项同时检查 art_preview 的三维源模型：三角色切换、同步相对方向/步态/播放、分层、相机旋转缩放与复位、关闭绘制及二维来源回退。渲染模式对比模型显隐前后的实际像素，工作台截图保存在 `work/humanoid/*_model_workbench.png`。
+
 每项单独引擎进程，上限 300 秒（高度边缘测试约 190 秒）；日志在 `work/checks`。Godot 部分解析错误不返回非零退出码，因此脚本同时检查输出。历史个别无头测试退出有资源清理警告，脚本不忽略脚本错误或失败断言。无头通过不代表手感或图形验收。

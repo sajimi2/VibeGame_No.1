@@ -8,10 +8,11 @@ var color_mesh: MeshInstance3D
 var depth_mesh: MeshInstance3D
 var color_material: ShaderMaterial
 var depth_material: ShaderMaterial
+var frame_size := Baker.SIZE
 
 func _ready() -> void:
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(Baker.SIZE*2,Baker.SIZE)
+	viewport.size = Vector2i(frame_size*2,frame_size)
 	viewport.own_world_3d = true
 	viewport.transparent_bg = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -21,7 +22,7 @@ func _ready() -> void:
 	add_child(viewport)
 	var camera := Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = Baker.SIZE*Baker.PIXEL_SIZE
+	camera.size = frame_size*Baker.PIXEL_SIZE
 	camera.position.z = Baker.DEPTH_SPAN*0.5
 	camera.near = 0.001
 	camera.far = Baker.DEPTH_SPAN+0.001
@@ -31,8 +32,8 @@ func _ready() -> void:
 	depth_material = ShaderMaterial.new()
 	depth_material.shader = CaptureShader
 	depth_material.set_shader_parameter("depth_pass",true)
-	color_mesh = _instance(color_material,-Baker.SIZE*Baker.PIXEL_SIZE*0.5)
-	depth_mesh = _instance(depth_material,Baker.SIZE*Baker.PIXEL_SIZE*0.5)
+	color_mesh = _instance(color_material,-frame_size*Baker.PIXEL_SIZE*0.5)
+	depth_mesh = _instance(depth_material,frame_size*Baker.PIXEL_SIZE*0.5)
 
 func _instance(mat: ShaderMaterial, x: float) -> MeshInstance3D:
 	var node := MeshInstance3D.new()

@@ -4,6 +4,7 @@ const Bundle = preload("res://scripts/art/atlas_bundle.gd")
 const Catalog = preload("res://scripts/art/atlas_catalog.gd")
 static var root_path := "res://data/art_overrides"
 static var loaded := false
+static var revision := 0
 static var catalog: Resource
 static var frames: Dictionary = {}
 static var textures: Dictionary = {}
@@ -11,6 +12,7 @@ static var textures: Dictionary = {}
 ## 重载后清空裁帧缓存；测试用独立 root_path 隔离。避免命名 reload，与 GDScript 原生方法冲突。
 static func reload_catalog() -> void:
 	loaded = true
+	revision += 1
 	frames.clear()
 	textures.clear()
 	var path := root_path.path_join("catalog.tres")
@@ -22,7 +24,7 @@ static func reload_catalog() -> void:
 		if not bundle is Bundle: continue
 		for index in bundle.cells.size():
 			var cell: Dictionary = bundle.cells[index]
-			frames[bundle.asset_id+":"+cell.key] = {"bundle":bundle,"index":index,"anchors":cell.get("anchors",{})}
+			frames[bundle.asset_id+":"+str(cell.get("binding",cell.key))] = {"bundle":bundle,"index":index,"anchors":cell.get("anchors",{})}
 
 ## 未回导的帧返回空字典，由调用者继续程序生成；只覆盖清单中精确匹配的帧。
 static func lookup(asset_id: String, key: String) -> Dictionary:
@@ -63,6 +65,7 @@ static func inspect_package(json_path: String) -> Dictionary:
 		if not cell is Dictionary or not cell.get("key") is String or cell.key.is_empty() or cell.key.length() > 2048: return {"error":"存在无效帧键"}
 		if keys.has(cell.key): return {"error":"帧键重复，无法可靠回导"}
 		keys[cell.key] = true
+		if cell.has("binding") and (not cell.binding is String or cell.binding.is_empty() or cell.binding.length()>2048): return {"error":"无效的分层绑定键"}
 		var anchors = cell.get("anchors",{})
 		if not anchors is Dictionary: return {"error":"锚点必须是对象"}
 		for name in anchors:
@@ -78,6 +81,16 @@ static func inspect_package(json_path: String) -> Dictionary:
 	if image.load_png_from_buffer(bytes) != OK: return {"error":"无法读取对应 PNG"}
 	var expected := Vector2i(size.x*int(columns),size.y*(cells.size()/int(columns)))
 	if image.get_size() != expected: return {"error":"PNG 尺寸不匹配，应为 %d×%d；请勿缩放或裁掉边距" % [expected.x,expected.y]}
+	# 一个上身帧可能被八个步态共用；共用层回导时必须一致，不能悄悄取最后一格覆盖。
+	var bindings: Dictionary={}
+	for index in cells.size():
+		var cell: Dictionary=cells[index]
+		if not cell.has("binding"): continue
+		var region:=Rect2i(Vector2i(index%int(columns),index/int(columns))*size,size)
+		var signature:=str(hash(image.get_region(region).get_data()))+JSON.stringify(cell.get("anchors",{}))
+		if bindings.has(cell.binding) and bindings[cell.binding]!=signature:
+			return {"error":"共用分层帧被改成不同内容；请同步所有同名 binding 格，或选择对应静态动作编辑一次。"}
+		bindings[cell.binding]=signature
 	return {"manifest":manifest,"bytes":bytes,"image":image}
 
 ## 目录采用临时文件替换，失败时保留旧有效目录；历史 bundle 不删除，便于人工回退。

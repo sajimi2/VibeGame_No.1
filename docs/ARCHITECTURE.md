@@ -66,6 +66,9 @@ ActorInventory.try_equip --inventory_changed--> camp_progress.changed
 - `run_screen.setup(player, objective, progression, hint_provider)` 接收明确依赖，负责结果/重试。任务状态每局重置，成长快照跨重试保存。
 
 ## 已知边界
+
+三角色离线管线现已接入 F5，详见 [PLAYER_RIG_EXPERIMENT.md](PLAYER_RIG_EXPERIMENT.md)：可编辑源模型/共享 AnimationLibrary → 开发期 GPU 烘焙 → 颜色/深度/双手握点 → baked_human 分层播放。玩家/敌人各自安装相同表现模块，关卡总控不管理图集。已移除样板对旧二维关节公式的依赖，普通出图不重建模型或动画。玩家战斗仍读原握点接口；守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。碰撞、AI、命中与存档不变。
+
 - 导航每个 X/Z 网格仅一个行走表面，不支持桥上桥下并行路径。
 - 敌人仍在一个脚本内维护状态和表现字段；此次先拆更新阶段，避免改动 AI 行为。
 - 角色字段仍存在直接读写，碰撞层仍有数字掩码；新增交互前要核对所有调用者。

@@ -174,7 +174,7 @@ func viewer(exported: Dictionary) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.pressed = true
-	event.position = Vector2(20,25)*6+Vector2(1,1)
+	event.position = Vector2(20,25)*4+Vector2(1,1)
 	ui.grip_input(event)
 	check(ui.document.cells[5*12+3].anchors.grip == [20,25],"点击大图能修改当前帧握点")
 	check(not ui.apply_atlas().has("error") and Art.frame("player",Spec.character(3,5,false,9,0,-1,0,-1,0,true)).grip == Vector2(20,25),"界面应用后运行时读取新握点")
@@ -182,7 +182,7 @@ func viewer(exported: Dictionary) -> void:
 		await frames(2)
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://work/atlas_workbench.png")
-	ui.asset.select(3)
+	ui.asset.select(ui.sources.find(sources[3]))
 	ui.configure_source()
 	check(ui.direction.item_count == 1 and ui.frame.max_value == 0 and ui.edit_grip.disabled,"箭矢共用查看器，无人物尺寸或握点硬编码")
 	if DisplayServer.get_name() != "headless":
@@ -198,7 +198,8 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute(directory)
 	Store.root_path = directory.path_join("overrides")
 	Store.reload_catalog()
-	sources = Registry.list_sources()
+	# 本专项保留原二维/箭矢协议回归；新分层来源由 baked_player 专项覆盖。
+	sources.assign(Registry.list_sources().filter(func(source): return not source.asset_id.ends_with("_baked")))
 	source_contracts()
 	var exported := roundtrip()
 	rejected_packages(exported)

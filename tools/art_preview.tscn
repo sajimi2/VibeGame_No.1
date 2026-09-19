@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://ldxsqag15ik1"]
 
-[ext_resource type="Script" path="res://tools/art_preview.gd" id="1"]
+[ext_resource type="Script" uid="uid://dwchl6sd4pd3u" path="res://tools/art_preview.gd" id="1"]
 
-[node name="CharacterArtPreview" type="Control"]
+[node name="CharacterArtPreview" type="Control" unique_id=1611679818]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

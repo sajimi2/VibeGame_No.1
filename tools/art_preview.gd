@@ -3,6 +3,7 @@ extends Control
 const Registry = preload("res://scripts/art/source_registry.gd")
 const Document = preload("res://scripts/art/atlas_document.gd")
 const Store = preload("res://scripts/art/atlas_store.gd")
+const ModelPreview = preload("res://tools/art_model_preview.gd")
 const OUTPUT := "res://work/art_atlases"
 var sources: Array[Resource] = []
 var document: RefCounted
@@ -24,6 +25,11 @@ var status: Label
 var frame_info: Label
 var picker: FileDialog
 var phase_time := 0.0
+var view_mode: OptionButton
+var atlas_scroll: ScrollContainer
+var model_panel: VBoxContainer
+var model_view: SubViewportContainer
+var model_info: Label
 
 func label_in(parent: Node, value: String) -> Label:
 	var item := Label.new()
@@ -78,6 +84,7 @@ func _ready() -> void:
 	action = choice(selection,"动作")
 	zoom = choice(selection,"图集缩放",["1 倍","2 倍","3 倍","4 倍"])
 	zoom.select(1)
+	view_mode = choice(selection,"查看",["像素图集","3D 源模型"])
 	options_row = HBoxContainer.new()
 	layout.add_child(options_row)
 	var playback := HBoxContainer.new()
@@ -97,7 +104,7 @@ func _ready() -> void:
 	label_in(playback,"帧/秒")
 	fps = SpinBox.new()
 	fps.min_value = 1
-	fps.max_value = 24
+	fps.max_value = 120
 	fps.value = 8
 	playback.add_child(fps)
 	label_in(playback,"横向：朝向；纵向：动作帧。点图集选帧。")
@@ -122,9 +129,24 @@ func _ready() -> void:
 	detail.add_child(edit_grip)
 	frame_info = label_in(detail,"")
 	var scroll := ScrollContainer.new()
+	atlas_scroll = scroll
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll)
+	model_panel = VBoxContainer.new()
+	model_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	model_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(model_panel)
+	var model_toolbar := HBoxContainer.new()
+	model_panel.add_child(model_toolbar)
+	button(model_toolbar,"复位视角",func(): model_view.reset_camera())
+	label_in(model_toolbar,"左键拖动旋转 · 滚轮缩放 · 与左侧像素帧同步")
+	model_view = ModelPreview.new()
+	model_panel.add_child(model_view)
+	model_info = label_in(model_panel,"")
+	model_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	model_panel.hide()
+	model_view.set_active(false)
 	sheet = image_view(scroll)
 	sheet.gui_input.connect(atlas_input)
 	selected_cell = Panel.new()
@@ -143,11 +165,11 @@ func _ready() -> void:
 		OS.shell_open(ProjectSettings.globalize_path(OUTPUT)))
 	button(exports,"载入编辑稿 JSON",func(): picker.popup_centered_ratio(0.8))
 	button(exports,"应用当前图集到游戏",apply_atlas)
-	button(exports,"恢复该资产程序外观",restore_asset)
+	button(exports,"恢复该资产源外观",restore_asset)
 	status = label_in(layout,"")
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label_in(layout,"仅覆盖当前图集包含的姿态组合；其他动作继续程序生成。切换选项会放弃未应用预览，请先导出保留。")
-	label_in(layout,"人物本体不含剑/盾/弓；弓手预览为基础纹理。回导在下次 F5 生效；更改手形时可同步修正握点。")
+	label_in(layout,"三维烘焙：完整合成可查看/导出，上身/下身可补色回导；形体改源模型后重烘焙。切换选项会放弃未应用预览，请先导出保留。")
+	label_in(layout,"人物本体不含独立剑/盾/弓。三维源场景的 AnimationPlayer 可编辑共享动作；回导在下次 F5 生效。")
 	picker = FileDialog.new()
 	picker.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	picker.access = FileDialog.ACCESS_FILESYSTEM
@@ -161,6 +183,7 @@ func _ready() -> void:
 	direction.item_selected.connect(func(_index: int): refresh_frame())
 	zoom.item_selected.connect(func(_index: int): resize_sheet())
 	frame.value_changed.connect(func(_value: float): refresh_frame())
+	view_mode.item_selected.connect(func(_index: int): refresh_view_mode())
 	if not sources.is_empty(): configure_source()
 
 ## 控件来自来源的选项描述；新增角色或非人形资产不需要在此增加类型分支。
@@ -196,7 +219,7 @@ func display_document() -> void:
 	frame.set_value_no_signal(0)
 	phase_time = 0
 	sheet.texture = ImageTexture.create_from_image(document.image)
-	large.custom_minimum_size = Vector2(document.source.cell_size)*6
+	large.custom_minimum_size = Vector2(document.source.cell_size)*4
 	resize_sheet()
 
 func resize_sheet() -> void:
@@ -214,8 +237,24 @@ func refresh_frame() -> void:
 	var anchors: Dictionary = document.cells[int(frame.value)*document.source.direction_count+direction.selected].anchors
 	edit_grip.disabled = not anchors.has("grip")
 	grip_marker.visible = anchors.has("grip") and edit_grip.button_pressed
-	if anchors.has("grip"): grip_marker.position = Vector2(anchors.grip[0]+0.5,anchors.grip[1]+0.5)*6-Vector2(2.5,2.5)
-	frame_info.text = "朝向 %d · 帧 %d / %d\n单格 %d×%d · 大图 6 倍" % [direction.selected,int(frame.value),int(frame.max_value),document.source.cell_size.x,document.source.cell_size.y]
+	if anchors.has("grip"): grip_marker.position = Vector2(anchors.grip[0]+0.5,anchors.grip[1]+0.5)*4-Vector2(2.5,2.5)
+	frame_info.text = "朝向 %d · 帧 %d / %d\n单格 %d×%d · 大图 4 倍" % [direction.selected,int(frame.value),int(frame.max_value),document.source.cell_size.x,document.source.cell_size.y]
+	refresh_view_mode()
+
+## 三维能力由来源声明；旧二维/箭矢来源自动回到图集，导出和回导始终操作像素文档。
+func refresh_view_mode() -> void:
+	if document == null: return
+	var descriptor: Dictionary = document.source.model_preview(document.animation.id,direction.selected,int(frame.value),document.settings)
+	view_mode.set_item_disabled(1,descriptor.is_empty())
+	if descriptor.is_empty(): view_mode.select(0)
+	var show_model := view_mode.selected == 1
+	atlas_scroll.visible = not show_model
+	model_panel.visible = show_model
+	model_view.set_active(show_model)
+	if descriptor.is_empty(): model_view.clear_model()
+	if not show_model: return
+	var error: String = model_view.show_frame(descriptor)
+	model_info.text = error if not error.is_empty() else "源模型：%s\n显示已保存的模型/骨骼动作，不包含独立剑盾弓或手绘补色。导出/回导按钮仍操作左侧像素图。" % str(descriptor.scene).trim_prefix("res://")
 
 func select_frame(value: int) -> void:
 	play.button_pressed = false
@@ -241,7 +280,7 @@ func atlas_input(event: InputEvent) -> void:
 func grip_input(event: InputEvent) -> void:
 	if document == null or not edit_grip.button_pressed or edit_grip.disabled: return
 	if event is not InputEventMouseButton or not event.pressed or event.button_index != MOUSE_BUTTON_LEFT: return
-	var pixel := Vector2i(event.position/6)
+	var pixel := Vector2i(event.position/4)
 	if not Rect2i(Vector2i.ZERO,document.source.cell_size).has_point(pixel): return
 	play.button_pressed = false
 	document.cells[int(frame.value)*document.source.direction_count+direction.selected].anchors.grip = [pixel.x,pixel.y]
@@ -271,13 +310,19 @@ func load_draft(path: String) -> void:
 
 ## 应用另存当前 PNG/清单快照，再持久化自包含资源；移动导出稿不会破坏游戏。
 func apply_atlas() -> Dictionary:
+	if document==null: return {"error":"没有图集"}
+	if document.source.has_method("validate_edit"):
+		var reason: String=document.source.validate_edit(document)
+		if not reason.is_empty():
+			status.text=reason
+			return {"error":reason}
 	var exported := export_atlas()
 	if exported.has("error"): return exported
 	var result := Store.import_package(exported.json)
-	status.text = "应用失败："+result.error if result.has("error") else "已应用 %s 的 %d 帧到 data/art_overrides；下次 F5 生效。其余姿态继续程序生成。" % [result.asset_id,result.frames]
+	status.text = "应用失败："+result.error if result.has("error") else "已应用 %s 的 %d 帧到 data/art_overrides；下次 F5 生效。其余姿态继续使用源外观。" % [result.asset_id,result.frames]
 	return result
 
 func restore_asset() -> void:
 	var error := Store.restore_asset(sources[asset.selected].asset_id)
 	if error == OK: rebuild_atlas()
-	status.text = "已恢复该资产全部程序帧；其他资产及导出稿保留，下次 F5 生效。" if error == OK else "恢复失败："+error_string(error)
+	status.text = "已恢复该资产全部源帧；其他资产及导出稿保留，下次 F5 生效。" if error == OK else "恢复失败："+error_string(error)

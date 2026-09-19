@@ -50,6 +50,10 @@ var visual_action := ""
 var visual_action_frame := 0
 var sprint_blockers: Dictionary = {}
 var combat_movement: Callable
+# 表现提供者读取离线图集；保留旧帧回退以支持旧人工稿和显式对照。
+var art_provider: Callable
+var baked_visual: Node3D
+var death_art_time := 0.0
 var effects: Node3D
 var foot_distance := 0.0
 var landing_delay := 0.0
@@ -84,6 +88,10 @@ func _ready() -> void:
 	shadow.radius=0.18
 	add_child(shadow)
 	world_shadow=Billboard.shadow(self)
+	baked_visual=preload("res://scripts/presentation/baked_human.gd").new()
+	baked_visual.name="BakedHuman"
+	add_child(baked_visual)
+	baked_visual.setup(self,art_id)
 	_refresh_art(0)
 
 ## 纸片保持直立，只绕竖轴朝向相机；轮廓副本忽略深度，用于被遮挡时显示。
@@ -122,6 +130,7 @@ func set_crouch(value: bool) -> bool:
 ## 每个固定物理帧依次处理输入、重力、碰撞移动和表现；delta 的单位是秒。
 ## 移动与攻击独立，实际行走距离驱动步态，避免顶墙时原地跑步。
 func _physics_process(delta: float) -> void:
+	death_art_time=death_art_time+delta if hp<=0 else 0.0
 	hurt_time = maxf(0,hurt_time-delta)
 	invulnerable = maxf(0,invulnerable-delta)
 	sprite.modulate = Color(0.55,0.55,0.55) if hp<=0 else Color(1.8,0.8,0.7) if hurt_time>0 else Color.WHITE
@@ -199,6 +208,10 @@ func _refresh_art(step: int) -> void:
 	var running := sprinting and step >= 0
 	var state := FrameSpec.character(direction_index,step,crouched,movement_direction,attack_pose,attack_arm,attack_weight,bow_draw,crouch_frame,running,jump_frame)
 	state = FrameSpec.with_action(state,visual_action,visual_action_frame)
+	if hp<=0: state=FrameSpec.with_action(FrameSpec.character(direction_index,-1,false),"death_fall",clampi(roundi(death_art_time/.85*32),0,32))
+	if is_instance_valid(baked_visual):
+		baked_visual.tint=Color(0.72,0.70,0.68) if hp<=0 else Color(1.8,.8,.7) if hurt_time>0 else Color.WHITE
+	if art_provider.is_valid() and art_provider.call(state): return
 	var frame := Art.frame(art_id,state)
 	sprite.texture = frame.texture
 	outline.texture = Art.outline_texture(sprite.texture)
@@ -237,6 +250,7 @@ func _update_occlusion() -> void:
 	query.exclude = [get_rid()]
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 	outline.visible = occluded
+	if art_provider.is_valid() and not sprite.visible: outline.hide()
 
 ## 初始化或掉出地图时回到出生点，恢复生命并清除移动、跳跃状态。
 func reset_position() -> void:

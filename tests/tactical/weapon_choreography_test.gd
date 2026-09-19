@@ -441,14 +441,14 @@ func death() -> void:
 	guard.receive_strike(guard.position+Vector3.UP,Vector3.RIGHT,Vector3.LEFT,1000)
 	await frames(8)
 	check(guard.hp==0 and guard.collision_layer==0 and guard.death_visual.started,"真实死亡立即退出战斗并开始倒地")
-	var early: Basis = guard.sprite.basis
+	var early: String = guard.baked_visual.last_keys.upper
 	await frames(45)
-	check(not early.is_equal_approx(guard.sprite.basis) and guard.visible,"先连续倒地，随后保留尸体")
+	check(early!=guard.baked_visual.last_keys.upper and guard.visible,"先连续倒地，随后保留尸体")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://work/enemy_death_ground.png")
 	await frames(130)
-	check(guard.sprite.modulate.a>0 and guard.sprite.modulate.a<1,"停留后逐渐降低透明度")
+	check(guard.baked_visual.opacity>0 and guard.baked_visual.opacity<1,"停留后逐渐降低透明度")
 	await frames(70)
 	check(not guard.visible and is_instance_valid(guard) and get_nodes_in_group("tactical_enemies").size()==population,"渐隐后隐藏表现，击败统计节点仍保留")
 	var archer: Node3D
@@ -457,8 +457,11 @@ func death() -> void:
 	archer.position = Vector3(8,1.12,-14)
 	archer.receive_strike(archer.position+Vector3.UP,Vector3.RIGHT,Vector3.FORWARD,1000)
 	await frames(60)
-	check(archer.death_visual.ground_normal.y<0.99 and archer.sprite.global_basis.z.normalized().dot(archer.death_visual.ground_normal)>0.999,"弓手倒在真实坡道上，尸体平面与地面贴合")
-	check(archer.sprite.global_basis.y.normalized().dot(archer.death_visual.fall_direction)>0.999,"倒地方向跟随致命攻击来向")
+	check(archer.death_visual.ground_normal.y<0.99 and (archer.baked_visual.ground_basis*Vector3.UP).dot(archer.death_visual.ground_normal)>0.999,"弓手倒在真实坡道上，尸体平面与地面贴合")
+	# 尸体现在是真实倒地骨骼帧；方向量化到十二向，允许半个扇区误差。
+	var corpse_direction: int=int(archer.baked_visual.last_keys.upper.split("/")[2])
+	var corpse_forward: Vector3=archer.baked_visual.ground_basis*Vector3.FORWARD.rotated(Vector3.UP,archer.camera.rotation.y+corpse_direction*PI/6)
+	check(corpse_forward.dot(archer.death_visual.fall_direction)>cos(deg_to_rad(16)),"倒地方向跟随致命来向，量化误差不超过半个朝向")
 
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)

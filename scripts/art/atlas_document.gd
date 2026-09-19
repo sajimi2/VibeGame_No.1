@@ -36,7 +36,9 @@ func load_package(checked: Dictionary, sources: Array[Resource]) -> String:
 	var index := 0
 	for phase in int(clip.frames):
 		for direction in selected.direction_count:
-			if manifest.cells[index].key != selected.sample(clip.id,direction,phase,options).key: return "帧键或排列已改变，请保留原 JSON 中的 key"
+			var expected: Dictionary=selected.sample(clip.id,direction,phase,options)
+			if manifest.cells[index].key != expected.key: return "帧键或排列已改变，请保留原 JSON 中的 key"
+			if manifest.cells[index].get("binding","")!=expected.get("binding",""): return "分层绑定键已改变，请保留原 JSON 中的 binding"
 			index += 1
 	source = selected
 	animation = clip
@@ -57,7 +59,9 @@ func build(input_source: Resource, clip: Dictionary, options: Dictionary) -> voi
 		for direction in source.direction_count:
 			var frame: Dictionary = source.sample(clip.id,direction,phase,settings)
 			image.blit_rect(frame.texture.get_image(),Rect2i(Vector2i.ZERO,source.cell_size),Vector2i(direction,phase)*source.cell_size)
-			cells.append({"key":frame.key,"anchors":frame.get("anchors",{}).duplicate(true)})
+			var cell: Dictionary={"key":frame.key,"anchors":frame.get("anchors",{}).duplicate(true)}
+			if frame.has("binding"): cell.binding=frame.binding
+			cells.append(cell)
 
 ## 显示与导出共用同一张原尺寸 Image；锚点能在界面里修正，也能在 JSON 中人工编辑。
 func cell_texture(direction: int, phase: int) -> ImageTexture:

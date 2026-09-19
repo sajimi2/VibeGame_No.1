@@ -37,6 +37,21 @@ func update(actor: CharacterBody3D, delta: float) -> void:
 	# 专用姿态先卸力下沉，随后伸开四肢；末帧不复用蹲姿，避免倒地后仍像坐着。
 	var asset: String = actor.art_id if not actor.art_id.is_empty() else "archer" if actor.ranged else "guard"
 	var state := Spec.with_action(Spec.character(direction,-1,false),"death_fall",roundi(fall*32))
+	if is_instance_valid(actor.baked_visual) and actor.baked_visual.enabled:
+		var visual: Node3D=actor.baked_visual
+		visual.tint=Color(.72,.70,.68)
+		visual.opacity=1.0-clampf((elapsed-2.8)/1.2,0,1)
+		visual.grounded_death=true
+		visual.ground_origin=ground_point+ground_normal*.035
+		visual.ground_basis=Basis(Quaternion(Vector3.UP,ground_normal))
+		# 图集默认向身后倒；按致命来向选择十二方向，仍由骨骼帧完成倒地。
+		var view: Vector3=(-fall_direction).rotated(Vector3.UP,-actor.camera.rotation.y)
+		state.direction=posmod(roundi(atan2(view.x,view.z)/(PI/6)),12)
+		if visual.apply_frame(state):
+			if elapsed>=4:
+				finished=true
+				actor.hide()
+			return
 	actor.sprite.texture = Art.frame(asset,state,true).texture
 	actor.sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	var upright := Basis(Vector3.UP,actor.camera.rotation.y)
@@ -62,6 +77,10 @@ func restore(actor: CharacterBody3D) -> void:
 	elapsed = 0
 	ground_normal = Vector3.UP
 	actor.show()
+	if is_instance_valid(actor.baked_visual):
+		actor.baked_visual.opacity=1.0
+		actor.baked_visual.grounded_death=false
+		actor.baked_visual.ground_basis=Basis.IDENTITY
 	actor.sprite.transform = Transform3D.IDENTITY
 	actor.sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	actor.sprite.modulate = Color.WHITE

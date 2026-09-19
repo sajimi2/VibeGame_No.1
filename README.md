@@ -43,3 +43,6 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 - 编辑器运行的项目名仍为 `Outpost RPG`；导出包保留原 `Outpost RPG Height Lab` 身份，因此不搬动既有存档目录。战场和试验场在同一种运行方式下共享成长。
 - 旧 2D 四关、T01–T07 报告和旧测试已从活跃工程移除；完整回退节点是 [9c4dc82](https://github.com/sajimi2/VibeGame_No.1/commit/9c4dc82ef5445503f2a7511232f8dd6f8a86a38c)，标签 `backup/pre-3d-cleanup-20260917`。不要在有未提交工作的目录中直接覆盖恢复。
 - 第三方 Godot AI 工具保持原样，使用见 [GODOT_AI_SETUP.md](GODOT_AI_SETUP.md)；个人 `.codex/` 配置不提交。
+## 角色三维源模型与离线图集
+
+F5 玩家、守卫、弓手使用新烘焙角色。打开 tools/art_preview.tscn 按 **F6** 可查看十二朝向全动作、原尺寸导出和分层补色回导；源场景的 AnimationPlayer 可编辑共享动作。独立对照仍在 tools/player_rig_lab.tscn：1 轻装、2 重刀、Tab 原版、M 实体模型。编辑、烘焙与限制见 [PLAYER_RIG_EXPERIMENT.md](docs/PLAYER_RIG_EXPERIMENT.md)。
