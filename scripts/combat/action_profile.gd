@@ -1,5 +1,5 @@
 extends Resource
-## 动作数据只描述时间与姿态曲线；命中、碰撞移动和显示由调用者执行，可供后续技能复用。
+## 游戏动作资源描述时序、武器旋转与移动能力；身体姿态由 Blender 动画制作并离线烘焙。
 @export var id := ""
 @export var windup_end := 0.3
 @export var active_end := 0.62
@@ -11,15 +11,9 @@ extends Resource
 @export var sweep_from := -0.5
 @export var sweep_to := 0.5
 @export var times := PackedFloat32Array([0,1])
-@export var hands := PackedVector3Array()
-@export var supports := PackedVector3Array()
-@export var chests := PackedVector3Array()
-@export var hips := PackedVector3Array()
 @export var blades := PackedVector3Array()
-@export var stances := PackedFloat32Array()
-@export var twists := PackedFloat32Array()
 
-## 各通道共享关键帧时间，三次平滑插值保持连续；身体以像素为单位，刀刃角度以度存储。
+## 分段曲线保持武器旋转连续；资源以度存储，输出弧度，不再混入旧二维身体关节。
 func sample(progress: float) -> Dictionary:
 	var t := clampf(progress,0,1)
 	var index := 0
@@ -27,16 +21,10 @@ func sample(progress: float) -> Dictionary:
 	var linear := clampf((t-times[index])/(times[index+1]-times[index]),0,1)
 	var power := eases[index] if index < eases.size() else 0.0
 	var factor := pow(linear,power) if power>0 else smoothstep(0,1,linear)
-	return {"hand":vector_at(hands,index,factor),"support":vector_at(supports,index,factor),
-		"chest":vector_at(chests,index,factor),"hip":vector_at(hips,index,factor),
-		"blade":vector_at(blades,index,factor)*PI/180.0,
-		"stance":scalar_at(stances,index,factor),"twist":scalar_at(twists,index,factor)*PI/180.0}
+	return {"blade":vector_at(blades,index,factor)*PI/180.0}
 
 func vector_at(values: PackedVector3Array, index: int, factor: float) -> Vector3:
 	return values[index].lerp(values[index+1],factor) if values.size() == times.size() else Vector3.ZERO
-
-func scalar_at(values: PackedFloat32Array, index: int, factor: float) -> float:
-	return lerpf(values[index],values[index+1],factor) if values.size() == times.size() else 0.0
 
 ## 前冲仅在挥出窗口产生；落地/碰撞约束由角色移动层负责，不能直接改 position。
 func forward_speed(progress: float) -> float:

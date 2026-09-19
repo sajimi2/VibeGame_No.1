@@ -2,6 +2,8 @@
 builds/
 work/
 *.tmp
+__pycache__/
+*.blend[0-9]
 
 # Local credentials and machine-specific files
 .env

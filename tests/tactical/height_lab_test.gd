@@ -70,7 +70,7 @@ func run() -> void:
 	actor.test_crouch = true
 	await place(Vector3(-6, 0.1, 0.15))
 	check(actor.crouched and actor.shape_node.shape.height < 1, "crouching changes collider")
-	check(actor.occluded and actor.outline.visible, "hidden player receives outline")
+	check(actor.occluded and actor.baked_visual.layers.upper.outline.visible, "hidden player receives outline")
 	await capture("occlusion")
 	await place(Vector3(-10, 0.1, 4))
 	actor.test_motion = Vector2(0, 1)
@@ -93,7 +93,7 @@ func run() -> void:
 	check(actor.position.z < 5, "cloth does not block locomotion")
 	var hashes := {}
 	for heading in 12:
-		var image: Image = preload("res://scripts/presentation/directional_art.gd").texture(heading, 0, false).get_image()
+		var image: Image = preload("res://scripts/art/baked_character_source.gd").new().sample("walk",heading,0,{"part":"full"}).texture.get_image()
 		hashes[hash(image.get_data())] = true
 	check(hashes.size() == 12, "twelve distinct direction textures")
 	actor.reset_position()

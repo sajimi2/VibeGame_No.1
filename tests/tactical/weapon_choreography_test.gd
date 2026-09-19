@@ -1,6 +1,5 @@
 extends SceneTree
 ## 覆盖两种武器的动作、物理前冲、接地尘、散布、死亡生命周期与新图集回导；隔离进度和美术覆盖。
-const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Actions = preload("res://scripts/combat/action_library.gd")
 const Accuracy = preload("res://scripts/combat/bow_accuracy.gd")
 const Store = preload("res://scripts/art/atlas_store.gd")
@@ -75,7 +74,7 @@ func attacks() -> void:
 		sequence.append(combat.attack_action.id)
 		for frame in 29:
 			await frames(1)
-			worst = maxf(worst,combat.hand.global_position.distance_to(Pose.world_grip(player.sprite,lab.camera,player.grip_pixel,player.grip_depth)))
+			worst = maxf(worst,combat.hand.global_position.distance_to(player.baked_visual.last_grip))
 	check(sequence == ["light_rise","light_stab","light_rise"],"小刀每次有效攻击交替上挥、下刺")
 	check(worst<0.0001,"连续攻击中手柄始终与本帧手心一致")
 	combat.apply_weapon(load("res://data/weapons/cleaver.tres"))
@@ -97,10 +96,14 @@ func attacks() -> void:
 	await frames(3)
 	await place()
 	var tip: Vector3 = combat.weapon.get_meta("blade_tip")
+	var source_rig: Node3D=load("res://assets/characters/player_rig.tscn").instantiate()
+	root.add_child(source_rig)
 	for id in ["light_rise","light_stab","heavy_swing"]:
-		var action := Actions.get_action(id)
-		var idle := Actions.get_action("heavy_drag" if id == "heavy_swing" else "light_ready")
-		check(action.sample(0).hand == idle.sample(0).hand and action.sample(1).hand == idle.sample(0).hand,"%s 首尾握点与待机连续" % id)
+		var idle: Vector3=source_rig.sample("heavy_drag" if id=="heavy_swing" else "light_ready",0).grip
+		var begin: Vector3=source_rig.sample(id,0).grip
+		var finish: Vector3=source_rig.sample(id,1).grip
+		check(begin.distance_to(idle)<.001 and finish.distance_to(idle)<.001,"%s Blender 动作首尾握点与待机连续" % id)
+	source_rig.free()
 	check(tip.z < -1.5,"大砍刀保留足够刀身用于拖地与前劈")
 
 ## 同一批随机样本比较瞄准误差，同时验证生产射击确实使用发射时姿态。
@@ -144,6 +147,9 @@ func weapon_revision() -> void:
 		for count in edges.values(): closed = closed and count==2
 		check(closed and volume>0.0001 and model.mesh.get_aabb().size.y>=0.029,id+" 刀身有厚度、封闭且面朝向正确")
 		model.free()
+	var compact_sword := preload("res://scripts/presentation/weapon_art.gd").sword()
+	check(is_equal_approx(compact_sword.mesh.get_aabb().size.z,1.48*.8) and is_equal_approx(compact_sword.get_meta("blade_tip").z,-1.36),"宝剑实体与刀光端点实际缩小 20%")
+	compact_sword.free()
 	check(lab.progression.inventory.has_instance("camp_sword"),"初始化库存新增一把中型宝剑")
 	# 模拟真实 v1 老库存没有宝剑：先补发再二次读档，验证装备保留且不会重复赠送。
 	var old_inventory: Dictionary = lab.progression.inventory.get_snapshot().duplicate(true)
@@ -214,74 +220,51 @@ func weapon_revision() -> void:
 	check(guard.sword.get_child(0).mesh.get_aabb().size.is_equal_approx(combat.weapon.mesh.get_aabb().size),"守卫与玩家中型宝剑共用相同模型尺寸")
 	var apex: Dictionary = Actions.get_action("heavy_swing").sample(0.62)
 	var tip := Basis.from_euler(apex.blade)*Vector3(0,0,-2.21)
-	check(apex.hand.x>0 and apex.hand.x<=2 and absf(tip.x)<0.08 and tip.y>2,"重刀头顶握点略偏持刀手，刀尖近乎竖直居中")
+	var rig: Node3D=load("res://assets/characters/player_rig.tscn").instantiate()
+	root.add_child(rig)
+	var hand: Vector3=rig.sample("heavy_swing",.62).grip
+	check(absf(hand.x)<.15 and hand.y>1.3 and absf(tip.x)<0.08 and tip.y>2,"Blender 重刀头顶握点接近身体中心，刀尖竖直居中")
+	rig.free()
 	guard.state = "guard"
 	guard.update_visuals(0)
 
-## 与旧固定前置握点做同画面 A/B：只统计身体不透明像素被武器改写的数量。
+## 从实际渲染提取身体遮罩，比较正确深度与强行前置，防止再次出现背向刀穿身。
 func back_occlusion() -> void:
 	if DisplayServer.get_name()=="headless": return
 	await place()
-	lab.camera.size = 6
+	lab.camera.size=6
 	lab.combat.apply_weapon(load("res://data/weapons/knife.tres"))
-	var yaw: float = lab.camera.rotation.y+PI
-	lab.player.facing = Vector2(sin(yaw),cos(yaw))
+	var yaw: float=lab.camera.rotation.y+PI
+	lab.player.facing=Vector2(sin(yaw),cos(yaw))
 	await frames(30)
 	lab.player.set_physics_process(false)
 	lab.combat.set_physics_process(false)
 	lab.combat.trail.hide()
-	var images: Array[Image] = []
-	for mode in 3:
-		lab.combat.weapon.visible = mode!=0
-		lab.combat.hand.global_position = Pose.world_grip(lab.player.sprite,lab.camera,lab.player.grip_pixel,0.018 if mode==1 else lab.player.grip_depth)
-		await frames(2)
-		await RenderingServer.frame_post_draw
+	var images: Array[Image]=[]
+	for mode in 4:
+		lab.combat.weapon.visible=mode in [1,2]
+		lab.player.baked_visual.visible=mode!=3
+		lab.combat.hand.global_position=lab.player.baked_visual.last_grip+(lab.camera.global_basis.z*.8 if mode==1 else Vector3.ZERO)
+		await frames(3)
+		RenderingServer.force_draw(false)
 		images.append(root.get_texture().get_image())
-	images[1].save_png("res://work/knife_back_old.png")
-	images[2].save_png("res://work/knife_back_fixed.png")
 	var counts := [0,0]
-	var body: Image = lab.player.sprite.texture.get_image()
-	for y in body.get_height():
-		for x in body.get_width():
-			if body.get_pixel(x,y).a<0.95: continue
-			var p := Vector2i(lab.camera.unproject_position(Pose.world_grip(lab.player.sprite,lab.camera,Vector2(x+0.5,y+0.5),0)))
+	var center: Vector2=lab.camera.unproject_position(lab.player.global_position+Vector3.UP*.9)
+	var region:=Rect2i(Vector2i(center)-Vector2i(65,100),Vector2i(130,170))
+	for y in range(region.position.y,region.end.y):
+		for x in range(region.position.x,region.end.x):
+			if images[0].get_pixel(x,y)==images[3].get_pixel(x,y): continue
 			for mode in 2:
-				if images[0].get_pixelv(p)!=images[mode+1].get_pixelv(p): counts[mode]+=1
-	print("Back occlusion old/new: ",counts)
-	check(counts[0]>0 and counts[1]<counts[0]*0.4,"实际渲染背向时匕首被身体遮挡，固定前置对照可复现")
+				if images[0].get_pixel(x,y)!=images[mode+1].get_pixel(x,y): counts[mode]+=1
+	print("Back occlusion forced/actual: ",counts)
+	check(counts[0]>0 and counts[1]<counts[0]*.4,"实际身体遮罩验证背向匕首遮挡，强行前置会穿身")
+	images[2].save_png("res://work/knife_back_fixed.png")
+	lab.player.baked_visual.show()
+	lab.combat.weapon.show()
+	lab.combat.hand.global_position=lab.player.baked_visual.last_grip
 	lab.combat.trail.show()
 	lab.player.set_physics_process(true)
 	lab.combat.set_physics_process(true)
-
-## 同一来源接口导出新的三十三帧动作并回导；原图集键仍保持兼容。
-func atlas() -> void:
-	var source = load("res://data/art_sources/01_player.tres")
-	var document := Document.new()
-	document.build(source,source.animations().back(),{"action":"heavy_swing"})
-	check(document.image.get_size() == Vector2i(384,1584),"重刀全身动作导出十二朝向、三十三帧原尺寸图集")
-	var frames_seen := {}
-	for row in 33: frames_seen[hash(document.cell_texture(3,row).get_image().get_data())] = true
-	check(frames_seen.size()>20,"全身动作有连续变化的躯干和手臂帧")
-	# 每格写不同色标，验证真正运行中的动作相位会使用编辑稿及对应握点。
-	for row in 33:
-		for column in 12: document.image.set_pixel(column*32+16,row*48+20,Color8(100+row*3,20+column*15,211))
-	document.cells[16*12+3].anchors.grip = [20,24]
-	var directory := Store.root_path.get_base_dir()
-	var file: Dictionary = document.export_to(directory)
-	check(not Store.import_package(file.json).has("error"),"新动作可通过现有导出回导接口持久化")
-	var candidate := Document.new()
-	check(candidate.load_package(Store.inspect_package(file.json),[source]).is_empty(),"工作台能够重新载入新动作清单")
-	var player = lab.player
-	player.direction_index = 3
-	player.art_step = -1
-	player.crouch_blend = 0
-	player.jump_frame = -1
-	player.visual_action = "heavy_swing"
-	player.visual_action_frame = 16
-	player._refresh_art(-1)
-	check(player.sprite.texture.get_image().get_pixel(16,20).is_equal_approx(Color8(148,65,211)) and player.grip_pixel == Vector2(20,24),"实际 Player 全身动作读取编辑稿及新握点")
-	check(player.world_shadow.texture == player.sprite.texture,"全身动作手绘稿同步进入实际剪影投影")
-	Store.restore_asset("player")
 
 ## 截取动作过程而非只看待机，供人工复核三维刀刃和纸片躯体是否同步。
 func capture_actions() -> void:
@@ -480,7 +463,6 @@ func run() -> void:
 	await weapon_revision()
 	await back_occlusion()
 	await accuracy()
-	atlas()
 	await capture_actions()
 	await sword_shadow()
 	await death()

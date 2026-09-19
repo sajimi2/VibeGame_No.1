@@ -4,9 +4,6 @@ const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
 const PixelWeapon = preload("res://scripts/presentation/pixel_weapon.gd")
 var sunlight: DirectionalLight3D
-const Art = preload("res://scripts/presentation/directional_art.gd")
-const Pose = preload("res://scripts/presentation/character_pose.gd")
-const Billboard = preload("res://scripts/presentation/character_billboard.gd")
 const FrameSpec = preload("res://scripts/art/frame_spec.gd")
 const Actions = preload("res://scripts/combat/action_library.gd")
 ## 留空时按守卫/弓手选择；新敌人可指定来源资源中的稳定资产 ID。
@@ -51,20 +48,14 @@ var gait := 0.0
 var clock := 0.0
 var knockback := Vector3.ZERO
 var locked_direction := Vector3.FORWARD
-var world_shadow: Sprite3D
-var outline: Sprite3D
 var occluded := false
-var sprite: Sprite3D
 var sword: Node3D
 var shield_node: Node3D
 var trail: MeshInstance3D
 var marker: Label3D
 var ai_enabled := true
 var navigation_excluded: Array[RID] = []
-var art_provider: Callable
 var baked_visual: Node3D
-var grip_pixel := Vector2.ZERO
-var grip_depth := 0.018
 var death_visual := preload("res://scripts/presentation/death_visual.gd").new()
 
 ## 创建身体、武器、血条和投影，并加入敌人分组供战斗与结算查询。
@@ -84,22 +75,6 @@ func _ready() -> void:
 	shape.shape = capsule
 	shape.position.y = 0.825
 	add_child(shape)
-	sprite = Sprite3D.new()
-	sprite.texture = Art.texture(0,-1,false,false,0,0,true)
-	sprite.pixel_size = 0.04
-	sprite.offset = Vector2(0,24)
-	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(sprite)
-	outline = sprite.duplicate()
-	outline.no_depth_test = true
-	outline.render_priority = 10
-	outline.modulate = Color("f1a36e")
-	outline.visible = false
-	add_child(outline)
-	world_shadow=Billboard.shadow(self)
 	marker = Label3D.new()
 	marker.position.y = 2.45
 	marker.pixel_size = 0.015
@@ -217,36 +192,27 @@ func update_visuals(travel: float) -> void:
 		motion_angle = blade_pose.y
 	if hurt_recovery:
 		art_state=FrameSpec.with_action(art_state,"hurt",clampi(roundi((1-attack_time/.35)*8),0,8))
-	Billboard.align(sprite,camera)
-	Billboard.align(outline,camera)
 	update_occlusion()
-	sprite.modulate=Color(1.8,1.5,1.2) if hurt>0 else Color.WHITE
-	baked_visual.tint=sprite.modulate
-	var frame: Dictionary
-	if art_provider.is_valid() and art_provider.call(art_state):
-		frame=baked_visual.current_frame
-	else:
-		frame=Art.frame(art_id if not art_id.is_empty() else "archer" if ranged else "guard",art_state,true)
-		sprite.texture=frame.texture
-		outline.texture=Art.outline_texture(sprite.texture)
-		Billboard.sync_shadow(world_shadow,sprite)
+	baked_visual.tint=Color(1.8,1.5,1.2) if hurt>0 else Color.WHITE
+	if not baked_visual.apply_frame(art_state): return
 	marker.text={"guard":"弓箭手" if ranged else "守卫","chase":"!","windup":"瞄准！" if ranged else "突刺！" if thrust else "横斩！","nock":"搭箭…","recover":"收招 · 破绽","investigate":"? 调查","search":"? 搜索","return":"返回"}.get(state,state)
 	if block_flash>0: marker.text="格挡 · 绕侧/等收招"
 	marker.modulate=Color("f1a36e") if state=="windup" else Color("e5d5ac")
 	if is_instance_valid(shield_node):
 		shield_node.position=Vector3(0,1.1,0)
 		shield_node.look_at(global_position+Vector3.UP*1.1+facing)
-		shield_node.global_position = Pose.world_grip(sprite,camera,frame.support,frame.support_depth)-shield_node.global_basis*WeaponArt.SHIELD_CENTER
+		shield_node.global_position = baked_visual.last_support-shield_node.global_basis*WeaponArt.SHIELD_CENTER
 	sword.position=Vector3(0,1.1,0)
 	if facing.length()>0.01: sword.look_at(global_position+Vector3.UP*1.1+facing)
-	# 人物纹理和武器共享同一手心像素，世界握点随相机投影转换。
-	sword.global_position = Pose.world_grip(sprite, camera, frame.grip, frame.depth)
+	# 武器直接使用烘焙骨架的世界手心，不再绕回旧二维像素坐标。
+	sword.global_position = baked_visual.last_grip
 	var active := not ranged and state=="recover" and not hurt_recovery and recovery_duration-attack_time<0.16
 	var held: Node3D = sword.get_child(0)
 	if not ranged:
 		# 只倾斜武器模型；朝向与手心位置继续由本帧姿态决定。
 		held.rotation = blade_pose
-	trail.sample_blade(active,held.to_global(Vector3(0,0,-1.32)),held.to_global(Vector3(0,0,-1.7)))
+	var blade_tip: Vector3 = held.get_meta("blade_tip", Vector3(0,0,-1.7))
+	trail.sample_blade(active,held.to_global(blade_tip*0.78),held.to_global(blade_tip))
 
 ## 执行一次已蓄势的攻击：弓手生成箭，守卫沿锁定方向采样近战射线。
 func perform_attack() -> void:
@@ -345,7 +311,7 @@ func update_occlusion() -> void:
 	var origin := camera.project_ray_origin(camera.unproject_position(target))
 	var query := PhysicsRayQueryParameters3D.create(origin,target,1|4,[get_rid()])
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
-	outline.visible = occluded and hp>0 and sprite.visible
+	baked_visual.set_occluded(occluded)
 
 ## 弓手从附近可达导航点中选择撤退位置，兼顾远离玩家、掩体和移动成本。
 func find_retreat() -> Vector3:

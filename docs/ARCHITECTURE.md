@@ -18,7 +18,7 @@
 
 点击锁定方向；计时到有效窗口后按角度采样射线；`struck` 按实例 ID 去重。伤害由敌人按盾挡/身体/顶部决定。武器图形不是碰撞伤害源。弓箭先拉弓 0.14 秒，`arrow.gd` 连续检测飞行线段。
 
-`data/weapons` 选择轻/中/重类别、待机动作与攻击序列；`data/actions` 中的 `action_profile` 提供身体/手臂/刀刃曲线、分段速度曲线、有效窗口与前冲速度。`action_library` 只负责查资源，不操作演员。战斗模块推进时间，`character_pose` 取同一相位生成关节，武器按同一资源旋转；玩家在移动前通过注入的 `combat_movement` 查询速度增量，统一走 `move_and_slide()`。重刀前冲没有直接改位置。
+`data/weapons` 选择轻/中/重类别、待机动作与攻击序列；`data/actions` 中的 `action_profile` 提供刀刃曲线、分段速度曲线、有效窗口与前冲速度；身体动作保存于 Blender。`action_library` 只负责查资源，不操作演员。战斗模块推进时间，`baked_human` 按同一动作相位播放已烘焙的身体帧，武器按动作资源旋转；玩家在移动前通过注入的 `combat_movement` 查询速度增量，统一走 `move_and_slide()`。重刀前冲没有直接改位置。
 
 装备通过 `player.set_sprint_block("equipped_weapon", ...)` 登记疾跑限制；未来技能可用独立来源键叠加，换装只移除装备自己的限制。轻型的 `movement_scale()` 为 1.1，中/重型为 1.0，只乘主动步行/疾跑/蹲行速度；跳跃初速和前冲不乘此倍率。枚举显式保留 HEAVY=1，新增 MEDIUM=2，避免旧资源被误读。
 
@@ -30,15 +30,15 @@
 
 玩家移动独立在 `player._physics_process`；敌人每帧依次执行 `update_senses → choose_movement → move_and_slide → update_visuals`。这些是同一物理线程内的方法调用，不是多个并行任务。最后目击记忆只在真实看见玩家时更新；受到隐藏攻击时仅估计来袭方向。
 
-人物表现由 `presentation/character_pose.gd` 提供关节和手心数据，`directional_art.gd` 绘制像素纸片；玩家战斗更新动作后同帧刷新纸片，并把世界武器握柄对齐该手心。刀光取实际模型端点，命中仍走原射线。石材像素纹理和 Shader 在 `stone_palette.gd` / `pixel_stone.gdshader`，与 `battle_prop.gd` 的几何、碰撞分开。资产入口和调研见 ART_PIPELINE.md。
+人物表现统一由 `presentation/baked_human.gd` 读取颜色、深度和双手握点，组合上下身；玩家战斗更新动作后同帧刷新图集帧，武器直接使用 `last_grip` / `last_support` 世界坐标，不再绕行二维像素握点转换。刀光取实际模型端点，命中仍走原射线。石材像素纹理和 Shader 在 `stone_palette.gd` / `pixel_stone.gdshader`，与 `battle_prop.gd` 的几何、碰撞分开。资产入口和调研见 ART_PIPELINE.md。
 
 玩家换装/建弓、敌人建剑盾/弓时调用 `PixelWeaponVisual.attach(model,camera,sun)`；它随模型释放，读取最终变换，交给 `pixel_frame_gpu` 在独立小尺寸 SubViewport 输出颜色/深度，原模型仅投影。屏外、隐藏和同姿态停止出图。`weapon_sprite_baker` 只负责几何采集及显式 `capture_frame()` 离线导出，CPU 图像缓存不进入游戏刷新。弓以 `pixel_revision` 更新弦形，已有像素箭通过 `pixel_bake_ignore` 排除重复烘焙。`swing_trail` 复用 GPU 后端把世界轨迹转为像素刀光并逐块消退。二者不参与伤害计算，详见 WEAPON_PIXEL_EXPERIMENT.md。
 
-`character_billboard.gd` 只接收 Sprite3D 与相机，统一直立纸片的深度/高度补偿并同步剪影投影，不读取战斗、UI 或存档。疾跑/跳跃状态由玩家物理过程产生，姿态生成器据此改变关节；阴影和武器握点均跟随同一帧。玩家 Shift 疾跑、Ctrl 精确射击；步行 4.2m/s、疾跑 6.8m/s、起跳 6.6m/s。
+`baked_human` 拥有上下身、逐像素深度、遮挡轮廓和剪影阴影；演员通过 `apply_frame` 和 `set_occluded` 更新表现。疾跑/跳跃状态由玩家物理过程产生，阴影和世界武器握点均跟随同一帧。玩家 Shift 疾跑、Ctrl 精确射击；步行 4.2m/s、疾跑 6.8m/s、起跳 6.6m/s。
 
 ## 美术帧与命中附着
 
-`data/art_sources/*.tres → atlas_source → atlas_document → tools/art_preview` 是工具侧数据流：来源提供动作/选项/帧，文档拼图并导出 PNG + JSON，界面只负责交互。`atlas_store` 按资产 ID 和规范帧键查询手绘覆盖，不依赖场景、UI 或战斗；回导通过校验后写自包含 `.res` 与 `catalog.tres`。角色运行时 `Art.frame()` 优先取覆盖，否则程序生成；纹理、握点、轮廓和阴影共用同一结果。详见 ART_PIPELINE.md。
+`data/art_sources/*.tres → atlas_source → atlas_document → tools/art_preview` 是工具侧数据流：来源提供动作/选项/帧，文档拼图并导出 PNG + JSON，界面只负责交互。`atlas_store` 按资产 ID 和规范帧键查询手绘覆盖，不依赖场景、UI 或战斗；回导通过校验后写自包含 `.res` 与 `catalog.tres`。角色工作台与运行时按同一帧键优先取补色覆盖，否则读取已烘焙图页；纹理、握点、轮廓和阴影共用同一结果。覆盖必须匹配资产与格子尺寸，旧 32×48/64² 稿不会被错误套入 96²。详见 ART_PIPELINE.md。
 
 `arrow → receive_strike/receive_damage → impact_attachment.bind → follow` 先按原规则结算，再保存目标提供的局部变换。角色根节点不旋转，所以身体附着框架从 `facing` 构造，盾挡则用盾节点；箭仍由关卡管理，无需改父子树或让敌人管理投射物。箭侧影与搭弓箭共用 `arrow_art`，正常三维深度遮挡。
 
@@ -67,10 +67,13 @@ ActorInventory.try_equip --inventory_changed--> camp_progress.changed
 
 ## 已知边界
 
-三角色离线管线现已接入 F5，详见 [PLAYER_RIG_EXPERIMENT.md](PLAYER_RIG_EXPERIMENT.md)：可编辑源模型/共享 AnimationLibrary → 开发期 GPU 烘焙 → 颜色/深度/双手握点 → baked_human 分层播放。玩家/敌人各自安装相同表现模块，关卡总控不管理图集。已移除样板对旧二维关节公式的依赖，普通出图不重建模型或动画。玩家战斗仍读原握点接口；守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。碰撞、AI、命中与存档不变。
+四角色均采用 Blender 保存的模型/骨骼/动作，经 GLB 和开发期 GPU 烘焙后，输出 96×96 颜色/深度/双手握点；`baked_human` 只分层播放。制作步骤见 [ART_PIPELINE.md](ART_PIPELINE.md)。关卡总控不管理图集，运行时不实例化角色骨架、模型生成器或角色烘焙视口。守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。武器与刀光仍有独立实时 GPU 像素化，不能混称为全离线。
 
 - 导航每个 X/Z 网格仅一个行走表面，不支持桥上桥下并行路径。
 - 敌人仍在一个脚本内维护状态和表现字段；此次先拆更新阶段，避免改动 AI 行为。
 - 角色字段仍存在直接读写，碰撞层仍有数字掩码；新增交互前要核对所有调用者。
 - 存档 I/O 已隔离，但异常 JSON 保护/原子写入仍是后续小修，不宣称此次已解决。
 - 近战命中仍为按角度扫射线，而非逐刀刃骨骼碰撞；动作编排改变了时序和前冲，需结合实际试玩验收。未来技能可复用动作资源及限制来源，但尚未实现技能系统。
+## 制作端与运行端的接口
+
+`imported_humanoid_rig` 继承已有动作采样/上下身组合协议，读取标准 GLB 的 Skeleton3D、Skin 和材质，离线计算变形表面；仅被工作台和烘焙工具使用。`baked_human_spec` 集中声明 96²、2.56m 采样范围及资产/动作映射，`baked_human` 读取清单中的格子尺寸和像素比例；战斗仍通过原世界握点接口连接。关卡布局的可选 `art_id` 选择外观，不改变敌人种类和状态机。

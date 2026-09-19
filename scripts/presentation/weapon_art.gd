@@ -55,7 +55,7 @@ static func blade_panel(parent: Node3D, points: PackedVector2Array, half: float,
 	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(panel)
 
-## 宝剑与守卫共用同一实体刀身，外轮廓和长度保持原尺寸。
+## 玩家与守卫共用紧凑宝剑；缩小实体几何，像素外观、真实投影和刀光端点同步变化。
 static func sword() -> MeshInstance3D:
 	var root := MeshInstance3D.new()
 	var points := [Vector3(-0.075,0,-0.22),Vector3(0.075,0,-0.22),Vector3(0.095,0,-1.35),Vector3(0,0,-1.7),Vector3(-0.065,0,-1.37)]
@@ -72,6 +72,19 @@ static func sword() -> MeshInstance3D:
 	for side in [-1,1]: block(root,Vector3(0.08,0.115,0.10),Vector3(side*0.17,0,-0.25),"dfca8b")
 	block(root,Vector3(0.15,0.13,0.08),Vector3(0,0,0.13),"889ba1")
 	block(root,Vector3(0.07,0.145,0.055),Vector3(0,0,0.13),"507d7a")
+	var size_scale := 0.8
+	var arrays := root.mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	for index in vertices.size(): vertices[index] *= size_scale
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	var compact := ArrayMesh.new()
+	compact.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	root.mesh = compact
+	for detail in root.get_children():
+		detail.position *= size_scale
+		detail.scale *= size_scale
+	root.set_meta("blade_base", Vector3(0,0,-0.24) * size_scale)
+	root.set_meta("blade_tip", Vector3(0,0,-1.7) * size_scale)
 	return root
 
 ## 玩家刀具保留握柄原点；反持由动作曲线控制，模型本身始终向局部 -Z 延伸。

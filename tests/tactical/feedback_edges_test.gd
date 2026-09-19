@@ -86,6 +86,6 @@ func run() -> void:
 	for child in lab.get_children():
 		if child.is_in_group("tree_world_shadows"): roots+=1
 	check(roots>=4,"all trees have world-space shadow volumes")
-	check(player.world_shadow.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY,"actor shares world shadow system")
+	check(player.baked_visual.layers.lower.shadow.cast_shadow==GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY,"actor shares world shadow system")
 	print("FEEDBACK_EDGES: %d checks, %d failures" % [checks,failures])
 	quit(1 if failures else 0)

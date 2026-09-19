@@ -78,7 +78,7 @@ func run() -> void:
 	var transforms := {}
 	for i in 36:
 		await frames(1)
-		poses[guard.sprite.texture.get_instance_id()]=true
+		poses[guard.baked_visual.last_keys.upper]=true
 		transforms[str(guard.sword.transform)]=true
 	check(guard.action_duration==0.32,"slash windup shortened")
 	check(poses.size()>=6 and transforms.size()>=10,"attack uses multiple arm poses and continuous weapon motion")

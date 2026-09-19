@@ -7,7 +7,7 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 - `scenes/tactical_height.tscn` 是保留的 3D 高度/布帘/坡道试验场，F6 或 `play_height.bat dev`。
 - 不带 `dev` 的批处理运行 `builds/windows` 中的导出包；修改源码后须重新导出。EXE 与同名 PCK 必须配套。
 - WASD 移动，Shift 疾跑，Space 跳跃，C 下蹲，左键近战，右键弓箭，E 交互，I 背包，Ctrl 暂停辅瞄，R 重试。
-- 图集工作台：打开 `tools/art_preview.tscn`，按 **F6**。查看玩家/守卫/弓手/箭矢，导出原尺寸 PNG + JSON；编辑 PNG 后载入 JSON、校准握点、应用，再 F5 查看游戏效果。使用与扩展说明见 [美术资产](docs/ART_PIPELINE.md)。
+- 图集工作台：打开 `tools/art_preview.tscn`，按 **F6**。查看玩家/守卫/弓手/骷髅/箭矢，导出原尺寸 PNG + JSON；编辑 PNG 后载入 JSON、校准握点、应用，再 F5 查看游戏效果。使用与扩展说明见 [美术资产](docs/ART_PIPELINE.md)。
 - F5 已启用玩家匕首/宝剑/大砍刀/弓、守卫剑盾、弓手弓及刀光的像素表现。模型对照工具：打开 `tools/weapon_pixel_lab.tscn`，按 **F6**；1 宝剑、2 大砍刀、3 匕首、Tab 原版/像素对照、V 导出当前帧。工具场景不读写进度，说明见 [武器像素化](docs/WEAPON_PIXEL_EXPERIMENT.md)。
 
 ## 阅读代码
@@ -45,4 +45,4 @@ Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D
 - 第三方 Godot AI 工具保持原样，使用见 [GODOT_AI_SETUP.md](GODOT_AI_SETUP.md)；个人 `.codex/` 配置不提交。
 ## 角色三维源模型与离线图集
 
-F5 玩家、守卫、弓手使用新烘焙角色。打开 tools/art_preview.tscn 按 **F6** 可查看十二朝向全动作、原尺寸导出和分层补色回导；源场景的 AnimationPlayer 可编辑共享动作。独立对照仍在 tools/player_rig_lab.tscn：1 轻装、2 重刀、Tab 原版、M 实体模型。编辑、烘焙与限制见 [PLAYER_RIG_EXPERIMENT.md](docs/PLAYER_RIG_EXPERIMENT.md)。
+四种角色统一采用 **Blender → GLB → Godot 离线烘焙 96×96**，十二朝向，显示大小沿用已确认的 1.2 倍观察基准。可编辑源集中在 `assets/characters/blender/`；工作台同时查看 3D 源模型和像素图集。导出入口 `tools/blender/export_characters.py`，烘焙入口 `tools/bake_characters.gd`。编辑、补色回导与限制见 [美术流程](docs/ART_PIPELINE.md)。

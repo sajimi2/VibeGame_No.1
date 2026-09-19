@@ -5,7 +5,6 @@ const Motion = preload("res://scripts/combat/motion.gd")
 const WeaponArt = preload("res://scripts/presentation/weapon_art.gd")
 const PixelWeapon = preload("res://scripts/presentation/pixel_weapon.gd")
 var sunlight: DirectionalLight3D
-const Pose = preload("res://scripts/presentation/character_pose.gd")
 const Arrow = preload("res://scripts/combat/arrow.gd")
 const Actions = preload("res://scripts/combat/action_library.gd")
 const Accuracy = preload("res://scripts/combat/bow_accuracy.gd")
@@ -214,7 +213,7 @@ func _physics_process(delta: float) -> void:
 		view = locked_direction.rotated(Vector3.UP, -actor.camera.rotation.y)
 	actor.direction_index = posmod(roundi(atan2(view.x, view.z) / (PI / 6)), 12)
 	actor._refresh_art(actor.art_step)
-	hand.global_position = Pose.world_grip(actor.sprite, actor.camera, actor.grip_pixel, actor.grip_depth)
+	hand.global_position = actor.baked_visual.last_grip
 	var idle_visual := Actions.get_action(weapon_profile.idle_action)
 	var visual: Resource = attack_action if swing_time>0 else idle_visual
 	var phase := (attack_duration-swing_time)/attack_duration if swing_time>0 else 0.0

@@ -1,8 +1,5 @@
 extends CharacterBody3D
 ## 玩家移动与姿态控制；战斗时序由 player_combat 单独处理。
-const Art = preload("res://scripts/presentation/directional_art.gd")
-const Pose = preload("res://scripts/presentation/character_pose.gd")
-const Billboard = preload("res://scripts/presentation/character_billboard.gd")
 const FrameSpec = preload("res://scripts/art/frame_spec.gd")
 @export var art_id := "player"
 const STAND_HEIGHT := 1.65
@@ -14,20 +11,15 @@ var camera: Camera3D
 var aim_point := Vector3.ZERO
 var cursor := Vector2.ZERO
 var shape_node: CollisionShape3D
-var sprite: Sprite3D
-var outline: Sprite3D
 var crouched := false
 var crouch_blend := 0.0
 var art_step := -1
-var grip_pixel := Vector2.ZERO
-var grip_depth := 0.018
 var equipment_speed_scale := 1.0
 var facing := Vector2(0, 1)
 var direction_index := 0
 var gait := 0.0
 var movement_direction := 0
 var shadow: Node3D
-var world_shadow: Sprite3D
 var occluded := false
 var test_mode := false
 var test_motion := Vector2.ZERO
@@ -50,8 +42,6 @@ var visual_action := ""
 var visual_action_frame := 0
 var sprint_blockers: Dictionary = {}
 var combat_movement: Callable
-# 表现提供者读取离线图集；保留旧帧回退以支持旧人工稿和显式对照。
-var art_provider: Callable
 var baked_visual: Node3D
 var death_art_time := 0.0
 var effects: Node3D
@@ -60,7 +50,7 @@ var landing_delay := 0.0
 var jumped := false
 var spawn := Vector3(-6, 0.1, 5)
 
-## 入树后创建胶囊碰撞、纸片外观和投影；相机与效果系统由关卡注入。
+## 入树后创建胶囊碰撞、离线图集外观和投影；相机与效果系统由关卡注入。
 func _ready() -> void:
 	cursor = get_viewport().get_mouse_position()
 	var listener := AudioListener3D.new()
@@ -81,32 +71,14 @@ func _ready() -> void:
 	shape_node.shape = locomotion
 	shape_node.position.y = STAND_HEIGHT / 2
 	add_child(shape_node)
-	sprite = _sprite(false)
-	outline = _sprite(true)
-	outline.visible = false
 	shadow = preload("res://scripts/presentation/ground_shadow.gd").new()
 	shadow.radius=0.18
 	add_child(shadow)
-	world_shadow=Billboard.shadow(self)
 	baked_visual=preload("res://scripts/presentation/baked_human.gd").new()
 	baked_visual.name="BakedHuman"
 	add_child(baked_visual)
 	baked_visual.setup(self,art_id)
 	_refresh_art(0)
-
-## 纸片保持直立，只绕竖轴朝向相机；轮廓副本忽略深度，用于被遮挡时显示。
-func _sprite(is_outline: bool) -> Sprite3D:
-	var item := Sprite3D.new()
-	item.pixel_size = 0.04
-	item.offset = Vector2(0, 24)
-	item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	item.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	item.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	item.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-	item.no_depth_test = is_outline
-	item.render_priority = 10 if is_outline else 0
-	add_child(item)
-	return item
 
 ## 切换胶囊高度；站起前检测头顶净空，受阻则保持下蹲并返回 false。
 func set_crouch(value: bool) -> bool:
@@ -133,9 +105,6 @@ func _physics_process(delta: float) -> void:
 	death_art_time=death_art_time+delta if hp<=0 else 0.0
 	hurt_time = maxf(0,hurt_time-delta)
 	invulnerable = maxf(0,invulnerable-delta)
-	sprite.modulate = Color(0.55,0.55,0.55) if hp<=0 else Color(1.8,0.8,0.7) if hurt_time>0 else Color.WHITE
-	sprite.rotation.z = -0.7 if hp<=0 else 0
-	world_shadow.visible = hp>0
 	var move := test_motion if test_mode else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if hp <= 0: move = Vector2.ZERO
 	set_crouch(test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C))
@@ -201,23 +170,14 @@ func _physics_process(delta: float) -> void:
 ## 按朝向、步态和攻击姿态选择纹理，使本体与遮挡轮廓同步。
 func _refresh_art(step: int) -> void:
 	art_step = step
-	var crouch_frame := roundi(crouch_blend * Pose.CROUCH_FRAMES)
-	for item in [sprite, outline]:
-		item.position = Vector3.ZERO
-		Billboard.align(item, camera)
+	var crouch_frame := roundi(crouch_blend * FrameSpec.CROUCH_FRAMES)
 	var running := sprinting and step >= 0
 	var state := FrameSpec.character(direction_index,step,crouched,movement_direction,attack_pose,attack_arm,attack_weight,bow_draw,crouch_frame,running,jump_frame)
 	state = FrameSpec.with_action(state,visual_action,visual_action_frame)
 	if hp<=0: state=FrameSpec.with_action(FrameSpec.character(direction_index,-1,false),"death_fall",clampi(roundi(death_art_time/.85*32),0,32))
 	if is_instance_valid(baked_visual):
 		baked_visual.tint=Color(0.72,0.70,0.68) if hp<=0 else Color(1.8,.8,.7) if hurt_time>0 else Color.WHITE
-	if art_provider.is_valid() and art_provider.call(state): return
-	var frame := Art.frame(art_id,state)
-	sprite.texture = frame.texture
-	outline.texture = Art.outline_texture(sprite.texture)
-	grip_pixel = frame.grip
-	grip_depth = frame.depth
-	Billboard.sync_shadow(world_shadow, sprite)
+	baked_visual.apply_frame(state)
 
 ## 限制按来源独立登记；换回轻武器只解除装备限制，不能误解除将来技能/状态的限制。
 func set_sprint_block(source: StringName, blocked: bool) -> void:
@@ -249,8 +209,7 @@ func _update_occlusion() -> void:
 	var query := PhysicsRayQueryParameters3D.create(origin, target, 1 | 4)
 	query.exclude = [get_rid()]
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
-	outline.visible = occluded
-	if art_provider.is_valid() and not sprite.visible: outline.hide()
+	baked_visual.set_occluded(occluded)
 
 ## 初始化或掉出地图时回到出生点，恢复生命并清除移动、跳跃状态。
 func reset_position() -> void:

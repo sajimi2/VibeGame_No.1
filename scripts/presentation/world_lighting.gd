@@ -1,5 +1,5 @@
 extends Node3D
-## 统一控制太阳光和树木投影；人物按自身当前帧投影，由 character_billboard 维护。
+## 统一控制太阳光和树木投影；人物按自身当前帧投影，由 baked_human 维护。
 var sun: DirectionalLight3D
 var environment: Environment
 var hour := 10.5

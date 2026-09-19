@@ -2,7 +2,9 @@ extends Node3D
 ## 关卡装配入口：创建各系统，并把它们需要的依赖传入。
 ## 子类提供地图几何、出生点和敌人布局，公共流程由本类执行。
 const Actor = preload("res://scripts/actors/player.gd")
-const Art = preload("res://scripts/presentation/directional_art.gd")
+const Art = preload("res://scripts/presentation/tree_art.gd")
+## 统一放大世界画面，便于看清角色细节；不改变模型尺寸、碰撞和攻击距离。
+const VIEW_ZOOM := 1.2
 var player: CharacterBody3D
 var camera: Camera3D
 var terrain: RefCounted
@@ -65,7 +67,7 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.name = "FixedAngleCamera"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 17
+	camera.size = 17.0 / VIEW_ZOOM
 	camera.far = 160
 	process_physics_priority = 10
 	add_child(camera)
@@ -128,6 +130,7 @@ func start_encounter() -> void:
 	routes.build(get_world_3d(),navigation_bounds())
 	for spec in enemy_layout():
 		var enemy=preload("res://scripts/actors/enemy.gd").new()
+		enemy.art_id=spec.get("art_id","")
 		enemy.ranged=spec.get("ranged",false)
 		enemy.max_hp=40 if enemy.ranged else 60
 		enemy.hp=enemy.max_hp

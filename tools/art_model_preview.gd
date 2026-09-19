@@ -78,7 +78,7 @@ func show_frame(descriptor: Dictionary) -> String:
 	rig.rotation.y=int(descriptor.state.get("direction",0))*PI/6
 	var part: String=descriptor.get("part","full")
 	# 分层可见性按源骨骼的元数据判断，不在查看器里硬编码玩家或敌人的节点名。
-	for bone in rig.bones: bone.attachment.visible=part=="full" or bone.part==part
+	rig.set_preview_part(part)
 	last_descriptor=descriptor.duplicate(true)
 	_redraw()
 	return ""

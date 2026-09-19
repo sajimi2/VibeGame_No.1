@@ -135,14 +135,14 @@ func run() -> void:
 	AudioServer.remove_bus_effect(0,AudioServer.get_bus_effect_count(0)-1)
 	await frames(20)
 	var poses := {}
-	var sheet := Image.create(32*5,48,false,Image.FORMAT_RGBA8)
+	var sheet := Image.create(96*5,96,false,Image.FORMAT_RGBA8)
+	var samples := [["idle",0],["heavy_swing",16],["heavy_swing",24],["hurt",4],["bow_draw",8]]
 	for pose in 5:
-		var art: Image = preload("res://scripts/presentation/directional_art.gd").texture(2,-1,false,false,2,pose).get_image()
+		var art: Image = preload("res://scripts/art/baked_character_source.gd").new().sample(samples[pose][0],2,samples[pose][1],{"part":"full"}).texture.get_image()
 		poses[hash(art.get_data())] = true
-		sheet.blit_rect(art,Rect2i(0,0,32,48),Vector2i(pose*32,0))
-	sheet.resize(640,192,Image.INTERPOLATE_NEAREST)
+		sheet.blit_rect(art,Rect2i(0,0,96,96),Vector2i(pose*96,0))
 	sheet.save_png("res://work/guard_action_poses.png")
-	check(poses.size()==5,"idle windup swing recovery and bow have distinct arm poses")
+	check(poses.size()==5,"当前待机、蓄力、挥出、受击和拉弓使用不同实体姿态")
 	player.hp=0
 	player.test_motion=Vector2.RIGHT
 	var dead_position: Vector3 = player.position

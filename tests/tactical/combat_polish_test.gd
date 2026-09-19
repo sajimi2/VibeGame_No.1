@@ -37,10 +37,14 @@ func run() -> void:
 	control.physical_keycode=KEY_CTRL
 	control.pressed=true
 	Input.parse_input_event(control)
+	# 注入事件可能仍在输入缓冲中；先派发再检查，避免在物理帧早于输入帧时误判。
+	Input.flush_buffered_events()
 	await frames(1)
 	check(lab.combat.assisted_point(raw,cursor)==raw,"Ctrl disables assist")
+	control=control.duplicate()
 	control.pressed=false
 	Input.parse_input_event(control)
+	Input.flush_buffered_events()
 	await frames(1)
 	guard.state="recover"
 	player.test_mode=false

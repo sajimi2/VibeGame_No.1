@@ -2,7 +2,7 @@ extends Resource
 ## 一次通过校验的图集及其精确帧键/握点；PNG 字节随资源打包，发布版无需访问 work 目录。
 @export var asset_id := ""
 @export var png_bytes := PackedByteArray()
-@export var cell_size := Vector2i(32,48)
+@export var cell_size := Vector2i(96,96)
 @export var columns := 12
 @export var cells: Array[Dictionary] = []
 var texture: ImageTexture

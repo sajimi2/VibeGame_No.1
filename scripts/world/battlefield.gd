@@ -14,7 +14,8 @@ func combat_hint() -> String:
 ## 给公共关卡装配提供三名守卫、两名弓手的位置及类型。
 func enemy_layout() -> Array:
 	return [
-		{"position":Vector3(-9,0,9)},
+		# 首名守卫作为 Blender 骷髅美术试机位，保留原 AI、任务计数和战斗参数。
+		{"position":Vector3(-9,0,9),"art_id":"skeleton"},
 		{"position":Vector3(1,0,-2)},
 		{"position":Vector3(-7,0,-7),"ranged":true},
 		{"position":Vector3(7,0,-10)},

@@ -6,9 +6,3 @@
 script = ExtResource("1")
 id = "death_fall"
 times = PackedFloat32Array(0, 0.3, 0.7, 1)
-hands = PackedVector3Array(5, -2, 5, 7, -6, 4, 9, -12, 1, 10, -12, 0)
-supports = PackedVector3Array(-5, -3, 4, -7, -8, 2, -9, -13, -1, -10, -13, -1)
-chests = PackedVector3Array(0, 0, 0, 1, -5, 2, 2, -3, 1, 2, -1, 0)
-hips = PackedVector3Array(0, 0, 0, 0, -4, 1, 0, -2, 0, 0, 0, 0)
-stances = PackedFloat32Array(0, 2, 4, 4)
-twists = PackedFloat32Array(0, 12, 15, 15)

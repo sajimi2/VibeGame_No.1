@@ -1,7 +1,6 @@
 @tool
-extends MeshInstance3D
+extends Node3D
 ## 美术源只采样已保存的 AnimationPlayer 骨骼轨道；不再依赖二维关节或拉伸肢体。
-const Baker = preload("res://scripts/art/weapon_sprite_baker.gd")
 const Spec = preload("res://scripts/art/baked_human_spec.gd")
 var rig_skeleton: Skeleton3D
 var animator: AnimationPlayer
@@ -9,14 +8,8 @@ var bones: Array[Dictionary]=[]
 
 func _ready() -> void: build()
 
-## 恢复源场景的绑定；编辑器中的模型、骨架和动画是唯一资产真源，不自动重建覆盖。
-func build() -> void:
-	if is_instance_valid(rig_skeleton): return
-	if not has_node("Skeleton3D"): return
-	rig_skeleton=$Skeleton3D
-	animator=$AnimationPlayer
-	for i in rig_skeleton.get_bone_count():
-		bones.append({"part":rig_skeleton.get_bone_meta(i,"part"),"attachment":rig_skeleton.get_node(rig_skeleton.get_bone_name(i))})
+## 由导入适配器绑定标准骨架、动画播放器和身体分层。
+func build() -> void: pass
 
 ## 采样标准 Godot 关键帧并立即同步骨骼；不依赖普通帧推进或旧二维姿态计算。
 func sample(clip: String, phase: float) -> Dictionary:
@@ -40,7 +33,6 @@ func sample(clip: String, phase: float) -> Dictionary:
 
 func _sync() -> void:
 	rig_skeleton.force_update_all_bone_transforms()
-	for i in bones.size(): bones[i].attachment.transform=rig_skeleton.get_bone_global_pose(i)
 
 func anchors() -> Dictionary:
 	return {"pelvis":_bone_point("Pelvis"),"grip":_bone_point("HandR"),"support":_bone_point("HandL")}
@@ -65,7 +57,7 @@ func sample_job(job: Dictionary, move: int, phase: int) -> Dictionary:
 		if bones[i].part=="lower": rig_skeleton.set_bone_pose(i,gait_poses[i])
 		elif id in ["Spine","Head"]:
 			var pose:=rig_skeleton.get_bone_pose(i)
-			pose.basis=(gait_poses[i].basis*pose.basis).orthonormalized()
+			pose.basis=(gait_poses[i].basis*rig_skeleton.get_bone_rest(i).basis.inverse()*pose.basis).orthonormalized()
 			rig_skeleton.set_bone_pose(i,pose)
 		elif job.clip=="light_ready" and id in ["UpperArmL","ForearmL","HandL","UpperArmR","ForearmR","HandR"]:
 			rig_skeleton.set_bone_pose(i,gait_poses[i])
@@ -90,17 +82,3 @@ func apply_state(state: Dictionary) -> Dictionary:
 				if bones[i].part=="lower": rig_skeleton.set_bone_pose(i,poses[i])
 	_sync()
 	return anchors()
-
-## 采集实体三角形用于离线颜色/深度出图；模型细节不进入游戏战斗代码。
-func geometry(part: String, offset:=Vector3.ZERO) -> Array:
-	var result: Array=[]
-	for bone in bones:
-		if bone.part!=part and part!="all": continue
-		for piece in bone.attachment.get_children():
-			if not piece is MeshInstance3D: continue
-			var transform: Transform3D=bone.attachment.transform*piece.transform
-			for triangle in Baker.geometry(piece):
-				var points: Array=[]
-				for point in triangle.points: points.append(transform*point-offset)
-				result.append({"points":points,"color":triangle.color})
-	return result

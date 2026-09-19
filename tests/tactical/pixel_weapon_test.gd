@@ -189,7 +189,9 @@ func depth_render() -> void:
 	world.add_child(adapter)
 	adapter.setup(sword,camera,light)
 	var counts: Array = []
-	for z in [0.5,-0.5,-2.0]:
+	# 按当前刀尖深度取中点；缩剑后旧固定墙位已接近刀尖，不能继续假定会挡住一半。
+	var midpoint: float=sword.to_global(sword.get_meta("blade_tip")).z*.5
+	for z in [0.5,midpoint,-2.0]:
 		wall.position.z = z
 		var images: Array[Image] = []
 		for mode in 3:

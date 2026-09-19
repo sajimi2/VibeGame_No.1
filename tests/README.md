@@ -1,25 +1,27 @@
-# 当前 3D 回归测试
+# 当前回归测试
 
-旧 T01–T07、2D Demo 截图/探针测试已移除；保留的测试覆盖现有行为，不按文件年龄决定删留。测试用 `tactical/testing=true` 禁用真实战术存档；背包保存测试仅写 `work/camp_progress_test.json`。
+测试只覆盖当前三维战场与有效工具；已移除旧二维人物绘制专项，相关移动/握点/遮挡验证改为检查真实烘焙角色。测试设置 `tactical/testing=true`，存档和手绘覆盖只写 `work/` 隔离目录。
 
-- `startup_smoke.gd`：实际加载配置的 F5 入口，验证装配、五名敌人、相机、默认武器和安全出生点。
-- 核心 16 项：`pixel_weapon`（53；渲染时 70）、`weapon_choreography`（50；渲染时 52）、`atlas_pipeline`（55）、`arrow_attachment`（34；渲染时 40）、`character_art`（33）、`locomotion_art`（60；渲染时 62）、`rock_collision`（290）、`guard_reaction`（28）、`attack_motion`（15）、`battlefield`（17）、`guard_encounter`（28）、`mission`（29）、`short_level`（21）、`camp_loop`（22）、`space_combat`（27）、`combat_polish`（15）。共 777 项，渲染模式额外检查 27 项；这是套件规模，不代表每轮全跑。
-- `weapon_choreography`：实际轻重疾跑限制及独立来源叠加、十二方向拖地/尘粒清理、交替出招、握点、真实前冲和撞墙、站蹲射击散布、新动作图集编辑回导与实际 Player 接入、守卫/弓手死亡渐隐和坡面贴合。覆盖资源写隔离 `work/weapon_test_*/overrides`；渲染模式输出三种出招的过程及十二方向图、尸体截图。自动断言不代替动作美感与手感验收。
-- `atlas_pipeline`：原尺寸 PNG + JSON 导出/编辑/回导、多行裁片、重复替换、错误稿保护、握点、实际玩家/守卫/搭弓箭接入及通用界面。覆盖资源仅写独立 `work/atlas_test_*/overrides/`；不要将其作为正式素材应用。测试会记录隔离路径到 `work/atlas_last_test_root.txt`，新进程加 `-- verify <该路径>` 另查 2 项持久化读取。
-- `arrow_attachment`：实际盾挡与身体命中、十二朝向移动/旋转、盾面/纸片嵌入、角色死亡/卸载与飞行箭寿命、垂直射击；玩家插箭停留 4 秒、淡出 0.8 秒、淡出中跟随、独立材质和无重复伤害；渲染时保存盾箭/身体箭十二方向，并比较墙前/墙后及半透明阶段的实际像素。
-- `weapon_choreography` 另覆盖目录内全部近战型号的封闭实体、厚度与面朝向、重刀顶点居中；渲染输出正面/双侧举刀，并对照旧单面与实体宝剑的真实阴影。
-- `character_art`：十二朝向蹲起不缩放、实际手心/剑柄投影、石材显示与射线碰撞一致；输出全朝向人物和蹲起预览，渲染模式额外保存战场与近景。
-- `locomotion_art`：十二朝向疾跑/跳跃图集、真实 Shift 输入、步行/疾跑/蹲行速度、跳跃阶段、持械投影、动态剪影阴影和顶墙停步；身体/移动方向 12×12 组合下的双膝折向，以及实际鼠标事件驱动的后退跳和空中转向；渲染时比较墙前/墙后本体像素。
-- `rock_collision`：240 条贴石进退轨迹、40 条真实守卫状态机绕石路线、10 次石面阻弹检查。修复前玩家轨迹 66/240 卡死，修复后全部通过。始终以无头固定 60Hz 加速模拟运行，避免数万物理帧超过单项超时。
-- `guard_reaction`：三名守卫在各自出生点横斩/突刺的最终世界顶点、移动转身及父节点旋转缩放、刀光消退；实际远程箭盾挡后的调查、记忆、返回和重新追击。渲染模式可保存刀光截图供人工查看。
-- 边界 7 项：`height_lab`、`height_edge`、`art_route`、`outpost_sample`、`letter_interaction`、`feedback_edges`、`tower_feedback`，覆盖坡道、净空、相机/投影、视野和任务输入。
-- 23 个功能测试位于 `tactical/`。迁移路径和背包 view 归属已更新；`outpost_sample` 原本就有两项失败，已对照备份复现，并修正登台所需帧数与平台射线取样位置；该历史修正未改变几何、碰撞或断言阈值。
-- `pixel_weapon_test.gd`：已加入 core，无头 53 项，实际渲染 70 项。覆盖三种刀剑各十二朝向九相位、离线导出缓存、屏外恢复、移动攻击/蹲/跳、五名敌人的剑盾/弓、弓弦与展示箭、死亡隐藏、武器/刀光真实遮挡和消退。新增五模型十二朝向 GPU 实际纹理与 CPU 输出的轮廓/颜色/深度对照，并断言正式刷新不再填充 CPU 图像缓存。运行引擎 `--path <工程目录> --disable-vsync --max-fps 120 --script res://tests/tactical/pixel_weapon_test.gd`，证据在 `work/weapon_pixels/`；渲染验证不要带 `--headless`。末尾加 `-- gpu-only` 可单查 GPU/CPU 一致性。
+```powershell
+./scripts/check.ps1 -Suite smoke
+./scripts/check.ps1 -Suite core
+./scripts/check.ps1 -Suite all
+./scripts/check.ps1 -Suite core -Rendered
+```
 
-从工程根执行 `./scripts/check.ps1 -Suite core`；`-Suite all` 跑边界项目，`-Suite smoke -Rendered` 检查渲染启动。可加 `-GodotPath` 或设置 `GODOT_BIN`。
+每项单独启动引擎，导入及运行日志保存在 `work/checks`。入口同时检查退出码、脚本错误及失败断言；无头通过不代表画面或手感验收。渲染检查需要 Compatibility 实际 GPU，不带 `--headless`。
 
-角色离线专项使用 --script res://tests/tactical/baked_player_test.gd（实际渲染建议 --disable-vsync）。覆盖三角色全部分层帧、标准动画编辑、固定骨长、相对方向/蹲跳/攻击组合、实际握点/墙挡/死亡、工作台 UI 与回导。已纳入 core；测试不会重新生成源资产，修改源模型/动画后须先烘焙并导入。流程与边界见 docs/PLAYER_RIG_EXPERIMENT.md。
+| 专项 | 当前责任 |
+| --- | --- |
+| `startup_smoke` | F5 装配、五敌人、正交相机、装备与安全出生点 |
+| `baked_player` | 四角色完整 96² 动作覆盖、固定骨长/跑跳膝盖、实际世界握点、源动画编辑、死亡、工作台模型与分层补色；渲染时验证墙挡 |
+| `skeleton_pipeline` | 骷髅 Blender 骨骼复用、实体蒙皮表面、统一 96² 运行、剑盾握点、补色与遮挡 |
+| `atlas_pipeline` | 五个当前来源、原尺寸导出/回导、错误稿保护、重复替换、资产/尺寸隔离、实际界面握点修改与独立进程重启读取 |
+| `pixel_weapon` / `weapon_choreography` | GPU 武器/刀光、封闭厚度、宝剑缩小、轻中重移动、交替出招、握点、前冲/撞墙、拖地尘/重击扬尘、射击精度、死亡与真实背向遮挡 |
+| `arrow_attachment` / `guard_reaction` | 飞行/搭弓/插箭、盾挡警觉、移动转身跟随、消隐、刀光世界坐标与去重伤害 |
+| `locomotion_art` / `rock_collision` | 实际 Shift 输入、蹲行、跳跃阶段、空中握点、剪影、鼠标后退跳膝盖；绕石物理压力与阻弹 |
+| 战斗/任务/地图其余专项 | 敌人状态、攻击时序、库存/保存兼容、任务闭环、坡道、净空、遮挡及安全区 |
 
-该专项同时检查 art_preview 的三维源模型：三角色切换、同步相对方向/步态/播放、分层、相机旋转缩放与复位、关闭绘制及二维来源回退。渲染模式对比模型显隐前后的实际像素，工作台截图保存在 `work/humanoid/*_model_workbench.png`。
+`all` 额外包括 height_lab、height_edge、art_route、outpost_sample、letter_interaction、feedback_edges、tower_feedback。绕石压力测试固定 60Hz 无头加速；其他渲染专项保持真实帧推进。测试规模由当前输出统计，不沿用历史通过数量。
 
-每项单独引擎进程，上限 300 秒（高度边缘测试约 190 秒）；日志在 `work/checks`。Godot 部分解析错误不返回非零退出码，因此脚本同时检查输出。历史个别无头测试退出有资源清理警告，脚本不忽略脚本错误或失败断言。无头通过不代表手感或图形验收。
+Blender 独立验证：运行 `tools/blender/validate_characters.py`，读取四份 `.blend`，检查实际骨架、权重、动作及手部顶点运动；结果写 `work/checks/blender_characters.json`。工具不写回源文件。

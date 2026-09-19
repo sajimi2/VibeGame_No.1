@@ -1,19 +1,22 @@
 extends RefCounted
 ## 人形离线帧协议：与模型和界面无关；身体/移动朝向独立，动作与步态分层组合。
-const CELL := 64
-const PIXEL := 0.04
+const CELL := 96
 const PITCH := -35.0
 const CENTER := Vector3(0,0.88,0)
-const FOLDER := "res://assets/characters/player_baked"
-const LIBRARY := "res://assets/characters/humanoid_moves.tres"
 const ACTIONS := {
 	"player":["light_ready","light_rise","light_stab","sword_ready","sword_slash","sword_thrust","heavy_drag","heavy_swing","bow_ready","bow_draw","hurt","death_fall"],
 	"guard":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
+	"skeleton":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
 	"archer":["bow_ready","bow_draw","hurt","death_fall"]}
 const LABELS := {"light_ready":"反持戒备","light_rise":"匕首上挥","light_stab":"匕首下刺","sword_ready":"双手持剑","sword_slash":"宝剑横斩","sword_thrust":"宝剑突刺","heavy_drag":"重刀拖地","heavy_swing":"重刀前劈","shield_ready":"剑盾戒备","shield_slash":"剑盾横斩","shield_thrust":"剑盾突刺","bow_ready":"持弓戒备","bow_draw":"拉弓/释放","hurt":"受击卸力","death_fall":"死亡倒地"}
 
 static func folder(asset: String) -> String: return "res://assets/characters/"+asset+"_baked"
-static func ready(asset: String) -> String: return "shield_ready" if asset=="guard" else "bow_ready" if asset=="archer" else "light_ready"
+static func ready(asset: String) -> String: return "shield_ready" if asset in ["guard","skeleton"] else "bow_ready" if asset=="archer" else "light_ready"
+## 分辨率属于单个资产；保持采样范围不变，提高像素密度不会放大世界中的人物。
+static func cell(_asset: String) -> int: return CELL
+static func pixel(asset: String) -> float: return 2.56/float(cell(asset))
+static func source_model(asset: String) -> String: return "res://assets/characters/"+asset+"_source.glb"
+static func source_scene(asset: String) -> String: return "res://assets/characters/"+asset+"_rig.tscn"
 static func phases(action: String) -> int:
 	return 1 if action.ends_with("ready") or action=="heavy_drag" else 9 if action in ["bow_draw","hurt"] else 33
 static func key(part: String, action: String, direction: int, move := 0, phase := 0) -> String:

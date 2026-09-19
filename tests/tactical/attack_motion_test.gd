@@ -47,7 +47,7 @@ func run() -> void:
 	var last_angle := 0.0
 	for i in 23:
 		await frames(1)
-		poses[player.baked_visual.last_keys.upper if player.baked_visual.active else str(player.sprite.texture.get_instance_id())]=true
+		poses[player.baked_visual.last_keys.upper]=true
 		var angle: float=combat.hand.rotation.y
 		if i>0: max_change=maxf(max_change,absf(angle_difference(last_angle,angle)))
 		last_angle=angle
@@ -96,8 +96,7 @@ func run() -> void:
 	guard.sword.show()
 	guard.shield_node.show()
 	guard.trail.show()
-	guard.sprite.rotation.z=0
-	guard.world_shadow.show()
+	guard.death_visual.restore(guard)
 	guard.state="chase"
 	guard.attack_cycle=0
 	guard.cooldown=0
@@ -109,7 +108,7 @@ func run() -> void:
 	poses.clear()
 	for i in 43:
 		await frames(1)
-		poses[guard.baked_visual.last_keys.upper if guard.baked_visual.active else str(guard.sprite.texture.get_instance_id())]=true
+		poses[guard.baked_visual.last_keys.upper]=true
 		if i==24: await capture("guard_swing")
 	check(poses.size()>=10,"guard windup and recovery keep progressive body poses")
 	print("Guard step ",start," -> ",guard.position," state ",guard.state)

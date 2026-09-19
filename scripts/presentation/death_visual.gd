@@ -1,7 +1,5 @@
 extends RefCounted
 ## 倒地只操作表现节点，尸体根节点保留给击败统计；渐隐完成后不再生成帧或更新变换。
-const Art = preload("res://scripts/presentation/directional_art.gd")
-const Billboard = preload("res://scripts/presentation/character_billboard.gd")
 const Spec = preload("res://scripts/art/frame_spec.gd")
 var elapsed := 0.0
 var started := false
@@ -31,11 +29,10 @@ func update(actor: CharacterBody3D, delta: float) -> void:
 		if is_instance_valid(actor.shield_node): actor.shield_node.hide()
 		actor.marker.hide()
 		actor.health_bar.hide()
-		actor.outline.hide()
+		actor.baked_visual.set_occluded(false)
 	elapsed += delta
 	var fall := clampf(elapsed/0.85,0,1)
 	# 专用姿态先卸力下沉，随后伸开四肢；末帧不复用蹲姿，避免倒地后仍像坐着。
-	var asset: String = actor.art_id if not actor.art_id.is_empty() else "archer" if actor.ranged else "guard"
 	var state := Spec.with_action(Spec.character(direction,-1,false),"death_fall",roundi(fall*32))
 	if is_instance_valid(actor.baked_visual) and actor.baked_visual.enabled:
 		var visual: Node3D=actor.baked_visual
@@ -52,24 +49,6 @@ func update(actor: CharacterBody3D, delta: float) -> void:
 				finished=true
 				actor.hide()
 			return
-	actor.sprite.texture = Art.frame(asset,state,true).texture
-	actor.sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	var upright := Basis(Vector3.UP,actor.camera.rotation.y)
-	var right := fall_direction.cross(ground_normal).normalized()
-	var lying := Basis(right,fall_direction,ground_normal)
-	actor.sprite.global_basis = upright.slerp(lying,smoothstep(0.2,1.0,fall))
-	actor.sprite.scale = Vector3(1,lerpf(Billboard.height_scale(actor.camera),1,fall),1)
-	actor.sprite.global_position = ground_point+ground_normal*0.035
-	actor.sprite.modulate = Color(0.72,0.70,0.68,1)
-	Billboard.sync_shadow(actor.world_shadow,actor.sprite)
-	actor.world_shadow.visible = fall < 1
-	if elapsed > 2.8:
-		actor.sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISABLED
-		actor.sprite.modulate.a = 1.0-clampf((elapsed-2.8)/1.2,0,1)
-	if elapsed >= 4.0:
-		finished = true
-		actor.hide()
-
 ## 重试通常重建场景；测试或未来复活流程恢复表现时可复用这个入口。
 func restore(actor: CharacterBody3D) -> void:
 	started = false
@@ -81,9 +60,6 @@ func restore(actor: CharacterBody3D) -> void:
 		actor.baked_visual.opacity=1.0
 		actor.baked_visual.grounded_death=false
 		actor.baked_visual.ground_basis=Basis.IDENTITY
-	actor.sprite.transform = Transform3D.IDENTITY
-	actor.sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-	actor.sprite.modulate = Color.WHITE
 	actor.sword.show()
 	actor.trail.show()
 	actor.marker.show()

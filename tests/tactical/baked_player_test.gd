@@ -2,7 +2,6 @@ extends SceneTree
 ## 全角色离线美术：固定骨长、真实覆盖、战斗握点、死亡、工作台补色与真实渲染。
 const Spec=preload("res://scripts/art/baked_human_spec.gd")
 const Frame=preload("res://scripts/art/frame_spec.gd")
-const Pose=preload("res://scripts/presentation/character_pose.gd")
 const Source=preload("res://scripts/art/baked_character_source.gd")
 const Document=preload("res://scripts/art/atlas_document.gd")
 const Store=preload("res://scripts/art/atlas_store.gd")
@@ -133,7 +132,7 @@ func validate_asset(asset: String) -> void:
 			var keys: Dictionary={}
 			for phase in clip.frames:
 				var sample: Dictionary=source.sample(clip.id,3,phase,{"part":part,"ready":Spec.ready(asset),"move":6,"gait":-1})
-				contract=contract and sample.texture.get_size()==Vector2(64,64) and not keys.has(sample.key)
+				contract=contract and sample.texture.get_size()==Vector2.ONE*Spec.cell(asset) and not keys.has(sample.key)
 				keys[sample.key]=true
 	check(contract,asset+" 新来源全动作三种视图尺寸与预览帧键有效")
 	await process_frame
@@ -153,7 +152,7 @@ func authoring() -> void:
 	for move in 12:
 		for phase in 8:
 			rig.sample("run_%02d"%move,phase/8.0)
-			var spine: Basis=rig.rig_skeleton.get_bone_global_pose(1).basis
+			var spine: Basis=rig.rig_skeleton.get_bone_global_pose(rig.rig_skeleton.find_bone("Spine")).basis
 			lean=lean and rad_to_deg(spine.y.angle_to(Vector3.UP))<8
 	check(lean,"十二方向跑步胸椎倾角小于 8 度，重心不再只靠胸口前移")
 	var knees:=true
@@ -183,7 +182,10 @@ func authoring() -> void:
 	rig.animator.remove_animation_library("")
 	rig.animator.add_animation_library("",library)
 	var clip:=library.get_animation("heavy_swing")
-	var track:=clip.find_track(NodePath("Skeleton3D:UpperArmR"),Animation.TYPE_ROTATION_3D)
+	var track := -1
+	for index in clip.get_track_count():
+		if clip.track_get_type(index)==Animation.TYPE_ROTATION_3D and str(clip.track_get_path(index)).ends_with(":UpperArmR"): track=index
+	assert(track>=0,"导入动画缺少右上臂轨道")
 	for index in clip.track_get_key_count(track): clip.rotation_track_insert_key(track,clip.track_get_key_time(track,index),Quaternion(Vector3.FORWARD,1.4))
 	rig.animator.clear_caches()
 	var modified: Dictionary=rig.sample("heavy_swing",.5)
@@ -206,12 +208,12 @@ func gallery(scene: Node3D) -> void:
 		var document:=Document.new()
 		document.build(source,source.animations()[2],{"part":"full","ready":Spec.ready(asset),"move":0,"gait":-1})
 		document.image.save_png("res://work/humanoid/"+asset+"_run.png")
-		var overview:=Image.create(64*6,64*4,false,Image.FORMAT_RGBA8)
+		var overview:=Image.create(96*6,96*4,false,Image.FORMAT_RGBA8)
 		var actions: Array=["idle","run","bow_draw" if asset=="archer" else "shield_slash" if asset=="guard" else "heavy_swing","death_fall"]
 		for row in 4:
 			for column in 6:
 				var frame:=source.sample(actions[row],column*2,3 if row==1 else 5 if row==2 and asset=="archer" else 20 if row==2 else 32 if row==3 else 0,{"part":"full","ready":Spec.ready(asset),"move":0})
-				overview.blit_rect(frame.texture.get_image(),Rect2i(0,0,64,64),Vector2i(column*64,row*64))
+				overview.blit_rect(frame.texture.get_image(),Rect2i(0,0,96,96),Vector2i(column*96,row*96))
 		overview.save_png("res://work/humanoid/"+asset+"_overview.png")
 	player.occluded=false
 	player.visual_action="light_ready"
@@ -274,7 +276,7 @@ func roundtrip(player: CharacterBody3D) -> void:
 	var source:=Source.new()
 	source.asset_id="player_baked"
 	source.rig_id="player"
-	source.cell_size=Vector2i(64,64)
+	source.cell_size=Vector2i(96,96)
 	var document:=Document.new()
 	document.build(source,source.animations()[0],{"part":"upper","ready":"light_ready","move":0,"gait":-1})
 	var original:=document.image.duplicate()
@@ -310,7 +312,7 @@ func workbench() -> void:
 	var ui: Control=load("res://tools/art_preview.tscn").instantiate()
 	root.add_child(ui)
 	await frames(2)
-	check(ui.sources[ui.asset.selected].asset_id=="player_baked" and ui.document.source.cell_size==Vector2i(64,64),"工作台默认展示新烘焙角色原尺寸")
+	check(ui.sources[ui.asset.selected].asset_id=="player_baked" and ui.document.source.cell_size==Vector2i(96,96),"工作台默认展示新烘焙角色原尺寸")
 	ui.action.select(2)
 	ui.rebuild_atlas()
 	ui.direction.select(6)
@@ -383,7 +385,7 @@ func model_workbench(ui: Control) -> void:
 	ui.option_controls.part.select(1)
 	ui.rebuild_atlas()
 	var layers_ok:=true
-	for bone in viewer.rig.bones: layers_ok=layers_ok and bone.attachment.visible==(bone.part=="upper")
+	for piece in viewer.rig.pieces: layers_ok=layers_ok and piece.visible==(piece.get_meta("art_part")=="upper")
 	check(layers_ok,"分层选择同步隐藏源模型对应骨段")
 	ui.play.button_pressed=true
 	ui._process(.2)

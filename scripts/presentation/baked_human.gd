@@ -5,7 +5,6 @@ const ShaderFile = preload("res://scripts/presentation/baked_human.gdshader")
 const Store = preload("res://scripts/art/atlas_store.gd")
 static var shared: Dictionary = {}
 var asset_id := "player"
-var current_frame: Dictionary = {}
 var last_support := Vector3.ZERO
 var opacity := 1.0
 var tint := Color.WHITE
@@ -14,6 +13,8 @@ var ground_origin := Vector3.ZERO
 var grounded_death := false
 var actor: CharacterBody3D
 var manifest: Dictionary = {}
+var frame_size := Spec.CELL
+var pixel_size := Spec.pixel("player")
 var pages: Array[Texture2D] = []
 var depths: Array[Texture2D] = []
 var layers: Dictionary = {}
@@ -41,19 +42,20 @@ func setup(player: CharacterBody3D, asset := "player") -> bool:
 			depth_pages.append(load(folder+"/"+str(page)+"_depth.png"))
 		shared[asset]={"manifest":data,"pages":colors,"depths":depth_pages}
 	manifest=shared[asset].manifest
+	frame_size=int(manifest.cell)
+	pixel_size=float(manifest.pixel_size)
 	pages=shared[asset].pages
 	depths=shared[asset].depths
 	for part in ["upper","lower"]:
 		var body := _card(false)
 		var outline := _card(true)
 		var shadow := Sprite3D.new()
-		shadow.pixel_size=Spec.PIXEL
+		shadow.pixel_size=pixel_size
 		shadow.texture_filter=BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		shadow.alpha_cut=SpriteBase3D.ALPHA_CUT_DISCARD
 		shadow.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		add_child(shadow)
 		layers[part]={"body":body,"outline":outline,"shadow":shadow,"key":""}
-	actor.art_provider=apply_frame
 	return true
 
 func _card(outline: bool) -> MeshInstance3D:
@@ -75,17 +77,12 @@ func _card(outline: bool) -> MeshInstance3D:
 	add_child(item)
 	return item
 
-## 选帧、握点与阴影同帧刷新；缺失资产显式回退，完整当前招式均应由离线图覆盖。
+## 选帧、世界握点与阴影同帧刷新；人物只有这一条播放路径，缺失资产由验证阻止发布。
 func apply_frame(state: Dictionary) -> bool:
-	# 已有二维人工稿保持精确帧覆盖优先，未覆盖状态仍使用新图集。
-	var legacy:=Store.lookup(asset_id,preload("res://scripts/art/frame_spec.gd").key(state))
-	var selected := Spec.select(state,asset_id) if enabled and actor.camera!=null and legacy.is_empty() else {}
+	var selected := Spec.select(state,asset_id) if enabled and actor.camera!=null else {}
 	active=not selected.is_empty() and manifest.entries.has(selected.upper) and manifest.entries.has(selected.lower) and absf(rad_to_deg(actor.camera.rotation.x)-Spec.PITCH)<0.1
 	visible=active
-	actor.sprite.visible=not active
-	actor.world_shadow.visible=not active
 	if not active: return false
-	actor.outline.hide()
 	if store_revision!=Store.revision:
 		store_revision=Store.revision
 		for layer in layers.values(): layer.key=""
@@ -101,11 +98,11 @@ func apply_frame(state: Dictionary) -> bool:
 		var world := origin+ground_basis*yaw*pivot
 		var trim: Array=entry.trim
 		var dimensions := Vector2(trim[2],trim[3])
-		layer.size=dimensions*Spec.PIXEL
-		var shift := Vector2(float(trim[0])+dimensions.x*0.5-32,32-float(trim[1])-dimensions.y*0.5)
+		layer.size=dimensions*pixel_size
+		var shift := Vector2(float(trim[0])+dimensions.x*0.5-frame_size*0.5,frame_size*0.5-float(trim[1])-dimensions.y*0.5)
 		# 改变裁片尺寸只缩放单位四边形，不逐帧重建 QuadMesh 并上传网格。
 		var basis: Basis=ground_basis*actor.camera.global_basis*Basis.from_scale(Vector3(layer.size.x,layer.size.y,1))
-		layer.body.global_transform=Transform3D(basis,world+ground_basis*actor.camera.global_basis*Vector3(shift.x,shift.y,0)*Spec.PIXEL)
+		layer.body.global_transform=Transform3D(basis,world+ground_basis*actor.camera.global_basis*Vector3(shift.x,shift.y,0)*pixel_size)
 		layer.outline.global_transform=layer.body.global_transform
 		layer.outline.visible=actor.occluded and actor.hp>0
 		layer.shadow.global_transform=Transform3D(Basis(Vector3.UP,actor.camera.rotation.y).scaled(Vector3(1,1/cos(deg_to_rad(Spec.PITCH)),1)),world)
@@ -131,10 +128,10 @@ func apply_frame(state: Dictionary) -> bool:
 			texture.region=Rect2(at,dimensions)
 			layer.shadow.texture=texture
 			# 人工补色只替换颜色，深度仍来自同一源模型；来源校验禁止画出没有深度的新轮廓。
-			var override:=Store.lookup(asset_id+"_baked",selected[part])
+			var override:=Store.lookup(asset_id+"_baked",selected[part],Vector2i.ONE*frame_size)
 			if not override.is_empty():
 				var region:=Rect2(Vector2(entry.trim[0],entry.trim[1]),dimensions)
-				var uv:=Vector4(region.position.x/64,region.position.y/64,dimensions.x/64,dimensions.y/64)
+				var uv:=Vector4(region.position.x/frame_size,region.position.y/frame_size,dimensions.x/frame_size,dimensions.y/frame_size)
 				var edited: Texture2D=override.texture
 				# AtlasTexture 在 shader uniform 中不自动裁片；显式还原到原图 UV。
 				if edited is AtlasTexture:
@@ -162,32 +159,18 @@ func apply_frame(state: Dictionary) -> bool:
 	var bow: bool=selected.upper.contains("/bow_")
 	last_grip=actor.global_position+yaw*(pelvis+_vector(upper.support if bow else upper.grip))
 	last_support=actor.global_position+yaw*(pelvis+_vector(upper.support))
-	var override:=Store.lookup(asset_id+"_baked",selected.upper)
+	var override:=Store.lookup(asset_id+"_baked",selected.upper,Vector2i.ONE*frame_size)
 	if not override.is_empty() and override.anchors.has("grip"):
 		var hand:=_vector(upper.support if bow else upper.grip)
 		var projected:=Basis(Vector3.RIGHT,deg_to_rad(Spec.PITCH)).inverse()*Basis(Vector3.UP,int(state.direction)*PI/6)*hand
-		var original:=Vector2(32+projected.x/Spec.PIXEL,32-projected.y/Spec.PIXEL)
+		var original:=Vector2(frame_size*0.5+projected.x/pixel_size,frame_size*0.5-projected.y/pixel_size)
 		var edited:=Vector2(override.anchors.grip[0],override.anchors.grip[1])
-		last_grip+=actor.camera.global_basis*Vector3(edited.x-original.x,original.y-edited.y,0)*Spec.PIXEL
-	current_frame=_legacy_anchor(last_grip)
-	var support:=_legacy_anchor(last_support)
-	current_frame.support=support.grip
-	current_frame.support_depth=support.depth
-	actor.grip_pixel=current_frame.grip
-	actor.grip_depth=current_frame.depth
+		last_grip+=actor.camera.global_basis*Vector3(edited.x-original.x,original.y-edited.y,0)*pixel_size
 	return true
 
-## 保持战斗的世界握点接口不变；源骨架手心是唯一位置来源。
-func _legacy_anchor(point: Vector3) -> Dictionary:
-	var view: Vector3=actor.camera.global_basis.inverse()*(point-actor.global_position)
-	var baseline: Vector3=Vector3.UP*(view.y/actor.camera.global_basis.y.y)
-	return {"grip":Vector2(16+view.x/Spec.PIXEL,48-view.y/Spec.PIXEL),"depth":view.z-(actor.camera.global_basis.inverse()*baseline).z}
+## 遮挡检测在物理帧末尾调用，同帧更新上下身轮廓。
+func set_occluded(value: bool) -> void:
+	for layer in layers.values(): layer.outline.visible = value and active and actor.hp > 0
 
 static func _vector(values: Array) -> Vector3:
 	return Vector3(values[0],values[1],values[2])
-
-func _exit_tree() -> void:
-	if is_instance_valid(actor):
-		actor.art_provider=Callable()
-		if is_instance_valid(actor.sprite): actor.sprite.show()
-		if is_instance_valid(actor.world_shadow): actor.world_shadow.show()

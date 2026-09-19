@@ -26,12 +26,13 @@ static func reload_catalog() -> void:
 			var cell: Dictionary = bundle.cells[index]
 			frames[bundle.asset_id+":"+str(cell.get("binding",cell.key))] = {"bundle":bundle,"index":index,"anchors":cell.get("anchors",{})}
 
-## 未回导的帧返回空字典，由调用者继续程序生成；只覆盖清单中精确匹配的帧。
-static func lookup(asset_id: String, key: String) -> Dictionary:
+## 未回导的帧返回空字典，由调用者继续读取原始资产；只覆盖清单中精确匹配的帧。
+static func lookup(asset_id: String, key: String, expected_size := Vector2i.ZERO) -> Dictionary:
 	if not loaded: reload_catalog()
 	var id := asset_id+":"+key
 	if not frames.has(id): return {}
 	var entry: Dictionary = frames[id]
+	if expected_size != Vector2i.ZERO and entry.bundle.cell_size != expected_size: return {}
 	if not textures.has(id):
 		var bundle: Resource = entry.bundle
 		var atlas: Texture2D = bundle.get_texture()
