@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/presentation/surface_projection.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/environment/warehouse_slice/textures/grass.png" id="2"]
+[resource]
+script = ExtResource("1")
+texture = ExtResource("2")
+fallback = "grass"
+texel_grid = Vector2(150, 150)
+mapping = "box"
+repeat_uv = true
+tile_size = Vector2(5, 5)

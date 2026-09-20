@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://assets/environment/prefabs/crate.tscn" id="art"]
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(1.1, 1.0, 1.1)
+[node name="SupplyCrate" type="StaticBody3D"]
+collision_layer = 13
+collision_mask = 0
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.5, 0)
+shape = SubResource("shape")
+[node name="Art" parent="." instance=ExtResource("art")]
+position = Vector3(0, 0.5, 0)
+extent = Vector3(1.1, 1.0, 1.1)

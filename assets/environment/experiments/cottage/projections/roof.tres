@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/presentation/surface_projection.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/environment/experiments/cottage/textures/roof.png" id="2"]
+[resource]
+script = ExtResource("1")
+texture = ExtResource("2")
+fallback = "timber"
+texel_grid = Vector2(201, 98)
+origin = Vector3(0, 0, -3.35)
+u_axis = Vector3(0, 0, 0.14925373)
+v_axis = Vector3(0.34482759, 0, 0)
+absolute_v = true
+face_normal = Vector3(0, 1, 0)

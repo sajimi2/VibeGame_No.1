@@ -26,7 +26,7 @@ void fragment() {
 	vec2 stable_pixel=floor(SCREEN_UV*viewport_size)-dither_origin;
 	float threshold=fract(52.9829189*fract(dot(stable_pixel,vec2(0.06711056,0.00583715))));
 	if (coverage<=threshold) discard;
-	ALBEDO=art_surface_color(surface_color(surface_position,surface_normal),UV,UV2.x);
+	ALBEDO=art_surface_color(surface_color(surface_position,surface_normal),UV,UV2.x,surface_position);
 	ROUGHNESS=1.0;
 }
 void light() {

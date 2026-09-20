@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/presentation/surface_projection.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/environment/warehouse_slice/textures/wall.png" id="2"]
+[resource]
+script = ExtResource("1")
+texture = ExtResource("2")
+fallback = "plaster"
+unmapped_color = Color(0.56, 0.48, 0.35, 0.45)
+texel_grid = Vector2(360, 108)
+origin = Vector3(-6, 3.6, 0)
+u_axis = Vector3(0.08333333, 0, 0)
+v_axis = Vector3(0, -0.27777778, 0)
+face_normal = Vector3(0, 0, -1)

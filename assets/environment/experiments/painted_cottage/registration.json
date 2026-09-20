@@ -1,0 +1,18 @@
+{
+  "source_canvas": 1254,
+  "coordinate_canvas": 1280,
+  "runtime_canvas": 320,
+  "camera_degrees": [-35,25,0],
+  "front_columns": [[-2.75,215,939],[-2.5,241,947],[-0.75,428,1005],[0.75,563,1045],[2.5,752,1105]],
+  "front_rows": [[-0.06,-7],[0,0],[2.2,245],[2.8,342],[4.1,548],[4.4,598]],
+  "side_front_bottom": [752,1105],
+  "side_front_top": [752,763],
+  "side_back_bottom": [1070,755],
+  "side_back_top": [1070,486],
+  "ridge_front": [496,478],
+  "ridge_back": [817,134],
+  "west_eave_front": [152,612],
+  "west_eave_back": [482,254],
+  "east_eave_front": [775,784],
+  "east_eave_back": [1105,426]
+}

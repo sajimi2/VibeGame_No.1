@@ -180,6 +180,7 @@ func _publish() -> void:
 			material.set_shader_parameter("banded",sources[id].get_shader_parameter("banded"))
 			# 实验的灰模/美术对比只换颜色，不重建碰撞或丢失已注册的透视分组。
 			material.set_shader_parameter("art_gray_preview",sources[id].get_shader_parameter("art_gray_preview"))
+			material.set_shader_parameter("art_projection_enabled",sources[id].get_shader_parameter("art_projection_enabled"))
 		var strength: float=reveal*groups[material_groups[id]].weight
 		material.set_shader_parameter("wall_reveal",strength)
 		# 分组后材质数量增加；未参与透视的构件不必每帧更新圆心等十余个参数。

@@ -1,0 +1,23 @@
+{
+ "props": [
+  {"id":"oak","name":"WestOak","position":[-6.2,0,0.3]},
+  {"id":"oak","name":"BackOak","position":[5.7,0,-5.7],"scale":0.85},
+  {"id":"oak","name":"OuterOak","position":[-9.6,0,10.0],"scale":0.78},
+  {"id":"well","name":"Well","position":[-4.9,0,6.2]},
+  {"id":"bucket","name":"Bucket","position":[-3.6,0,6.8]},
+  {"id":"cart","name":"Cart","position":[5.1,0,5.9]},
+  {"id":"stump","name":"Stump","position":[3.8,0,9.2]},
+  {"id":"chest","name":"OpenChest","position":[-3.7,0,2.6]},
+  {"id":"rock","name":"RockEast","position":[7.1,0,9.0],"scale":1.15},
+  {"id":"rock","name":"RockWest","position":[-7.5,0,6.5],"scale":0.8},
+  {"id":"rock","name":"RockBack","position":[4.7,0,-2.8],"scale":0.8},
+  {"id":"rock","name":"RockNorth","position":[-4.1,0,-4.8],"scale":0.7},
+  {"id":"wall","name":"GateWallLeft","position":[-5.2,0,11.4],"scale":1.0},
+  {"id":"wall","name":"GateWallRight","position":[5.3,0,11.4],"scale":1.0},
+  {"id":"wall","name":"BackWall","position":[0,0,-5.3],"scale":1.05},
+  {"id":"wall","name":"BackWallLeft","position":[-6.3,0,-4.1],"scale":0.68}
+ ],
+ "flower_patches":[[-3,3.2],[-2.9,1.5],[-2.9,-1.5],[2.8,2.4],[2.8,0.5],[-5.9,6.6],[-4.9,7.1],[-5.5,5.3],[4.2,5.7],[5.7,6.8],[6.0,5.0],[7.5,9.4],[6.2,9.0],[3.3,9.5],[-7.6,6.9],[-6.0,1.2],[-6.8,0.7],[-5.8,-0.7],[-7.7,11.9],[-6.2,11.7],[-4.5,11.6],[-3.2,11.7],[3.4,11.7],[4.6,11.9],[6.4,11.6],[7.5,11.9],[-1.8,8.3],[3.6,7.4],[5.2,-4.6],[6.3,-5.1],[-8.0,8.4],[-9.8,10.1],[-6.1,-4.0],[-4.7,-4.5]],
+ "butterflies":[[-4.5,0.7,7.3],[3.1,0.65,7.3],[-5.5,1.2,1.4],[6.1,0.8,8.8]],
+ "leaf_origins":[[-6.2,3.8,0.3],[5.7,3.4,-5.7],[-9.6,3.0,10.0]]
+}

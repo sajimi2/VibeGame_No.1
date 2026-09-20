@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/presentation/surface_projection.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/environment/experiments/cottage/textures/front.png" id="2"]
+[resource]
+script = ExtResource("1")
+texture = ExtResource("2")
+texel_grid = Vector2(150, 123)
+origin = Vector3(-2.5, 4.1, 0)
+u_axis = Vector3(0.2, 0, 0)
+v_axis = Vector3(0, -0.24390244, 0)
+face_normal = Vector3(0, 0, 1)

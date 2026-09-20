@@ -4,6 +4,10 @@
 
 ## 资产入口
 
+最新待试玩的是 [固定视角绘画小院](../assets/environment/experiments/painted_courtyard/README.md)：沿用分层小屋，加上直接生成的树、矮墙、推车、井桶、石头、树桩和宝箱；简单隐藏体积负责碰撞，画稿负责轮廓，花草/蝴蝶/落叶不参与碰撞。运行 `play_painted_cottage.bat`，V 比较绘画/简单体积，F3 查看碰撞范围。原 [双屋实验](../assets/environment/experiments/painted_cottage/README.md) 仍保留；正式地图未替换，近似深度与固定光照的适用边界见小院说明。
+
+新生产路线样板见 [仓库与门前小院](../assets/environment/warehouse_slice/README.md)：保留简单几何，以生成表面图提供细节；图片、提示词和对齐配置随资产保存。原型小屋和仓库共用 `surface_projection`，仓库由 `scenes/warehouse_art_slice.tscn` 单独试玩，V 与下面的原环境方案对照。原纹理生成器仅维护旧资产，不会覆盖这两套生成图片目录。
+
 | 路径 | 内容与修改方式 |
 | --- | --- |
 | `assets/environment/textures/*.png` | 11 张 128×128 可编辑纹理：草地、土路、土壤、砖石、灰泥、木板、木梁、木材、瓦片、布、铁。可以直接修改 PNG，Godot 重新导入后生效 |

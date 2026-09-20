@@ -9,3 +9,5 @@
 7. 默认任务以用户当前请求为准；不自动新增敌人、地图或大框架。技术通过与主观试玩通过分开报告。
 8. 角色美术从 `assets/characters/blender/` 编辑，按 `docs/ART_PIPELINE.md` 导出和烘焙；环境纹理、材质和构件在 `assets/environment/`，维护见 `docs/ENVIRONMENT_ART.md`。旧二维角色和模型生成器已退役，不恢复第二套运行时回退。
 9. MCP 每次通过 `session_manage(op="list")` 匹配完整工程路径，显式传 `session_id`。另一个学习工程和 AgentLab 均不属于本工程。
+10. 当前待试玩环境样板为 `scenes/warehouse_art_slice.tscn` / `play_warehouse_art.bat`，V 新旧对比、P 勘察/战斗。制作源、提示词和投影配置见 `assets/environment/warehouse_slice/README.md`；F5 正式入口仍按上文。
+11. 最新固定视角实验扩为 `tools/painted_courtyard_lab.tscn` / `play_painted_cottage.bat`：树木、错落墙、井桶车箱石与无碰撞花草/蝴蝶/落叶；V 绘画/简体、F3 碰撞体、F4 动态装饰、M 全院取景、1–4 院门/室内/树井/推车。资产与边界见 `assets/environment/experiments/painted_courtyard/README.md`。原双屋 `tools/painted_cottage_lab.tscn` 仍保留，暂未确认为全项目新标准。

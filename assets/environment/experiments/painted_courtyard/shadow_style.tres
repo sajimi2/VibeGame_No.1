@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow_style.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+offset_per_height = Vector2(0.2, -0.54)
+tint = Color(0.09, 0.16, 0.11, 1)
+opacity = 0.22
+feather = 0.18
+pixels_per_meter = 28.0
+max_sway = 0.12

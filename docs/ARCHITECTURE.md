@@ -4,6 +4,10 @@
 
 ## 装配与地图
 
+固定视角插画实验在原小屋遮挡注册后装配 `painted_cottage`。外墙/屋顶由 `registration.json` 配准四片，内景由 `interior_registration.json` 配准后墙/左墙/地板三片，直接写入空间深度。原 GLB 保留碰撞、独立阴影与遮挡几何，原墙和地板颜色通过 `layers=0` 退出，仍保持 visible 供采样；V 恢复原渲染层。`painted_environment` 复用墙圆和屋顶覆盖率，地板显式 `is_support`，不另建遮挡状态机。源图、配准与固定光照/方向限制见 `assets/environment/experiments/painted_cottage/README.md`，这条实验路线尚未替换正式地图。
+
+`warehouse_art_slice.tscn` 继承驿站简模，以独立子类提供三人遭遇和桥前出生点。`warehouse_art_layer` 只读取资产 `bindings.json` 装配外观；`surface_projection` Resource 提供图片、局部 UV 轴和朝向筛选，小屋也复用这一计算器。投影只改 UV/UV2/COLOR，不改顶点或碰撞：UV2.x 标识外侧、COLOR.rg 保留原网格 UV 供土路边缘判断。装配必须早于 wall_occlusion 注册；V 同步源材质的 `art_projection_enabled` 到显示副本，不能直接换回原材质丢掉透视变体。新增箱桶独立显式碰撞，原仓库门洞、高台、桥和承托标记保持。资产原点/映射资源是维护入口，详见 `assets/environment/warehouse_slice/README.md`。
+
 `tools/cottage_art_lab.tscn` 独立实验使用简单 Blender 网格配生成表面图，不替换正式地图。`cottage.gd` 从保存的 GLB 装配显示和碰撞，前墙门两侧/门楣/山墙归同一个物理父节点，门洞几何仍独立；侧墙/后墙/屋顶各自管理遮挡。资产局部位置生成 UV，UV2.x 是外侧贴图掩码；共用 `art_surface.gdshaderinc` 只替换颜色，不改几何深度或透明管线。默认关闭该功能，旧材质照常。屋顶可注入 `surface_material`，控制器复制表面参数后仍拥有透视状态；灰模对比仅修改颜色参数，wall_occlusion 同步到材质副本，不能重新挂原材质绕过透视变体。尺寸映射与生产约束见资产目录 README，回归入口 `cottage_art_lab_test.gd`。
 
 普通墙圆先按真实遮挡筛选构件，再做圆内柔边：`wall_occlusion.measure` 收集相机到身体采样点之间命中的所有构件，身体覆盖并集决定是否开圆，命中集合决定哪些构件可以淡化。不能只取最近命中，否则前墙透开后仍漏掉第二堵墙。最近的 `CollisionObject3D` 为分组边界（当前建筑为独立 StaticBody3D 墙段）；无物理父节点时归到美术 `architecture_piece`，散放网格独立。墙身/压顶/窗框共组，独立墙段不因共用材质一起消失。材质副本按“组＋原材质”隔离，Shader 仍共享；组状态有 0.16s 退出缓冲和 0.28s 渐变，未激活的组跳过圆心等参数更新。`selective_wall` 验证同材质旁墙、近后墙、重叠前墙和真实仓库走道；不可用扩大/缩小深度余量代替对象筛选。
@@ -95,6 +99,8 @@ ActorInventory.try_equip --inventory_changed--> camp_progress.changed
 - `run_screen.setup(player, objective, progression, hint_provider)` 接收明确依赖，负责结果/重试。任务状态每局重置，成长快照跨重试保存。
 
 ## 已知边界
+
+独立小院实验 `tools/painted_courtyard_lab` 只编排原小屋、玩家与测试快捷键；`painted_courtyard` 按资产 `catalog.json` 与 `layout.json` 装配。`illustrated_prop` 接收图片/显示尺寸/锚点/碰撞/深度范围，分别创建绘画平面与隐藏盒或柱。普通实物写近似盒深度，树用树干竖直深度面，不能用树冠最前面遮挡树前人物。花草走独立 `ground_decoration`：不写遮挡深度、无墙圆、先于人物显示。实物从注册后的代理材质读取已有墙圆参数，不拥有第二套遮挡状态。阴影由 `illustration_shadow` 根据 `shadow_profiles.json` 编排体量；`shadow_style.tres` 是方向/颜色/覆盖率/柔边/晃动上限的唯一来源。小院房屋显式启用共享投影，停用旧实时代理且退出其颜色层，V 对比恢复；人物太阳方向与强度从同一样式应用。物件先入树再 `setup`，无专属 profile 时按深度尺寸生成默认形体。固定朝向的平地平移由变换通知同步锚点；`set_visual_sway` 同步画稿上部和影子，脚点/碰撞不动，调用者持有动画时钟，不自动开启风摆、不逐帧重建。不同物件影子仍普通透明混合，夜间和坡面未接入。`courtyard_ambience` 只更新无碰撞装饰，与战斗/存档无依赖。小院默认关闭环境降采样、保留 F2，正式地图默认值不变。完整源图不导入，离线降采样记录在 `baked.json`，详见小院资产 README。
 
 七种角色均采用 Blender 保存的模型/骨骼/动作，经 GLB 和开发期 GPU 烘焙后，输出 96×96 颜色/深度，四种类人另有双手握点；`baked_human` 只按清单播放整身或分层帧。制作步骤见 [ART_PIPELINE.md](ART_PIPELINE.md)。关卡总控不管理图集，运行时不实例化角色骨架、模型生成器或角色烘焙视口。守卫盾使用副手，弓使用左手，死亡模块读同一倒地图集。可装备武器与刀光仍有独立实时 GPU 像素化，不能混称为全离线。
 

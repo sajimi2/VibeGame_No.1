@@ -8,6 +8,7 @@
 - `source/cottage.blend`：可人工编辑的简模源，子目录 `.gdignore` 防止 Godot 隐式调用 Blender。
 - `cottage_shell.glb`：从上述已保存源导出的网格。墙宽 5m、深 6m、高 2.8m，屋脊高 4.1m，门洞宽 1.5m、高 2.2m。
 - `cottage.tscn` / `cottage.gd`：实验预制件，按 Blender 物件名装配墙体碰撞、独立屋顶和受保护地板。GLB 为显示和碰撞共同来源，不另维护一份尺寸。
+- `projections/*.tres`：前/后/侧墙与屋面的图片和尺寸映射，复用 `scripts/presentation/surface_projection.gd`；后续尺寸修改在资产配置中调整，不再复制一套小屋专属 UV 算法。
 - `gray_reference.png`：首次生图使用的 Godot 1280×720 灰模参考，包含现有玩家作比例参照。相机角度/倍率同正式游戏，取景中心只做平移以容纳完整小屋。后续测试截图只写 `work/cottage/`，不覆盖生图输入。
 - `art_prompt_v1.txt`：内置 imagegen 的完整提示词；第二张输入为用户提供的中世纪像素场景，仅作风格参考。
 - `art_proposal_v1.png`：内置 imagegen 生成的首版红瓦/木骨灰泥小屋提案，原输出保留。生成器对轮廓、人物与背景并非逐像素锁定；这张图只用于外观/风格参考，运行材质使用下述独立平面图，不能把提案当作深度图或碰撞依据。

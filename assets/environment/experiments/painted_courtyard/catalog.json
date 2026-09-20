@@ -1,0 +1,15 @@
+{
+  "pixels_per_view_meter": 28,
+  "assets": {
+    "oak": {"width":5.9,"anchor":[0.55,0.92],"shape":"cylinder","radius":0.48,"height":2.2,"depth_box":[3.8,5.4,3.0]},
+    "wall": {"width":4.9,"anchor":[0.5,0.73],"shape":"box","size":[4.9,1.05,0.6],"depth_box":[4.9,1.45,0.65]},
+    "cart": {"width":2.8,"anchor":[0.65,0.8],"shape":"box","size":[1.55,1.1,1.8],"depth_box":[2.0,1.6,2.5]},
+    "rock": {"width":1.7,"anchor":[0.5,0.88],"shape":"cylinder","radius":0.66,"height":0.85,"depth_box":[1.5,1.05,1.3]},
+    "well": {"width":2.3,"anchor":[0.49,0.91],"shape":"cylinder","radius":0.8,"height":0.95,"depth_box":[1.8,2.8,1.8]},
+    "bucket": {"width":0.65,"anchor":[0.5,0.94],"shape":"cylinder","radius":0.22,"height":0.46,"depth_box":[0.5,0.65,0.5]},
+    "chest": {"width":1.3,"anchor":[0.5,0.91],"shape":"box","size":[1.1,0.65,0.72],"depth_box":[1.1,1.1,0.85]},
+    "stump": {"width":1.35,"anchor":[0.52,0.88],"shape":"cylinder","radius":0.39,"height":0.52,"depth_box":[1.0,0.7,1.0]},
+    "flowers": {"width":0.8,"anchor":[0.5,0.98],"shape":"none","depth_box":[0.8,0.45,0.45]},
+    "meadow": {"tile":true,"pixels":192}
+  }
+}

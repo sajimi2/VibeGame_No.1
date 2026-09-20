@@ -1,0 +1,5 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://scenes/waystation_blockout.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/world/warehouse_art_slice.gd" id="2"]
+[node name="WarehouseArtSlice" instance=ExtResource("1")]
+script = ExtResource("2")
