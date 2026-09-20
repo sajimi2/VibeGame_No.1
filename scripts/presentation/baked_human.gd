@@ -50,30 +50,29 @@ func setup(player: CharacterBody3D, asset := "player") -> bool:
 	depths=shared[asset].depths
 	for part in parts:
 		var body := _card(false)
-		var outline := _card(true)
+		var occlusion := _card(true)
 		var shadow := Sprite3D.new()
 		shadow.pixel_size=pixel_size
 		shadow.texture_filter=BaseMaterial3D.TEXTURE_FILTER_NEAREST
 		shadow.alpha_cut=SpriteBase3D.ALPHA_CUT_DISCARD
 		shadow.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		add_child(shadow)
-		layers[part]={"body":body,"outline":outline,"shadow":shadow,"key":""}
+		layers[part]={"body":body,"occlusion":occlusion,"shadow":shadow,"key":""}
 	return true
 
-func _card(outline: bool) -> MeshInstance3D:
+func _card(occlusion: bool) -> MeshInstance3D:
 	var item := MeshInstance3D.new()
 	var quad := QuadMesh.new()
 	quad.size=Vector2.ONE
 	item.mesh=quad
 	item.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var material := ShaderMaterial.new()
-	# 遮挡轮廓使用独立 shader 变体，正文仍保留真实深度测试。
-	if outline:
+	# 灰色遮挡层在正文之前绘制；共享深度解码，但不写场景深度、不改变正文遮挡。
+	if occlusion:
 		var shader := Shader.new()
-		shader.code=ShaderFile.code.replace("render_mode unshaded, cull_disabled;","render_mode unshaded, cull_disabled, depth_test_disabled;")
+		shader.code="#define OCCLUSION_PASS\n"+ShaderFile.code
 		material.shader=shader
-		material.set_shader_parameter("outline_only",true)
-		material.render_priority=10
+		material.render_priority=-1
 	else: material.shader=ShaderFile
 	item.material_override=material
 	add_child(item)
@@ -104,12 +103,12 @@ func apply_frame(state: Dictionary) -> bool:
 		# 改变裁片尺寸只缩放单位四边形，不逐帧重建 QuadMesh 并上传网格。
 		var basis: Basis=ground_basis*actor.camera.global_basis*Basis.from_scale(Vector3(layer.size.x,layer.size.y,1))
 		layer.body.global_transform=Transform3D(basis,world+ground_basis*actor.camera.global_basis*Vector3(shift.x,shift.y,0)*pixel_size)
-		layer.outline.global_transform=layer.body.global_transform
-		layer.outline.visible=actor.occluded and actor.hp>0
+		layer.occlusion.global_transform=layer.body.global_transform
+		layer.occlusion.visible=actor.hp>0
 		layer.shadow.global_transform=Transform3D(Basis(Vector3.UP,actor.camera.rotation.y).scaled(Vector3(1,1/cos(deg_to_rad(Spec.PITCH)),1)),world)
 		layer.shadow.offset=shift
 		layer.shadow.visible=actor.hp>0
-		for item in [layer.body,layer.outline]:
+		for item in [layer.body,layer.occlusion]:
 			item.material_override.set_shader_parameter("tint",tint)
 			item.material_override.set_shader_parameter("opacity",opacity)
 			item.material_override.set_shader_parameter("depth_axis",actor.camera.global_basis.inverse()*ground_basis*actor.camera.global_basis.z)
@@ -118,12 +117,11 @@ func apply_frame(state: Dictionary) -> bool:
 			frame_changes+=1
 			var at := Vector2(entry.rect[0],entry.rect[1])
 			var rect := Vector4(at.x/1024,at.y/1024,dimensions.x/1024,dimensions.y/1024)
-			for item in [layer.body,layer.outline]:
+			for item in [layer.body,layer.occlusion]:
 				item.material_override.set_shader_parameter("color_atlas",pages[int(entry.page)])
 				item.material_override.set_shader_parameter("depth_atlas",depths[int(entry.page)])
 				item.material_override.set_shader_parameter("frame_rect",rect)
 				item.material_override.set_shader_parameter("depth_rect",rect)
-				item.material_override.set_shader_parameter("frame_pixels",dimensions)
 			var texture := AtlasTexture.new()
 			texture.atlas=pages[int(entry.page)]
 			texture.region=Rect2(at,dimensions)
@@ -138,33 +136,15 @@ func apply_frame(state: Dictionary) -> bool:
 				if edited is AtlasTexture:
 					uv=Vector4((edited.region.position.x+region.position.x)/edited.atlas.get_width(),(edited.region.position.y+region.position.y)/edited.atlas.get_height(),dimensions.x/edited.atlas.get_width(),dimensions.y/edited.atlas.get_height())
 					edited=edited.atlas
-				for item in [layer.body,layer.outline]:
+				for item in [layer.body,layer.occlusion]:
 					item.material_override.set_shader_parameter("color_atlas",edited)
 					item.material_override.set_shader_parameter("frame_rect",uv)
 				var shadow_texture:=AtlasTexture.new()
 				shadow_texture.atlas=override.texture
 				shadow_texture.region=region
 				layer.shadow.texture=shadow_texture
-	# 整身图集共用颜色、深度、阴影与补色路径，不伪造空的上下身层。
-	if parts==["full"]:
-		var layer: Dictionary=layers.full
-		var outline: ShaderMaterial=layer.outline.material_override
-		outline.set_shader_parameter("other_atlas",layer.body.material_override.get_shader_parameter("color_atlas"))
-		outline.set_shader_parameter("other_rect",layer.body.material_override.get_shader_parameter("frame_rect"))
-		outline.set_shader_parameter("other_scale",Vector2.ONE)
-		outline.set_shader_parameter("other_shift",Vector2.ZERO)
-		return true
-	# 轮廓读取两层的联合覆盖；相邻纸片的枢轴差转换为同一像素网格偏移。
-	for part in ["lower","upper"]:
-		var layer: Dictionary=layers[part]
-		var other: Dictionary=layers["upper" if part=="lower" else "lower"]
-		var material: ShaderMaterial=layer.outline.material_override
-		material.set_shader_parameter("other_atlas",other.body.material_override.get_shader_parameter("color_atlas"))
-		material.set_shader_parameter("other_rect",other.body.material_override.get_shader_parameter("frame_rect"))
-		var delta: Vector3=actor.camera.global_basis.inverse()*(layer.body.global_position-other.body.global_position)
-		var scale: Vector2=layer.size/other.size
-		material.set_shader_parameter("other_scale",scale)
-		material.set_shader_parameter("other_shift",Vector2.ONE*0.5-scale*0.5+Vector2(delta.x,-delta.y)/other.size)
+	# 整身图集与分层角色共用逐像素提示，不再计算两层边缘的联合轮廓。
+	if parts==["full"]: return true
 	var upper: Dictionary=manifest.entries[selected.upper]
 	var bow: bool=selected.upper.contains("/bow_")
 	last_grip=actor.global_position+yaw*(pelvis+_vector(upper.support if bow else upper.grip))
@@ -178,9 +158,9 @@ func apply_frame(state: Dictionary) -> bool:
 		last_grip+=actor.camera.global_basis*Vector3(edited.x-original.x,original.y-edited.y,0)*pixel_size
 	return true
 
-## 遮挡检测在物理帧末尾调用，同帧更新上下身轮廓。
-func set_occluded(value: bool) -> void:
-	for layer in layers.values(): layer.outline.visible = value and active and actor.hp > 0
+## 提示层只按存活/显示状态启用；真正被挡的像素交给 GPU，不受单条中心射线限制。
+func refresh_occlusion_visibility() -> void:
+	for layer in layers.values(): layer.occlusion.visible = active and actor.hp>0
 
 static func _vector(values: Array) -> Vector3:
 	return Vector3(values[0],values[1],values[2])

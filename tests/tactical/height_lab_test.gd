@@ -70,7 +70,7 @@ func run() -> void:
 	actor.test_crouch = true
 	await place(Vector3(-6, 0.1, 0.15))
 	check(actor.crouched and actor.shape_node.shape.height < 1, "crouching changes collider")
-	check(actor.occluded and actor.baked_visual.layers.upper.outline.visible, "hidden player receives outline")
+	check(actor.occluded and actor.baked_visual.layers.upper.occlusion.visible, "被挡玩家保留逐像素灰色提示层")
 	await capture("occlusion")
 	await place(Vector3(-10, 0.1, 4))
 	actor.test_motion = Vector2(0, 1)

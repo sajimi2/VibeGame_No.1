@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled;
+render_mode unshaded, cull_disabled, depth_draw_always;
 uniform sampler2D frame_color : source_color, filter_nearest, repeat_disable;
 uniform sampler2D frame_depth : filter_nearest, repeat_disable;
 uniform float depth_span = 6.0;
@@ -12,6 +12,8 @@ void vertex() {
 }
 
 void fragment() {
+	// 武器和刀光在环境像素化之后绘制，保持原精度和逐像素深度。
+	ALPHA = 1.0;
 	vec2 color_uv = packed_frame ? vec2(UV.x * 0.5, UV.y) : UV;
 	vec2 depth_uv = packed_frame ? vec2(UV.x * 0.5 + 0.5, UV.y) : UV;
 	vec4 color = texture(frame_color, color_uv);

@@ -7,59 +7,17 @@ var materials: Dictionary = {}
 func _init(parent: Node3D) -> void:
 	root = parent
 
-## 按材质种类生成像素纹理并缓存，同类地形共享资源。
-func material(kind: String) -> StandardMaterial3D:
-	if materials.has(kind): return materials[kind]
-	var palette := {"grass": Color("536448"), "stone": Color("778184"), "wall": Color("626b72"), "path": Color("988468"), "soil": Color("514a3e"), "wood": Color("796349"), "cloth": Color("985b4f"), "wood_frame": Color("4e4032")}
-	var base: Color = palette.get(kind, Color.GRAY)
-	var image := Image.create(64, 64, false, Image.FORMAT_RGB8)
-	image.fill(base)
-	var texture_rng := RandomNumberGenerator.new()
-	texture_rng.seed = 7319 + kind.hash()
-	for y in 64:
-		for x in 64:
-			var shade := int(texture_rng.randi() % 47)
-			if kind in ["wall","stone"]:
-				var row := y/16 as int
-				var brick_x := (x+row*16)%32
-				var brick_tone := ((x+row*16)/32 as int + row*3)%3
-				var color := base.darkened(brick_tone*0.045)
-				if y%16==0 or brick_x==0: color=base.darkened(0.32)
-				elif y%16 in [1,2] or brick_x==1: color=base.lightened(0.12)
-				elif y%16==15 or brick_x==31: color=base.darkened(0.14)
-				image.set_pixel(x,y,color)
-			elif kind == "wood":
-				var grain := sin(float(x/2)*2.2+sin(float(y)*0.15))
-				image.set_pixel(x,y,base.darkened(0.16) if grain>0.65 else base)
-			elif kind in ["soil","path","grass"]:
-				# 用较大像素色块组织纹理，避免细密噪点和连续渐变。
-				var cx := x/8 as int
-				var cy := y/8 as int
-				var cluster := sin(cx*1.73+sin(cy*0.83)*2.0)+cos(cy*1.32-cx*0.37)
-				var color := base.lightened(0.04) if cluster>1.2 else base.darkened(0.045) if cluster< -1.2 else base
-				if kind=="grass": color=base.lightened(0.018) if cluster>1.65 else base.darkened(0.02) if cluster< -1.65 else base
-				if kind=="soil":
-					var band := (y+int(3*sin(cx*0.7)))%20
-					if band<2: color=base.darkened(0.22)
-				image.set_pixel(x,y,color)
-			elif shade<2: image.set_pixel(x,y,base.lightened(0.055))
-	var result := StandardMaterial3D.new()
-	result.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
-	result.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	result.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	result.roughness = 1.0
-	result.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	result.albedo_texture = ImageTexture.create_from_image(image)
-	result.uv1_triplanar = true
-	result.uv1_scale = Vector3(0.5, 0.5, 0.5)
-	materials[kind] = result
-	return result
+## 地图与建筑共用磁盘像素资产；只缓存材质引用，不在启动时重复绘制纹理。
+func material(kind: String) -> ShaderMaterial:
+	if not materials.has(kind): materials[kind]=preload("res://scripts/presentation/environment_library.gd").material(kind)
+	return materials[kind]
 
 ## 同时生成盒状网格和碰撞；layers 控制它参与哪些物理查询。
 func box(label: String, center: Vector3, size: Vector3, kind: String, layers: int = 13) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = label
 	body.position = center
+	if kind in ["grass","soil","floor","planks"]: body.set_meta("occlusion_role","support")
 	body.collision_layer = layers
 	body.collision_mask = 0
 	root.add_child(body)
@@ -76,9 +34,9 @@ func box(label: String, center: Vector3, size: Vector3, kind: String, layers: in
 	body.add_child(visual)
 	return body
 
-## 生成指定宽度、长度和升高量的楔形坡道，网格与碰撞保持一致。
+## 保留指定宽度/长度/升高量的连续坡碰撞，用共用木架桥构件贴合行走面。
 func ramp(label: String, origin: Vector3, width: float, length: float, rise: float) -> void:
-	# 坡道朝 -Z 方向升高，显示与碰撞使用相同顶点。
+	# 坡道朝 -Z 方向升高，木桥原点与碰撞坡脚重合。
 	var vertices := PackedVector3Array([
 		Vector3(-width / 2, 0, 0), Vector3(width / 2, 0, 0),
 		Vector3(-width / 2, 0, -length), Vector3(width / 2, 0, -length),
@@ -87,6 +45,7 @@ func ramp(label: String, origin: Vector3, width: float, length: float, rise: flo
 	body.name = label
 	body.position = origin
 	body.collision_layer = 13
+	body.set_meta("occlusion_role","support")
 	root.add_child(body)
 	var collision := CollisionShape3D.new()
 	var shape := ConvexPolygonShape3D.new()
@@ -101,10 +60,15 @@ func ramp(label: String, origin: Vector3, width: float, length: float, rise: flo
 	surface.generate_normals()
 	var visual := MeshInstance3D.new()
 	visual.mesh = surface.commit()
-	var mat := material("path")
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	visual.material_override = mat
+	visual.material_override = material("wood")
+	visual.visible=false
 	body.add_child(visual)
+	var bridge:=preload("res://scripts/presentation/architecture_piece.gd").new()
+	bridge.name="TimberBridge"
+	bridge.kind="bridge"
+	bridge.extent=Vector3(width,.1,length)
+	bridge.rise=rise
+	body.add_child(bridge)
 
 ## 把二维轮廓拉成立体高台，使用同一组面生成外观和碰撞。
 func natural_ledge(label: String, origin: Vector3, outline: PackedVector2Array, height: float) -> void:
@@ -143,6 +107,8 @@ func natural_ledge(label: String, origin: Vector3, outline: PackedVector2Array, 
 	body.position = origin
 	body.collision_layer = 13
 	body.collision_mask = 0
+	# 高台包含顶面和侧壁，必须作为完整承托体保留，不能把底下草地透出来。
+	body.set_meta("occlusion_role","support")
 	root.add_child(body)
 	var visual := MeshInstance3D.new()
 	visual.mesh = mesh

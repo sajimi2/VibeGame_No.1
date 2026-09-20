@@ -254,6 +254,8 @@ func wall_depth(scene: Node3D) -> void:
 	wall.global_basis=Basis(Vector3.UP,scene.camera.rotation.y)
 	wall.global_position=player.global_position+Vector3.UP*.9+scene.camera.global_basis.z*1
 	await frames(3)
+	# 本项只验证正常身体的深度遮挡；新灰色提示另有逐像素专项，不能把提示当作穿墙。
+	for layer in player.baked_visual.layers.values(): layer.occlusion.hide()
 	RenderingServer.force_draw(false)
 	var front:=root.get_texture().get_image()
 	player.baked_visual.hide()
@@ -267,6 +269,7 @@ func wall_depth(scene: Node3D) -> void:
 	hidden.save_png("res://work/humanoid/wall_hidden.png")
 	check(same,"实际墙体在人物前方时完全遮挡，不靠显示层级强行置顶")
 	player.baked_visual.show()
+	player.baked_visual.refresh_occlusion_visibility()
 	wall.queue_free()
 
 func roundtrip(player: CharacterBody3D) -> void:

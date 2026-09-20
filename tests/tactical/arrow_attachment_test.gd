@@ -98,7 +98,7 @@ func player_fade(target: CharacterBody3D, arrow: Node3D, initial: Transform3D) -
 	var other := ArrowArt.model()
 	check(arrow.attachment.fade_after==4.0,"仅玩家声明四秒附着停留时间")
 	while arrow.attached_time<3.9: await frames(1)
-	check(is_instance_valid(arrow) and arrow.shaft.material_override.albedo_color.a==1,"停留阶段箭仍完整显示")
+	check(is_instance_valid(arrow) and arrow.shaft.material_override.get_shader_parameter("albedo_color").a==1,"停留阶段箭仍完整显示")
 	if DisplayServer.get_name()!="headless":
 		lab.camera.size = 5
 		await frames(2)
@@ -108,8 +108,8 @@ func player_fade(target: CharacterBody3D, arrow: Node3D, initial: Transform3D) -
 	target.facing = Vector2(1,0)
 	target.position += Vector3(0.1,0,0.1)
 	await frames(1)
-	check(arrow.shaft.material_override.albedo_color.a>0.15 and arrow.shaft.material_override.albedo_color.a<0.6 and same_transform(target.projectile_attachment_frame("身体").affine_inverse()*arrow.global_transform,initial),"淡出中保持半透明并跟随玩家转身")
-	check(other.material_override.albedo_color.a==1 and other.material_override.transparency==BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR,"一支箭淡出不会修改别的箭材质")
+	check(arrow.shaft.material_override.get_shader_parameter("albedo_color").a>0.15 and arrow.shaft.material_override.get_shader_parameter("albedo_color").a<0.6 and same_transform(target.projectile_attachment_frame("身体").affine_inverse()*arrow.global_transform,initial),"淡出中保持半透明并跟随玩家转身")
+	check(other.material_override.get_shader_parameter("albedo_color").a==1 and other.get_node("ArrowShadow").material_override.transparency==BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR,"一支箭淡出不会修改别的箭材质")
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://work/player_arrow_fade.png")
@@ -164,7 +164,7 @@ func depth_render() -> void:
 	camera.position = Vector3(0,1,8)
 	var arrow := ArrowArt.model()
 	arrow.material_override = arrow.material_override.duplicate()
-	arrow.material_override.albedo_color = Color.MAGENTA
+	arrow.material_override.set_shader_parameter("albedo_color",Color.MAGENTA)
 	world.add_child(arrow)
 	arrow.position = Vector3(-0.4,1,1)
 	arrow.rotation.y = PI/2

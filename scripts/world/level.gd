@@ -24,6 +24,8 @@ var routes: Node
 var results_enabled := true
 var run_flow: CanvasLayer
 var lighting: Node3D
+var environment_pixels: MeshInstance3D
+var wall_occlusion: Node
 const Lighting = preload("res://scripts/presentation/world_lighting.gd")
 
 ## Godot 在节点入树并就绪后调用此函数，依次装配地图、玩家、相机、界面与战斗。
@@ -34,7 +36,14 @@ func _ready() -> void:
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	get_window().content_scale_size = Vector2i(1280, 720)
 	get_window().min_size = Vector2i(1280, 720)
-	get_window().content_scale_stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	# 先让窗口/全屏等比例铺满；1280×720 到 1080p 需要 1.5 倍，整数取整会留下四周黑框。
+	get_window().content_scale_stretch = Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	# 窗口控制独立于关卡生命周期，R 重开不丢失全屏前的窗口尺寸；不新增游戏全局状态。
+	if not get_window().has_node("GameWindowMode"):
+		var window_mode := preload("res://scripts/ui/window_mode.gd").new()
+		window_mode.name = "GameWindowMode"
+		get_window().add_child.call_deferred(window_mode)
 	RenderingServer.set_default_clear_color(Color("202e36"))
 	var environment_node := WorldEnvironment.new()
 	var environment := Environment.new()
@@ -75,6 +84,16 @@ func _ready() -> void:
 	update_camera_position()
 	camera.current = true
 	player.camera = camera
+	environment_pixels = preload("res://scripts/presentation/environment_pixel_pass.gd").new()
+	environment_pixels.name = "EnvironmentPixelPass"
+	camera.add_child(environment_pixels)
+	wall_occlusion=preload("res://scripts/presentation/wall_occlusion.gd").new()
+	wall_occlusion.name="WallOcclusion"
+	wall_occlusion.observer=player
+	wall_occlusion.camera=camera
+	add_child(wall_occlusion)
+	# 等待场景构件完成生成；关卡只注入依赖，不持有遮挡采样或材质渐变逻辑。
+	wall_occlusion.register_branch.call_deferred(self)
 	hud = preload("res://scripts/ui/game_hud.gd").new()
 	add_child(hud)
 	hud.setup(level_title())
@@ -118,7 +137,7 @@ func snapped_camera_position(desired: Vector3) -> Vector3:
 func toggle_shading() -> void:
 	stylized = not stylized
 	for material_value in terrain.materials.values():
-		material_value.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON if stylized else BaseMaterial3D.DIFFUSE_BURLEY
+		material_value.set_shader_parameter("banded",stylized)
 	last_feedback = "分段明暗" if stylized else "连续明暗 · 对比模式"
 
 ## 等待地形进入物理世界后建立导航、敌人、任务、成长与结算，并连接依赖。
@@ -187,7 +206,7 @@ func enemy_layout() -> Array:
 func combat_hint() -> String: return ""
 
 ## 以下薄接口统一委托给 terrain_builder，供地图脚本复用几何构造。
-func material(kind: String) -> StandardMaterial3D:
+func material(kind: String) -> ShaderMaterial:
 	return terrain.material(kind)
 
 func box(label: String, center: Vector3, size: Vector3, kind: String, layers: int = 13) -> StaticBody3D:

@@ -29,7 +29,7 @@ func update(actor: CharacterBody3D, delta: float) -> void:
 		if is_instance_valid(actor.shield_node): actor.shield_node.hide()
 		actor.marker.hide()
 		actor.health_bar.hide()
-		actor.baked_visual.set_occluded(false)
+		actor.baked_visual.refresh_occlusion_visibility()
 	elapsed += delta
 	var fall := clampf(elapsed/0.85,0,1)
 	# 专用姿态先卸力下沉，随后伸开四肢；末帧不复用蹲姿，避免倒地后仍像坐着。

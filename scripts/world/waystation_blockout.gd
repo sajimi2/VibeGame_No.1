@@ -1,5 +1,5 @@
 extends "res://scripts/world/level.gd"
-## 驿站战斗试玩：沿用灰盒几何与已有敌人；可关闭战斗回到空间勘察，不读写真实成长。
+## 驿站战斗试玩：沿用已验收碰撞与混合敌人；可关闭战斗回到空间勘察，不读写真实成长。
 @export var combat_enabled := true
 const HARD = preload("res://data/encounters/waystation_hard.tres")
 var battle_ready := false
@@ -9,7 +9,7 @@ const STOPS := [Vector3(0,0.1,32), Vector3(0,0.1,10), Vector3(5,1.9,-9), Vector3
 
 func spawn_point() -> Vector3: return STOPS[0]
 func navigation_bounds() -> Rect2: return Rect2(-50,-38,76,76)
-func level_title() -> String: return "废弃边境驿站 / 强化遭遇" if combat_enabled else "废弃边境驿站 / 空间灰盒 · 无战斗"
+func level_title() -> String: return "废弃边境驿站 / 强化遭遇" if combat_enabled else "废弃边境驿站 / 空间勘察 · 无战斗"
 
 ## 四组混合驻军，地图只提供站位、物种和难度，不复制各敌人的 AI。
 func enemy_layout() -> Array:
@@ -36,8 +36,8 @@ func _ready() -> void:
 	results_enabled = false
 	super._ready()
 	camera.far = 240
-	hud.notice.text = "WASD 移动 · Shift 疾跑 · 空格跳跃 · C 下蹲 · M 全图/步行\n1 入口 · 2 外院 · 3 高台 · 4 内院 · 5 野地 · F1 标注 · R 返回起点 · Esc 退出"
-	last_feedback = "土黄主路 / 青绿侧路；进屋屋顶渐隐。M 看全图，1—5 跳转（5 野地）。"
+	hud.notice.text = "WASD 移动 · Shift 疾跑 · 空格跳跃 · C 下蹲 · M 全图/步行\n1 入口 · 2 外院 · 3 高台 · 4 内院 · 5 野地 · F1 标注 · F2 环境精度 · R 返回起点 · F11 全屏/窗口 · Esc 退出"
+	last_feedback = "土路 / 木架桥 / 石木驿站；被屋檐遮挡时局部透视。M 看全图，1—5 跳转（5 野地）。"
 	for marker in $ReviewMarkers.get_children():
 		_label(str(marker.get_meta("caption",marker.name)),marker.position)
 		review_labels.append(get_child(get_child_count()-1))
@@ -49,7 +49,7 @@ func _ready() -> void:
 	player.safe_zone = true
 	for roof in $Roofs.get_children(): roof.observer = player
 	if combat_enabled:
-		hud.notice.text="WASD 移动 · Shift 疾跑 · 空格跳跃 · C 蹲射 · 左键近战 · 右键射箭\nI 背包换装 · Ctrl 辅瞄 · R 重新挑战 · F1 标注 · Esc 退出"
+		hud.notice.text="WASD 移动 · Shift 疾跑 · 空格跳跃 · C 蹲射 · 左键近战 · 右键射箭\nI 背包换装 · Ctrl 辅瞄 · R 重新挑战 · F1 标注 · F2 环境精度 · F11 全屏/窗口 · Esc 退出"
 		last_feedback="I 换装 · 营地恢复生命"
 		for label in review_labels: label.hide()
 		for child in $Cover.get_children():
@@ -115,7 +115,7 @@ func set_overview(value: bool) -> void:
 		var full: String = label.get_meta("full_caption")
 		label.text = full.split(" / ")[0] if overview else full
 	update_camera_position()
-	last_feedback = "全图：黄色主路 / 青绿侧路 / 浅绿返程预留线；西侧为新增野地。M 返回步行。" if overview else "土黄主路 / 青绿侧路；进屋屋顶渐隐。M 看全图，1—5 跳转（5 野地）。"
+	last_feedback = "全图：土路连接主路与侧路，西侧为林间野地。M 返回步行。" if overview else "土路 / 木架桥 / 石木驿站；被屋檐遮挡时局部透视。M 看全图，1—5 跳转（5 野地）。"
 
 ## 只供空间勘察跳转；先退出全图，再清空速度，目标均为已验证的可站立面。
 func move_to_stop(index: int) -> void:

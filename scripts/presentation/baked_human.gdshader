@@ -1,5 +1,11 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled;
+#ifdef OCCLUSION_PASS
+render_mode unshaded, cull_disabled, depth_draw_never, depth_test_disabled;
+uniform sampler2D scene_depth : hint_depth_texture, filter_nearest, repeat_disable;
+uniform vec4 occlusion_color : source_color = vec4(0.55,0.57,0.59,1.0);
+#else
+render_mode unshaded, cull_disabled, depth_draw_always;
+#endif
 uniform sampler2D color_atlas : source_color, filter_nearest, repeat_disable;
 uniform sampler2D depth_atlas : filter_nearest, repeat_disable;
 uniform vec4 frame_rect;
@@ -7,54 +13,39 @@ uniform vec4 depth_rect;
 uniform vec4 tint : source_color = vec4(1.0);
 uniform float opacity = 1.0;
 uniform vec3 depth_axis = vec3(0.0,0.0,1.0);
-uniform bool outline_only = false;
-uniform sampler2D other_atlas : source_color, filter_nearest, repeat_disable;
-uniform vec4 other_rect;
-uniform vec2 other_shift;
-uniform vec2 other_scale = vec2(1.0);
-uniform vec2 frame_pixels = vec2(64.0);
 varying vec3 view_position;
-float coverage(vec2 uv) {
-	float a = 0.0;
-	if (all(greaterThanEqual(uv,vec2(0.0))) && all(lessThanEqual(uv,vec2(1.0)))) {
-		a=texture(color_atlas,frame_rect.xy+uv*frame_rect.zw).a;
-	}
-	vec2 other_uv=uv*other_scale+other_shift;
-	if (all(greaterThanEqual(other_uv,vec2(0.0))) && all(lessThanEqual(other_uv,vec2(1.0)))) {
-		a=max(a,texture(other_atlas,other_rect.xy+other_uv*other_rect.zw).a);
-	}
-	return a;
-}
 void vertex() {
-	view_position = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	view_position = (MODELVIEW_MATRIX * vec4(VERTEX,1.0)).xyz;
 }
 void fragment() {
-	vec2 at = frame_rect.xy + UV * frame_rect.zw;
-	vec4 color = texture(color_atlas, at);
-	// 固定像素格有序消隐，保持深度写入；不把整个角色切换到透明排序通道。
+	vec4 color = texture(color_atlas,frame_rect.xy+UV*frame_rect.zw);
+	if (color.a < 0.5) discard;
 	float pattern = mod(floor(FRAGCOORD.x)*3.0+floor(FRAGCOORD.y)*5.0,16.0)/16.0;
-	if (opacity <= pattern) { discard; }
-	if (outline_only) {
-		float around = 0.0;
-		vec2 texel = vec2(1.0)/frame_pixels;
-		around = max(around, coverage(UV + vec2(texel.x,0.0)));
-		around = max(around, coverage(UV - vec2(texel.x,0.0)));
-		around = max(around, coverage(UV + vec2(0.0,texel.y)));
-		around = max(around, coverage(UV - vec2(0.0,texel.y)));
-		// 先合并两层透明轮廓，腰部重叠边不能被描成一圈黄线。
-		if (coverage(UV) > 0.5 || around < 0.5) { discard; }
-		ALBEDO = vec3(1.0,0.89,0.63);
-	} else {
-		if (color.a < 0.5) { discard; }
-		ALBEDO = color.rgb*tint.rgb;
-	}
-	// 上下身纸片各自恢复真实表面深度；层级由形体决定，不强行把手或武器置顶。
-	vec2 data = texture(depth_atlas, depth_rect.xy+UV*depth_rect.zw).rg;
+	if (opacity <= pattern) discard;
+	// 两种显示共用烘焙表面深度，不能用整张纸片平面的深度判断手脚是否被挡。
+	vec2 data = texture(depth_atlas,depth_rect.xy+UV*depth_rect.zw).rg;
 	float offset = (dot(data,vec2(65280.0,255.0))/65535.0-0.5)*6.0;
-	vec4 clip = PROJECTION_MATRIX*vec4(view_position+depth_axis*offset,1.0);
-	#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
-		DEPTH = clip.z/clip.w*0.5+0.5;
-	#else
-		DEPTH = clip.z/clip.w;
-	#endif
+	vec3 surface_view = view_position+depth_axis*offset;
+	vec4 clip = PROJECTION_MATRIX*vec4(surface_view,1.0);
+	ALPHA = 1.0;
+#ifdef OCCLUSION_PASS
+	// 读取屋顶开孔/裁切后的真实环境深度：只覆盖被遮住的像素，露出的部分直接丢弃。
+	float depth = textureLod(scene_depth,SCREEN_UV,0.0).r;
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	vec3 ndc = vec3(SCREEN_UV,depth)*2.0-1.0;
+#else
+	vec3 ndc = vec3(SCREEN_UV*2.0-1.0,depth);
+#endif
+	vec4 obstacle = INV_PROJECTION_MATRIX*vec4(ndc,1.0);
+	if (surface_view.z >= obstacle.z/obstacle.w-0.025) discard;
+	// 灰色先绘制，正常身体随后覆盖可见部分；上下身重叠不会反复叠透明度或盖住露出的手。
+	ALBEDO = occlusion_color.rgb;
+#else
+	ALBEDO = color.rgb*tint.rgb;
+#endif
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+	DEPTH = clip.z/clip.w*0.5+0.5;
+#else
+	DEPTH = clip.z/clip.w;
+#endif
 }

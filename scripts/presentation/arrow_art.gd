@@ -40,18 +40,33 @@ static func model(asset_id: String = "arrow") -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.set_meta("pixel_bake_ignore",true) # 已是带透明纹理的像素箭，不能再次当无纹理网格烘焙。
 	node.mesh = surface.commit()
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = texture(asset_id)
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.alpha_scissor_threshold = 0.5
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://scripts/presentation/arrow_sprite.gdshader")
+	mat.set_shader_parameter("albedo_texture",texture(asset_id))
+	mat.set_shader_parameter("albedo_color",Color.WHITE)
+	mat.render_priority = 1
 	node.material_override = mat
+	# 身体后绘制不影响箭的世界投影；裁剪阴影代理只投影、不参与环境颜色采样。
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var shadow := MeshInstance3D.new()
+	shadow.name = "ArrowShadow"
+	shadow.mesh = node.mesh
+	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	var shadow_mat := StandardMaterial3D.new()
+	shadow_mat.albedo_texture = texture(asset_id)
+	shadow_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	shadow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	shadow_mat.alpha_scissor_threshold = 0.5
+	shadow_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	shadow.material_override = shadow_mat
+	node.add_child(shadow)
 	return node
 
-## 每支箭拥有独立材质；淡出时改用透明混合，不能让 alpha scissor 在半透明时突然整支裁掉。
+## 每支箭拥有独立材质；淡出保持原半透明曲线，阴影用抖动逐步消失。
 static func set_opacity(node: MeshInstance3D, opacity: float) -> void:
-	var mat := node.material_override as StandardMaterial3D
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color.a = clampf(opacity,0,1)
+	var color: Color = node.material_override.get_shader_parameter("albedo_color")
+	color.a = clampf(opacity,0,1)
+	node.material_override.set_shader_parameter("albedo_color",color)
+	var shadow: MeshInstance3D = node.get_node("ArrowShadow")
+	shadow.material_override.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
+	shadow.material_override.albedo_color.a = color.a

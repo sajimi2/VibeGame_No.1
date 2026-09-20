@@ -1,5 +1,8 @@
 shader_type spatial;
 render_mode cull_disabled, specular_disabled;
+#ifdef WALL_REVEAL_PASS
+#include "res://scripts/presentation/wall_reveal.gdshaderinc"
+#endif
 
 // 石材只处理自身表面：纹理使用人物相近的世界像素密度，保留真实遮挡和太阳投影。
 uniform sampler2D stone_texture : source_color, filter_nearest, repeat_enable;
@@ -9,11 +12,17 @@ varying vec3 local_position;
 varying vec3 local_normal;
 
 void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
 	local_position = VERTEX;
 	local_normal = NORMAL;
 }
 
 void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
 	vec3 axis = abs(normalize(local_normal));
 	// 使用主轴投影而非三向混合，避免像素纹理在斜面变糊。
 	vec2 plane = axis.y > max(axis.x, axis.z) ? local_position.xz :

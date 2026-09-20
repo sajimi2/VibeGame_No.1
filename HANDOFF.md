@@ -7,5 +7,5 @@
 5. 新代码路径按职责组织，原 `scripts/tactical/` 已迁移；见架构文档。不可按已删除的 T01–T07 顺序推进。
 6. 战术 v1 存档、项目身份和物品实例 ID 保持兼容。测试必须隔离玩家存档；使用 `scripts/check.ps1`。
 7. 默认任务以用户当前请求为准；不自动新增敌人、地图或大框架。技术通过与主观试玩通过分开报告。
-8. 美术统一从 `assets/characters/blender/` 编辑，按 `docs/ART_PIPELINE.md` 导出和烘焙。旧二维角色和模型生成器已退役，不恢复第二套运行时回退。
+8. 角色美术从 `assets/characters/blender/` 编辑，按 `docs/ART_PIPELINE.md` 导出和烘焙；环境纹理、材质和构件在 `assets/environment/`，维护见 `docs/ENVIRONMENT_ART.md`。旧二维角色和模型生成器已退役，不恢复第二套运行时回退。
 9. MCP 每次通过 `session_manage(op="list")` 匹配完整工程路径，显式传 `session_id`。另一个学习工程和 AgentLab 均不属于本工程。

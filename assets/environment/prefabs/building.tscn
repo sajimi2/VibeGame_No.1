@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/architecture_piece.gd" id="1"]
+
+[node name="Building" type="Node3D"]
+script = ExtResource("1")
+kind = "building"
+extent = Vector3(4,3,0.4)
+include_base = true

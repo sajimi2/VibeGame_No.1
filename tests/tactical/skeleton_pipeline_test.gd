@@ -229,8 +229,8 @@ func render_checks(scene: Node3D, actor: CharacterBody3D) -> void:
 	actor.marker.hide()
 	actor.health_bar.hide()
 	actor.occluded=false
-	actor.baked_visual.layers.upper.outline.hide()
-	actor.baked_visual.layers.lower.outline.hide()
+	actor.baked_visual.layers.upper.occlusion.hide()
+	actor.baked_visual.layers.lower.occlusion.hide()
 	await frames(3)
 	RenderingServer.force_draw(false)
 	var behind:=root.get_texture().get_image()

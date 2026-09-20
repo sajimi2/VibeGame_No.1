@@ -39,37 +39,20 @@ func key(code: Key) -> void:
 	event.pressed=true
 	scene._unhandled_input(event)
 
-## 多建筑独立渐隐，真实出入仓库；同时覆盖高台下方与门槛滞回，防止只按平面坐标误判。
+## 真实步行继续覆盖仓库门洞；局部透视/屋檐边缘/像素效果由 environment_art 专项验证。
 func roofs_and_wilderness() -> void:
 	scene.move_to_stop(2)
 	for i in 30: await physics_frame
 	var roof: Node3D=scene.get_node("Roofs/WarehouseRoof")
-	check(roof.opacity==1.0 and roof.visible,"仓库外屋顶完整显示")
+	check(roof.visible,"仓库外保留屋顶")
 	await capture("roof_outside")
-	scene.player.position=Vector3(13,1.85,-9)
-	scene.player.velocity=Vector3.ZERO
-	for i in 6: await physics_frame
-	check(roof.opacity>0.0 and roof.opacity<1.0,"进入室内经过渐隐中间帧")
-	await capture("roof_fading")
+	await walk([Vector3(13,1.8,-9)],"真实步行进入仓库")
 	for i in 30: await physics_frame
-	check(roof.inside and roof.opacity==0.0 and not roof.visible,"室内屋顶完全退去，可看见人物")
-	check(scene.get_node("Roofs/CommandRoof").opacity==1.0,"仓库淡出不影响其他建筑")
-	check(not roof.contains_observer(Vector3(15,0,-9)),"高台下方不误触发仓库屋顶")
-	check(roof.contains_observer(Vector3(9.1,1.8,-9)),"门口小幅越界由滞回维持室内状态")
+	check(roof.blocked and roof.reveal==1 and roof.visible,"室内打开局部透视圆，整体屋顶保留")
 	await capture("roof_inside")
 	await walk([Vector3(5,1.8,-9)],"仓库室内步行穿门返回室外")
-	for i in 30: await physics_frame
-	check(not roof.inside and roof.opacity==1.0,"离开仓库屋顶渐现恢复")
-	for spec in [["WestStoreRoof",Vector3(-12,0.1,5),Vector3(-8,0.1,5)],["CommandRoof",Vector3(3,0.1,-29),Vector3(3,0.1,-25)]]:
-		var other: Node3D=scene.get_node("Roofs/"+spec[0])
-		scene.player.position=spec[1]
-		scene.player.velocity=Vector3.ZERO
-		for i in 35: await physics_frame
-		check(other.inside and not other.visible,"进入建筑独立隐藏 "+spec[0])
-		scene.player.position=spec[2]
-		scene.player.velocity=Vector3.ZERO
-		for i in 35: await physics_frame
-		check(not other.inside and other.visible and other.opacity==1.0,"离开建筑独立恢复 "+spec[0])
+	for i in 35: await physics_frame
+	check(roof.reveal==0,"走出屋面投影后恢复屋顶")
 	key(KEY_5)
 	for i in 8: await physics_frame
 	check(scene.player.is_on_floor() and scene.player.position.x < -27,"5 跳转至新增西侧野地")

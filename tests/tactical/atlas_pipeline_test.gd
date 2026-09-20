@@ -89,7 +89,7 @@ func run() -> void:
 	check(not Store.import_package(arrow_doc.export_to(directory).json).has("error"),"箭矢复用原尺寸回导")
 	var arrow:=ArrowArt.model()
 	var bow:=preload("res://scripts/presentation/weapon_art.gd").bow()
-	check(arrow.material_override.albedo_texture.get_image().get_pixel(15,5)==Color.MAGENTA and bow.get_node("NockedArrow").material_override.albedo_texture==arrow.material_override.albedo_texture,"飞行箭和搭弓箭共用编辑稿")
+	check(arrow.material_override.get_shader_parameter("albedo_texture").get_image().get_pixel(15,5)==Color.MAGENTA and bow.get_node("NockedArrow").material_override.get_shader_parameter("albedo_texture")==arrow.material_override.get_shader_parameter("albedo_texture"),"飞行箭和搭弓箭共用编辑稿")
 	arrow.free()
 	bow.free()
 	var ui: Control=load("res://tools/art_preview.tscn").instantiate()

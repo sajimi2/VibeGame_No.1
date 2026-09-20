@@ -314,13 +314,13 @@ func notice_strike(toward_attacker: Vector3) -> void:
 		state="chase" if target_visible else "investigate"
 		effects.sound("alert",global_position)
 
-## 检测相机到敌人的遮挡，只为存活且被挡住的敌人显示轮廓。
+## 保留中心射线的遮挡调试状态；存活敌人的灰色提示由实际画面深度逐像素决定。
 func update_occlusion() -> void:
 	var target := global_position+Vector3.UP*(body_height*.58)
 	var origin := camera.project_ray_origin(camera.unproject_position(target))
 	var query := PhysicsRayQueryParameters3D.create(origin,target,1|4,[get_rid()])
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
-	baked_visual.set_occluded(occluded)
+	baked_visual.refresh_occlusion_visibility()
 
 ## 弓手从附近可达导航点中选择撤退位置，兼顾远离玩家、掩体和移动成本。
 func find_retreat() -> Vector3:

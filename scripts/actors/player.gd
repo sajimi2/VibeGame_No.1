@@ -102,6 +102,8 @@ func set_crouch(value: bool) -> bool:
 ## 每个固定物理帧依次处理输入、重力、碰撞移动和表现；delta 的单位是秒。
 ## 移动与攻击独立，实际行走距离驱动步态，避免顶墙时原地跑步。
 func _physics_process(delta: float) -> void:
+	# 全屏切换时画布可能不变而屏幕变换已改变；每帧取转换后的鼠标坐标，不依赖鼠标移动事件。
+	if not test_mode: cursor = get_viewport().get_mouse_position()
 	death_art_time=death_art_time+delta if hp<=0 else 0.0
 	hurt_time = maxf(0,hurt_time-delta)
 	invulnerable = maxf(0,invulnerable-delta)
@@ -200,7 +202,7 @@ func projectile_anchor_alive() -> bool:
 func projectile_attachment_duration() -> float:
 	return 4.0
 
-## 从相机向角色发射射线；被实体或树冠遮挡时显示轮廓。
+## 中心射线保留 HUD 的遮挡状态；灰色提示按 GPU 实际深度裁切，不用此布尔值控制整个人。
 func _update_occlusion() -> void:
 	if camera == null: return
 	var target := global_position + Vector3.UP * (0.5 if crouched else 0.95)
@@ -209,7 +211,7 @@ func _update_occlusion() -> void:
 	var query := PhysicsRayQueryParameters3D.create(origin, target, 1 | 4)
 	query.exclude = [get_rid()]
 	occluded = not get_world_3d().direct_space_state.intersect_ray(query).is_empty()
-	baked_visual.set_occluded(occluded)
+	baked_visual.refresh_occlusion_visibility()
 
 ## 初始化或掉出地图时回到出生点，恢复生命并清除移动、跳跃状态。
 func reset_position() -> void:

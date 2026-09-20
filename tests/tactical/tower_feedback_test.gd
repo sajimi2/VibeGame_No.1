@@ -39,11 +39,11 @@ func run() -> void:
 	guard.position=Vector3(-8,0.01,7.7)
 	await frames(5)
 	guard.update_occlusion()
-	check(guard.occluded and guard.baked_visual.layers.upper.outline.visible,"occluded enemy gets outline")
+	check(guard.occluded and guard.baked_visual.layers.upper.occlusion.visible,"occluded enemy gets occlusion")
 	guard.position=Vector3(-3,0.01,7)
 	await frames(4)
 	guard.update_occlusion()
-	check(not guard.baked_visual.layers.upper.outline.visible,"unobstructed enemy has no outline")
+	check(not guard.occluded and guard.baked_visual.layers.upper.occlusion.visible,"无遮挡时仍启用 GPU 逐像素裁切，实际无灰色由 occlusion_presentation 验证")
 	check(not lab.lighting.pixel_material.shader.code.contains("SCREEN_PIXEL_SIZE*2.0"),"native resolution color pass")
 	if DisplayServer.get_name()!="headless":
 		await process_frame
