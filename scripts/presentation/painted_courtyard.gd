@@ -1,7 +1,7 @@
 extends Node3D
 ## 资产目录持有图片/尺寸，layout 持有摆放；这里只装配物件和装饰，不控制玩家或 UI。
 const Prop=preload("res://scripts/presentation/illustrated_prop.gd")
-const FOLDER="res://assets/environment/experiments/painted_courtyard/"
+const FOLDER="res://assets/environment/painted/courtyard/"
 var props: Array[Node3D]=[]
 var flowers: Array[Node3D]=[]
 var ambience: Node3D

@@ -7,7 +7,7 @@ func run() -> void:
 	viewport.own_world_3d=true
 	viewport.transparent_bg=true
 	root.add_child(viewport)
-	var model: Node3D=load("res://assets/environment/experiments/cottage/cottage_shell.glb").instantiate()
+	var model: Node3D=load("res://assets/environment/painted/cottage/structure/cottage_shell.glb").instantiate()
 	viewport.add_child(model)
 	for part in model.find_children("*","MeshInstance3D",true,false):
 		var material:=StandardMaterial3D.new()
@@ -32,6 +32,6 @@ func run() -> void:
 	viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
 	for i in 5: await process_frame
 	RenderingServer.force_draw(false)
-	DirAccess.make_dir_recursive_absolute("res://assets/environment/experiments/painted_cottage")
-	viewport.get_texture().get_image().save_png("res://assets/environment/experiments/painted_cottage/guide.png")
+	DirAccess.make_dir_recursive_absolute("res://assets/environment/painted/cottage")
+	viewport.get_texture().get_image().save_png("res://assets/environment/painted/cottage/guide.png")
 	quit()

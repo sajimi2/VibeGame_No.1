@@ -1,4 +1,4 @@
-extends "res://tests/tactical/warehouse_motion_test.gd"
+extends "res://tests/helpers/render_motion_test.gd"
 ## 冻结真实动画后检查窗口/全屏滚屏；前后标记额外验证画稿实际写入空间深度。
 func depth_probe(point: Vector3,label: String) -> void:
 	var probe:=MeshInstance3D.new()
@@ -29,7 +29,7 @@ func run() -> void:
 		return
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/painted_courtyard")
-	scene=load("res://tools/painted_courtyard_lab.tscn").instantiate()
+	scene=load("res://scenes/painted_courtyard.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	for i in 35: await physics_frame

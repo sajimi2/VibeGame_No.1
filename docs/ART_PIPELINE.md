@@ -55,9 +55,9 @@ GLB 导入保持 96 Hz 并关闭有损动画优化，避免快速出手关键时
 
 四种类人身体不重复烘焙剑盾弓。当前可装备武器源仍在 `weapon_art.gd`，握柄由身体世界手心定位，像素武器及刀光继续使用独立 GPU 后端，详见 [武器表现](WEAPON_PIXEL_EXPERIMENT.md)。宝剑实体缩小 20%，厚度、装饰、阴影和刀光端点一起调整；伤害与判定距离未改。
 
-`tree_art.gd` 只负责已认可的像素树；石材由 `stone_palette` / `pixel_stone` 管理，碰撞仍独立。它们是有效环境美术，不属于已删除的二维人物遗留。
+新场景美术已确认使用完整单视角绘画资产与简单隐藏空间代理，见 [场景美术管线](ENVIRONMENT_ART.md)。这不取代人物的 Blender 制作与深度烘焙，也不将可装备武器改成纯静态图。
 
-地形和建筑使用 `assets/environment` 的可编辑 PNG、共用像素材质及可调尺寸构件；不经过角色动作烘焙，也不新增实时烘焙视口。荒堡、驿站、高度试验场共用草地与木架坡桥；屋顶用视线检测与屏幕空间局部透视。工具与维护约定见 [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md)。
+`tree_art`、`stone_palette`、`pixel_stone`、旧建筑材质仍由荒堡/驿站/高度场使用，保留用于实际玩法回归。新增环境默认使用 `assets/environment/painted/`，不沿旧逐面贴图方案继续生产。
 
 ## 验证
 

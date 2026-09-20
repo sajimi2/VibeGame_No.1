@@ -17,13 +17,11 @@ var interior_fade:=0.0
 var interior_hold:=0.0
 var roof_material: ShaderMaterial
 var pieces: Array[MeshInstance3D]=[]
-## 可选资产表面材质：屋顶仍拥有透视状态，只接收颜色/投影参数，不要求关卡更换控制器。
-@export var surface_material: ShaderMaterial
 func _ready() -> void:
 	process_physics_priority=20
-	roof_material=surface_material.duplicate() if surface_material!=null else ShaderMaterial.new()
+	roof_material=ShaderMaterial.new()
 	roof_material.shader=preload("res://scripts/presentation/interior_roof.gdshader")
-	if surface_material==null: roof_material.set_shader_parameter("surface_texture",load("res://assets/environment/textures/roof.png"))
+	roof_material.set_shader_parameter("surface_texture",load("res://assets/environment/textures/roof.png"))
 	for child in get_children():
 		if child is MeshInstance3D and child.mesh!=null:
 			pieces.append(child)

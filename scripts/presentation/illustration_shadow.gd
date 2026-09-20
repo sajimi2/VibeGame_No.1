@@ -1,8 +1,8 @@
 extends MeshInstance3D
 ## 固定白天的美术投影：按物件体量编排地面轮廓，脱离正面画稿，避免整张树被拉成长条。
 const ShaderFile=preload("res://scripts/presentation/illustration_shadow.gdshader")
-const PROFILE_PATH="res://assets/environment/experiments/painted_courtyard/shadow_profiles.json"
-const DEFAULT_STYLE=preload("res://assets/environment/experiments/painted_courtyard/shadow_style.tres")
+const PROFILE_PATH="res://assets/environment/painted/courtyard/shadow_profiles.json"
+const DEFAULT_STYLE=preload("res://assets/environment/painted/courtyard/shadow_style.tres")
 var style=DEFAULT_STYLE
 static var profiles: Dictionary={}
 var sway_world:=Vector2.ZERO

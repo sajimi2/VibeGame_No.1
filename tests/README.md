@@ -7,6 +7,7 @@
 ./scripts/check.ps1 -Suite core
 ./scripts/check.ps1 -Suite all
 ./scripts/check.ps1 -Suite core -Rendered
+./scripts/check.ps1 -Suite art -Rendered
 ```
 
 每项单独启动引擎，导入及运行日志保存在 `work/checks`。入口同时检查退出码、脚本错误及失败断言；无头通过不代表画面或手感验收。渲染检查需要 Compatibility 实际 GPU，不带 `--headless`。
@@ -18,9 +19,6 @@
 | `startup_smoke` | F5 装配、五敌人、正交相机、装备与安全出生点 |
 | `painted_courtyard` / `painted_courtyard_motion` | 小院真实穿门、绕井/绕车、墙碰撞、纯装饰隔离与 V/F3/F4；GPU 矮墙/石头前后深度，窗口/全屏粗细两档滚屏；截图与指标 `work/painted_courtyard` |
 | `courtyard_presentation` | 实际 GPU 树前零灰显、树后透视与灰显保留、花草不遮人；影子开关画面差分及井/车/墙独立影子；原灰模退出颜色显示且保留几何、内景地板承托保护，默认原始环境精度 |
-| `cottage_art_lab` | 小屋生成美术：实际墙/屋面图片、整面前墙共组、V 灰模对比、两个实例独立透视，真实进出门/撞墙/绕屋/阻弹、地板保护；截图 `work/cottage`，概念提案不作为运行证据 |
-| `warehouse_art_slice` | 仓库新旧环境切换、投影顶点与原碰撞不变、真实走桥/穿门、支撑面保护、室内/背墙透视、飞行箭撞墙和守卫扣血，隔离进度；截图 `work/warehouse` |
-| `warehouse_motion` | 实际窗口/全屏、新/旧样板横纵斜向滚屏残差低于 1%；记录静态绘制调用/帧间隔/显存，冻结演员观测不替代战斗性能；指标 `work/warehouse/render_metrics.json` |
 | `painted_cottage` / `painted_cottage_motion` | 分层插画实际穿门/绕屋/碰撞阻弹、墙/顶渲染前后深度、V 保持物理、双屋隔离与承托保护；GPU 窗口/全屏及粗/细两档新旧滚屏，截图 `work/painted_cottage` |
 | `display_mode` | 独立渲染进程实际切窗口/全屏、完整屏幕尺寸、暂停/最大化/场景重开及原窗口恢复；静止鼠标瞄准、屋顶圆心与画布不漂移。需直接运行 `--script res://tests/tactical/display_mode_test.gd`，不加 `--headless`；无头仅验证装配 |
 | `waystation_blockout` | 驿站真实步行路线、南北木桥、仓库门洞、侧路与野地连通；局部透视及恢复、勘察快捷键与原连续坡碰撞；不启动任务/存档 |
@@ -43,7 +41,7 @@
 | `locomotion_art` / `rock_collision` | 实际 Shift 输入、蹲行、跳跃阶段、空中握点、剪影、鼠标后退跳膝盖；绕石物理压力与阻弹 |
 | 战斗/任务/地图其余专项 | 敌人状态、攻击时序、库存/保存兼容、任务闭环、坡道、净空、遮挡及安全区 |
 
-`all` 额外包括 height_lab、height_edge、art_route、outpost_sample、letter_interaction、feedback_edges、tower_feedback、waystation_blockout、waystation_combat、cottage_art_lab、warehouse_art_slice、warehouse_motion、painted_cottage、painted_cottage_motion。绕石压力测试固定 60Hz 无头加速；其他渲染专项保持真实帧推进。测试规模由当前输出统计，不沿用历史通过数量。
+`art` 聚焦已确认的绘画路线及环境渲染，使用 `scripts/check.ps1 -Suite art -Rendered`；`core` 是玩法/角色基线，`all` 加上现有地图边缘与全部绘画专项。具体清单以 check.ps1 为准。退役的逐面贴图测试已移除，有效双屋测试使用 tests/fixtures，滚屏取帧共用 tests/helpers。绕石压力测试固定 60Hz 无头加速；headless 跳过画面检查不能算渲染通过。
 
 Blender 独立验证：运行 `tools/blender/validate_characters.py`，读取七份 `.blend`，检查实际骨架、权重、动作及手部/矛/石拳/胶体顶点运动；结果写 `work/checks/blender_characters.json`。工具不写回源文件。
 

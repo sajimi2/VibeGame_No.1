@@ -9,7 +9,7 @@ func shot(label: String) -> void:
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/painted_courtyard")
-	scene=load("res://tools/painted_courtyard_lab.tscn").instantiate()
+	scene=load("res://scenes/painted_courtyard.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	scene.player.test_mode=true

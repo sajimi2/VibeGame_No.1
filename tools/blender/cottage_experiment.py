@@ -5,7 +5,7 @@ from pathlib import Path
 import bpy
 
 ROOT = Path(__file__).resolve().parents[2]
-ASSET = ROOT / 'assets/environment/experiments/cottage'
+ASSET = ROOT / 'assets/environment/painted/cottage/structure'
 SOURCE = ASSET / 'source/cottage.blend'
 
 

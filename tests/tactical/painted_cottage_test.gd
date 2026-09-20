@@ -43,7 +43,7 @@ func depth_probe(point: Vector3,label: String) -> void:
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/painted_cottage")
-	scene=load("res://tools/painted_cottage_lab.tscn").instantiate()
+	scene=load("res://tests/fixtures/painted_cottage_scene.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	scene.player.test_mode=true
@@ -62,9 +62,9 @@ func run() -> void:
 	await depth_probe(Vector3(1.5,4.13-1.5*.52,0),"屋顶插画深度")
 	key(KEY_V)
 	for i in 5: await physics_frame
-	check(not scene.painting.enabled and not scene.second_painting.enabled,"V 切换两栋为原贴面")
+	check(not scene.painting.enabled and not scene.second_painting.enabled,"V 切换两栋为空间代理")
 	check(collision_state()==collisions,"美术对比不改变任何碰撞资源或变换")
-	await shot("old_exterior")
+	await shot("geometry_comparison")
 	key(KEY_V)
 	for i in 5: await physics_frame
 	scene.set_physics_process(true)

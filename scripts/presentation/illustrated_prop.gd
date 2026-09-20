@@ -1,8 +1,8 @@
 extends Node3D
 ## 单视角画稿负责轮廓；独立盒/柱负责物理。近似深度体积和碰撞体积分别配置，避免树冠堵路。
-const FOLDER="res://assets/environment/experiments/painted_courtyard/"
+const FOLDER="res://assets/environment/painted/courtyard/"
 const PAINT=preload("res://scripts/presentation/illustrated_prop.gdshader")
-const PARAMETERS=preload("res://scripts/presentation/painted_cottage.gd").WALL_PARAMETERS
+const PARAMETERS=preload("res://scripts/presentation/occlusion_style.gd").WALL_PARAMETERS
 var asset_id: String
 var spec: Dictionary
 var art: MeshInstance3D
@@ -60,7 +60,7 @@ func setup(id: String,definition: Dictionary,baked: Dictionary,scale_factor: flo
 ## 轻微视觉晃动的单一入口：画稿与上部影形同步，脚底接触影和碰撞代理保持原位。
 ## 输入世界 XZ 偏移（米），调用者拥有动画时钟；默认不启用任何自动摆动。
 func set_visual_sway(offset: Vector2) -> void:
-	var style=preload("res://assets/environment/experiments/painted_courtyard/shadow_style.tres")
+	var style=preload("res://assets/environment/painted/courtyard/shadow_style.tres")
 	var limited:=offset.limit_length(style.max_sway)
 	visual_sway=Vector3(limited.x,0,limited.y)
 	art_material.set_shader_parameter("sway_world",visual_sway)

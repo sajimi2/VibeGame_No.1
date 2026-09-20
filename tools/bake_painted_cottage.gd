@@ -1,7 +1,7 @@
 extends SceneTree
 ## 运行时只加载目标像素尺寸，保留生图原稿供改画；滤波只在离线缩图时执行。
 func _initialize() -> void:
-	var path: String="res://assets/environment/experiments/painted_cottage/"
+	var path: String="res://assets/environment/painted/cottage/"
 	var config: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path+"registration.json"))
 	var size:=int(config.runtime_canvas)
 	var originals: Dictionary={}

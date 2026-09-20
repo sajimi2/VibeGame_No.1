@@ -1,6 +1,6 @@
 extends SceneTree
 ## 将各尺寸原稿裁到实际 alpha 内容，再按统一屏幕密度生成运行图；只在制作时运行。
-const FOLDER="res://assets/environment/experiments/painted_courtyard/"
+const FOLDER="res://assets/environment/painted/courtyard/"
 func _initialize() -> void:
 	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(FOLDER+"catalog.json"))
 	var output: Dictionary={}

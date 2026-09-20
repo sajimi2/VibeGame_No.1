@@ -1,6 +1,6 @@
 param(
     [string]$GodotPath = $env:GODOT_BIN,
-    [ValidateSet('smoke','core','all')][string]$Suite = 'core',
+    [ValidateSet('smoke','core','art','all')][string]$Suite = 'core',
     [switch]$Rendered
 )
 $ErrorActionPreference = 'Stop'
@@ -30,7 +30,9 @@ Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_sm
 if ($Suite -eq 'smoke') { return }
 $tests = @('baked_player','skeleton_pipeline','pixel_weapon','weapon_choreography','atlas_pipeline','arrow_attachment','locomotion_art','rock_collision','guard_reaction','attack_motion','melee_aoe','creature_encounter','environment_art','occlusion_presentation','environment_resolution','environment_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
 $tests += @('wall_occlusion','near_wall_reveal','occlusion_support','selective_wall')
-if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback','waystation_blockout','waystation_combat','cottage_art_lab','warehouse_art_slice','warehouse_motion','painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style') }
+$artTests = @('painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style','environment_art','occlusion_presentation','environment_resolution')
+if ($Suite -eq 'art') { $tests = $artTests }
+if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback','waystation_blockout','waystation_combat','painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style') }
 foreach ($test in $tests) {
     # 绕石压力测试含数万物理帧，用固定 60Hz 加速离线模拟；画面由 locomotion_art 单独验证。
     [string[]]$testDisplay = if ($test -eq 'rock_collision') { @('--headless','--fixed-fps','60') } else { $displayArgs }

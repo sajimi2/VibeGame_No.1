@@ -1,7 +1,6 @@
 shader_type spatial;
 render_mode cull_disabled, specular_disabled;
 #include "res://scripts/presentation/environment_surface.gdshaderinc"
-#include "res://scripts/presentation/art_surface.gdshaderinc"
 #include "res://scripts/presentation/occlusion_depth.gdshaderinc"
 uniform float reveal : hint_range(0.0,1.0) = 0.0;
 uniform float roof_opacity : hint_range(0.0,1.0) = 1.0;
@@ -26,7 +25,7 @@ void fragment() {
 	vec2 stable_pixel=floor(SCREEN_UV*viewport_size)-dither_origin;
 	float threshold=fract(52.9829189*fract(dot(stable_pixel,vec2(0.06711056,0.00583715))));
 	if (coverage<=threshold) discard;
-	ALBEDO=art_surface_color(surface_color(surface_position,surface_normal),UV,UV2.x,surface_position);
+	ALBEDO=surface_color(surface_position,surface_normal);
 	ROUGHNESS=1.0;
 }
 void light() {

@@ -1,0 +1,10 @@
+{
+  "tool": "built-in imagegen",
+  "checkpoint": "ddb3b2c",
+  "original_path": "assets/environment/warehouse_slice/textures/earth.png",
+  "reference_at_checkpoint": "../experiments/cottage/art_proposal_v1.png",
+  "asset": {
+    "id": "earth",
+    "prompt": "Production game material single SQUARE seamless flat top-down medieval village dirt path texture. Match reference painterly chunky pixel art, muted ochre tan packed earth, broad quiet patches with a few grouped small flat pebble shapes and short faint cart-wear streaks. Mostly calm midtone ground for clear combat silhouettes, sparse detail, no high-frequency noise. No grass, objects, large rocks, footprints, perspective, cast shadows, text, frame or vignette. Fully fills canvas edge to edge, all edges tile seamlessly. Neutral even lighting and deliberate coarse pixel clusters."
+  }
+}

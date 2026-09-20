@@ -1,13 +1,31 @@
 # OutpostRPG 接手入口
 
-1. 读 `AGENTS.md`、`README.md`、`AI_SYNC.md`；架构看 `docs/ARCHITECTURE.md`，方向看 `docs/TACTICAL_HEIGHT_PLAN.md`。
-2. 先查看 Git 工作区；保留他人未提交修改。已验收的 3D 维护与武器动作按用户要求合入 `main`，当前已确认 Blender + 96² 角色流程；以实际 Git 分支及 AI_SYNC 最新记录为准。
-3. 最新入口为 `scenes/battlefield.tscn`，F5 已对齐；3D 试验场 `scenes/tactical_height.tscn` 仍可 F6。旧 2D 已经用户明确同意从工作区移除。
-4. 清理前完整快照 `9c4dc82` 已推送 GitHub，标签 `backup/pre-3d-cleanup-20260917`；该节点包含原 2D、最新 3D、旧报告和插件。个人配置与构建缓存不在 Git 中。
-5. 新代码路径按职责组织，原 `scripts/tactical/` 已迁移；见架构文档。不可按已删除的 T01–T07 顺序推进。
-6. 战术 v1 存档、项目身份和物品实例 ID 保持兼容。测试必须隔离玩家存档；使用 `scripts/check.ps1`。
-7. 默认任务以用户当前请求为准；不自动新增敌人、地图或大框架。技术通过与主观试玩通过分开报告。
-8. 角色美术从 `assets/characters/blender/` 编辑，按 `docs/ART_PIPELINE.md` 导出和烘焙；环境纹理、材质和构件在 `assets/environment/`，维护见 `docs/ENVIRONMENT_ART.md`。旧二维角色和模型生成器已退役，不恢复第二套运行时回退。
-9. MCP 每次通过 `session_manage(op="list")` 匹配完整工程路径，显式传 `session_id`。另一个学习工程和 AgentLab 均不属于本工程。
-10. 当前待试玩环境样板为 `scenes/warehouse_art_slice.tscn` / `play_warehouse_art.bat`，V 新旧对比、P 勘察/战斗。制作源、提示词和投影配置见 `assets/environment/warehouse_slice/README.md`；F5 正式入口仍按上文。
-11. 最新固定视角实验扩为 `tools/painted_courtyard_lab.tscn` / `play_painted_cottage.bat`：树木、错落墙、井桶车箱石与无碰撞花草/蝴蝶/落叶；V 绘画/简体、F3 碰撞体、F4 动态装饰、M 全院取景、1–4 院门/室内/树井/推车。资产与边界见 `assets/environment/experiments/painted_courtyard/README.md`。原双屋 `tools/painted_cottage_lab.tscn` 仍保留，暂未确认为全项目新标准。
+2026-09-20：用户已确认本轮整体美术实验成功，**后续默认沿用固定正交视角的完整绘画资产 + 隐藏简单空间体积路线**。这不是仍待选型的提案，不要重新回到逐面生成图片贴满精细模型的方式。
+
+## 先读与先运行
+
+1. 读 `AGENTS.md`、`AI_SYNC.md`，检查 Git 分支和工作区；只按新一轮用户请求推进。
+2. 读 `docs/ARCHITECTURE.md` 的职责、装配顺序和隐藏约定；场景美术看 `docs/ENVIRONMENT_ART.md`，人物看 `docs/ART_PIPELINE.md`，武器看 `docs/WEAPON_PIXEL_EXPERIMENT.md`。
+3. 新美术基准：`scenes/painted_courtyard.tscn` / `play_courtyard.bat`。旧 `play_painted_cottage.bat` 只是同一入口的兼容转发。
+4. 现有完整玩法：F5 → `scenes/battlefield.tscn`；增强遭遇与高低地图 → `scenes/waystation_blockout.tscn`。**小院尚无敌人、任务、井箱交互和存档，不能把美术验收当作完整游戏地图已迁移。**
+5. 双屋实例隔离是 `tests/fixtures/painted_cottage_scene.tscn` 回归夹具，不是第二条美术路线。
+
+## 必须沿用的管线
+
+- 场景：简单灰模确定尺寸/门洞/高低 → 固定角度参考 → 生图制作完整单视角物件，房屋按屋顶/墙体/内景分层 → 原稿保留 → 离线统一像素密度 → 画稿负责轮廓，隐藏盒/柱/简模负责碰撞、阻弹和遮挡采样。允许适度美术/碰撞偏差，不为细节再建精模。
+- 人物：保存的 Blender 模型/骨架/动作 → GLB → Godot 开发期烘焙 96×96、十二朝向的颜色/深度/握点 → 运行时播放。保留 `VIEW_ZOOM=1.2`，不得降低角色分辨率；日常导出不重建或覆盖人工动作。
+- 武器/刀光：读取角色世界握点，保留独立实时 GPU 像素化；命中由战斗射线与动作窗口负责，不由图片边缘负责。
+- 阴影：新路线统一 `assets/environment/painted/courtyard/shadow_style.tres`；方向、22% 覆盖率、颜色、柔边集中管理。资产只描述体量，未来小幅风摆走 `set_visual_sway`，不动碰撞；默认未开启风摆。
+- 遮挡：少量遮挡逐像素灰显被挡部分；屋顶室内整片淡化后叠全透圆、室外仅圆；普通墙累计遮挡 90% 开启/80% 退出。只处理真正挡住人的构件，承托面保护，花草不遮人。
+- 新美术以原始 1280×720、全屏观感为标准，保留 F2 对照；角色尺寸和固定镜头不变。
+
+## 版本与删除边界
+
+- 清理前完整成果 **`ddb3b2c`** 已推送 `origin/codex/skeleton-blender-96`，包含所有逐面贴图实验和本轮已验收小院，作为准确回退点。不要为查旧素材直接重置当前分支。
+- 已退役：逐面贴图投影器/Shader 分支、旧小屋贴面实验、仓库贴面样板及其专用纹理/配置/测试。旧内容去 Git 历史查询，不恢复到活跃工程。
+- 保留：荒堡、驿站、高度场的既有几何/材质与角色工具。它们仍被实际玩法或回归使用，不能因看起来较旧就删除；后续地图换装另立范围。
+- 活跃绘画资产集中于 `assets/environment/painted/`，含原图、提示词、配准、空间简模和运行图。小院土路已从退役目录迁出并保留来源记录。
+
+## 下一轮的起点
+
+用户将在新对话继续推进大功能，具体范围等新指令；优先在已确认美术路线之上接通实际战斗地图，再逐步补交互/内容，不重开视觉选型。扩展入口和未实现边界见架构文档。自动测试使用隔离存档；美术回归运行 `scripts/check.ps1 -Suite art -Rendered`，玩法回归用 `-Suite core`。既有通过记录不是下一轮的新验证。

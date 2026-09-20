@@ -5,7 +5,7 @@ const Shadow=preload("res://scripts/presentation/illustration_shadow.gd")
 func run() -> void:
 	if DisplayServer.get_name()=="headless": print("SKIP shadow style requires GPU"); quit(); return
 	ProjectSettings.set_setting("tactical/testing",true)
-	scene=load("res://tools/painted_courtyard_lab.tscn").instantiate()
+	scene=load("res://scenes/painted_courtyard.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	for i in 35: await physics_frame

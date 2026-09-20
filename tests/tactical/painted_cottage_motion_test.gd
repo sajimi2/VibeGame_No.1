@@ -1,4 +1,4 @@
-extends "res://tests/tactical/warehouse_motion_test.gd"
+extends "res://tests/helpers/render_motion_test.gd"
 ## 覆盖真实 GPU 下滚屏、窗口/全屏以及原始/粗环境两档；不以静态截图推断稳定性。
 func run() -> void:
 	if DisplayServer.get_name()=="headless":
@@ -7,7 +7,7 @@ func run() -> void:
 		return
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/painted_cottage")
-	scene=load("res://tools/painted_cottage_lab.tscn").instantiate()
+	scene=load("res://tests/fixtures/painted_cottage_scene.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	for i in 35: await physics_frame

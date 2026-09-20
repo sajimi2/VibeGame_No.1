@@ -1,6 +1,6 @@
 extends SceneTree
 ## 为内景绘画输出固定正交配准草图和顶点屏幕坐标；不修改原碰撞或 Blender 源。
-const FOLDER="res://assets/environment/experiments/painted_cottage/"
+const FOLDER="res://assets/environment/painted/cottage/"
 func _initialize() -> void: run.call_deferred()
 func run() -> void:
 	var viewport:=SubViewport.new()

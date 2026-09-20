@@ -90,9 +90,19 @@ func run() -> void:
 	var cursor: Vector2=lab.camera.unproject_position(guard.position+Vector3.UP)+Vector2(18,0)
 	var mouse := InputEventMouseMotion.new()
 	mouse.position=cursor
+	# 玩家现在每帧读 Viewport 的真实鼠标位置；仅注入事件会在下一帧被旧位置覆盖。
+	if DisplayServer.get_name()!="headless":
+		root.warp_mouse(cursor)
+	else:
+		# 无头环境没有系统指针；只冻结玩家输入采样，战斗仍逐帧更新辅助环。
+		player.set_physics_process(false)
+		player.cursor=cursor
+		player.update_aim(cursor)
 	Input.parse_input_event(mouse)
+	Input.flush_buffered_events()
 	await frames(4)
 	check(lab.combat.assist_marker.visible and lab.combat.assist_marker.global_position.distance_to(guard.global_position+Vector3.UP*0.04)<0.01,"assist ring follows enemy feet")
+	player.set_physics_process(true)
 	player.test_mode=true
 	player.position=quest.exit_point+Vector3.UP*0.03
 	await frames(5)

@@ -1,16 +1,14 @@
 extends Node3D
 ## 独立绘画层：完整插画经少量配准点拆成墙/屋顶纸片，原小屋仍持有物理与遮挡状态。
 ## 不修改 Blender 网格，也不重新实现战斗/透视算法；只订阅对应墙组和屋顶的材质参数。
-const ASSET="res://assets/environment/experiments/painted_cottage/"
+const ASSET="res://assets/environment/painted/cottage/"
 const SHADER=preload("res://scripts/presentation/painted_environment.gdshader")
-const WALL_PARAMETERS=["wall_reveal","wall_coverage","wall_center","wall_viewport","wall_dither_origin","wall_radius","wall_feather","wall_clear_core","wall_target","wall_to_camera"]
-const ROOF_PARAMETERS=["reveal","roof_opacity","reveal_center","viewport_size","dither_origin","reveal_radius","feather_width","reveal_target","view_to_camera"]
+const Style=preload("res://scripts/presentation/occlusion_style.gd")
 var cottage: Node3D
 var enabled:=true
 var ready_for_comparison:=false
 var cards: Array[MeshInstance3D]=[]
 var bindings: Array[Dictionary]=[]
-var exterior_materials: Array[ShaderMaterial]=[]
 var roof_layers: Dictionary={}
 var original_layers: Dictionary={}
 var registration: Dictionary
@@ -18,17 +16,12 @@ var ground_shadow: MeshInstance3D
 var original_casters: Dictionary={}
 
 ## 关卡的原墙遮挡注册结束后调用一次；绑定的是显示副本，绝不隐藏阴影代理的原材质。
-func setup(source: Node3D,unified_shadows: bool=false) -> void:
+func setup(source: Node3D) -> void:
 	cottage=source
 	registration=JSON.parse_string(FileAccess.get_file_as_string(ASSET+"registration.json"))
 	process_physics_priority=30
 	var front: MeshInstance3D=cottage.get_node("FrontWall/WallFrontLeft")
 	var side: MeshInstance3D=cottage.get_node("WallEast/Visual")
-	for path in ["FrontWall","WallEast"]:
-		for mesh in cottage.get_node(path).get_children():
-			if mesh is MeshInstance3D:
-				var material: ShaderMaterial=mesh.get_active_material(0)
-				if not exterior_materials.has(material): exterior_materials.append(material)
 	_front(front.get_active_material(0))
 	_side(side.get_active_material(0))
 	_roof(-1)
@@ -39,16 +32,15 @@ func setup(source: Node3D,unified_shadows: bool=false) -> void:
 		for visual in cottage.get_node(path).get_children():
 			if visual is MeshInstance3D: original_layers[visual]=visual.layers
 	for piece in cottage.roof.pieces: roof_layers[piece.get_instance_id()]=piece.layers
-	if unified_shadows:
-		# 仅在新绘画路线接管投影；不隐藏网格，不干扰屋顶/墙的视线采样与碰撞。
-		for visual in cottage.find_children("*","MeshInstance3D",true,false):
-			if visual.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
-				original_casters[visual]={"casting":visual.cast_shadow,"layers":visual.layers}
-		ground_shadow=preload("res://scripts/presentation/illustration_shadow.gd").new()
-		ground_shadow.name="PaintedHouseShadow"
-		add_child(ground_shadow)
-		ground_shadow.setup("cottage",1.0)
-		set_notify_transform(true)
+	# 仅在新绘画路线接管投影；不隐藏网格，不干扰屋顶/墙的视线采样与碰撞。
+	for visual in cottage.find_children("*","MeshInstance3D",true,false):
+		if visual.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			original_casters[visual]={"casting":visual.cast_shadow,"layers":visual.layers}
+	ground_shadow=preload("res://scripts/presentation/illustration_shadow.gd").new()
+	ground_shadow.name="PaintedHouseShadow"
+	add_child(ground_shadow)
+	ground_shadow.setup("cottage",1.0)
+	set_notify_transform(true)
 	ready_for_comparison=true
 	set_enabled(true)
 
@@ -143,7 +135,7 @@ func _card(label: String,vertices: PackedVector3Array,uv: PackedVector2Array,ind
 	card.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(card)
 	cards.append(card)
-	bindings.append({"material":material,"source":source,"parameters":ROOF_PARAMETERS if roof else WALL_PARAMETERS})
+	bindings.append({"material":material,"source":source,"parameters":Style.ROOF_PARAMETERS if roof else Style.WALL_PARAMETERS})
 
 func _physics_process(_delta: float) -> void:
 	if not ready_for_comparison: return
@@ -163,7 +155,6 @@ func set_enabled(value: bool) -> void:
 		if previous.casting==GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY:
 			visual.layers=0 if value else previous.layers
 	for card in cards: card.visible=value
-	for material in exterior_materials: material.set_shader_parameter("painted_hide_exterior",value)
 	for visual in original_layers: visual.layers=0 if value else original_layers[visual]
 	for piece in cottage.roof.pieces:
 		# 只退出颜色绘制，保留 visible 供原屋顶视线采样；原独立阴影代理继续投影。
