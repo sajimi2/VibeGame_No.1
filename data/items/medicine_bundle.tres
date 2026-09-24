@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/items/medicine_bundle.png" id="2"]
+[resource]
+script = ExtResource("1")
+id = &"medicine_bundle"
+display_name = "封装药材"
+category = 9
+footprint = Vector2i(3, 3)
+max_stack = 1
+sell_value = 20
+icon_texture = ExtResource("2")
+description = "埃文藏下的整包药材。占3×3格；米菈愿付20枚钱币回收。可以留在原处，下次再取。"

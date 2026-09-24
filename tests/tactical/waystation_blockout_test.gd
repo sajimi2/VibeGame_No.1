@@ -65,7 +65,7 @@ func roofs_and_wilderness() -> void:
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/waystation")
-	scene=load("res://scenes/waystation_blockout.tscn").instantiate()
+	scene=load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 	scene.combat_enabled=false
 	root.add_child(scene)
 	current_scene=scene

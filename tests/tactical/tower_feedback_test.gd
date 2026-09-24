@@ -8,7 +8,7 @@ func check(ok: bool,label: String) -> void:
 	if not ok: failures+=1
 ## 检查守卫登塔路径、遮挡轮廓和原始分辨率调色。
 func run() -> void:
-	var lab = load("res://scenes/tactical_height.tscn").instantiate()
+	var lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

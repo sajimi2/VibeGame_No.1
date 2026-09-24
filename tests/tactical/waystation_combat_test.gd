@@ -31,7 +31,7 @@ func arrange(enemy: Node3D, at: Vector3, target: Vector3) -> void:
 
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	scene=load("res://scenes/waystation_blockout.tscn").instantiate()
+	scene=load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 	root.add_child(scene)
 	current_scene=scene
 	scene.player.test_mode=true
@@ -165,7 +165,7 @@ func run() -> void:
 	scene.queue_free()
 	await process_frame
 	if DisplayServer.get_name()!="headless":
-		scene=load("res://scenes/waystation_blockout.tscn").instantiate()
+		scene=load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 		root.add_child(scene)
 		current_scene=scene
 		while not scene.battle_ready: await physics_frame

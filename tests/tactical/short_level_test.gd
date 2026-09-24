@@ -54,7 +54,7 @@ func walk_to(destination: Vector3) -> bool:
 ## 驱动关卡闭环，覆盖通行、交付结算、死亡重试与界面按键。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	lab=load("res://scenes/tactical_height.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	root.add_child(lab)
 	current_scene=lab
 	while not is_instance_valid(lab.run_flow): await frames(1)

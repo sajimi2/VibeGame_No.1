@@ -6,7 +6,7 @@ func frames(count: int) -> void:
  for i in count: await physics_frame
 ## 遍历蹲姿、坡道、方向与侧缘偏移，限制单帧高度跳变，检测碰撞修正问题。
 func run() -> void:
- var lab = load("res://scenes/tactical_height.tscn").instantiate()
+ var lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
  ProjectSettings.set_setting("tactical/testing",true)
  root.add_child(lab)
  var actor = lab.player

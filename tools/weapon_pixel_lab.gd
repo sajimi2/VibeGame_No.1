@@ -11,7 +11,7 @@ var previous_testing: bool
 func _ready() -> void:
 	previous_testing = ProjectSettings.get_setting("tactical/testing",false)
 	ProjectSettings.set_setting("tactical/testing",true)
-	battlefield = preload("res://scenes/battlefield.tscn").instantiate()
+	battlefield = preload("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	battlefield.encounter_enabled = false
 	battlefield.results_enabled = false
 	add_child(battlefield)

@@ -28,7 +28,7 @@ func capture(label: String) -> void:
 
 ## 检查坡道、高台、低梁下蹲、遮挡、十二朝向纹理及实际移动输入。
 func run() -> void:
-	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.encounter_enabled = false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

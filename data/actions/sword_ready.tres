@@ -3,11 +3,13 @@
 [resource]
 script = ExtResource("1")
 id = "sword_ready"
-windup_end = 0.32
-active_end = 0.56
-control_scale = 0.8
-lunge_speed = 1.6
-sweep_from = -0.7
-sweep_to = 0.7
-times = PackedFloat32Array(0, 1)
-blades = PackedVector3Array(25, 0, 0, 25, 0, 0)
+windup_end = 0.3
+active_end = 0.6
+control_scale = 0.7
+lunge_speed = 0.8
+sweep_from = -0.5
+sweep_to = 0.5
+max_targets = 1
+knockback_strength = 2.5
+times = PackedFloat32Array(0.0, 1.0)
+blades = PackedVector3Array(48, -15, 0, 48, -15, 0)

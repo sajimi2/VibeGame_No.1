@@ -1,182 +1,298 @@
 class_name ActorInventory
 extends InventoryPort
-## 库存实现：20 格背包及武器、头部、身体、饰品四类装备槽。
-## 写入时复制物品，快照返回数据副本；外部不应直接修改查询到的物品。
-## 添加与换装先校验后修改，拒绝时保持原状；同一实例 ID 不应重复出现。
-const BAG_CAPACITY := 20
+## 只在物品左上角保存实例，占用格由尺寸推导。跨容器先在副本校验，再一起提交。
+const BAG_CAPACITY := 48
 const SLOT_WEAPON := &"weapon"
 const SLOT_HEAD := &"head"
 const SLOT_BODY := &"body"
 const SLOT_ACCESSORY := &"accessory"
+var columns := 8
+var rows := 6
+var muted := false
+var _catalog: ItemCatalog
+var _bag: Array[ItemInstance] = []
+var _equipment: Dictionary = {}
+var recovery: Array = []
 
 static func legal_slots() -> Array[StringName]:
-	return [SLOT_WEAPON, SLOT_HEAD, SLOT_BODY, SLOT_ACCESSORY]
+	return [SLOT_WEAPON, SLOT_HEAD, SLOT_BODY, SLOT_ACCESSORY, &"hands", &"feet", &"cloak"]
 
-## 把物品类别映射到对应装备槽。
 static func slot_for_category(category: int) -> StringName:
 	match category:
 		ItemDefinition.Category.WEAPON: return SLOT_WEAPON
 		ItemDefinition.Category.HEAD: return SLOT_HEAD
 		ItemDefinition.Category.BODY: return SLOT_BODY
-		_ : return SLOT_ACCESSORY
+		ItemDefinition.Category.ACCESSORY: return SLOT_ACCESSORY
+		ItemDefinition.Category.HANDS: return &"hands"
+		ItemDefinition.Category.FEET: return &"feet"
+		ItemDefinition.Category.CLOAK: return &"cloak"
+	return &""
 
-var _catalog: ItemCatalog
-## 空格保留 null，使背包格子的下标稳定。
-var _bag: Array[ItemInstance] = []
-var _equipment: Dictionary = {}
-
-## 提前固定背包格数和装备槽键，保证快照与界面下标一致。
 func _init() -> void:
-	for _i in BAG_CAPACITY:
-		_bag.append(null)
-	for slot in legal_slots():
-		_equipment[slot] = null
+	_bag.resize(BAG_CAPACITY)
+	for slot in legal_slots(): _equipment[slot] = null
 
-func set_catalog(catalog: ItemCatalog) -> void:
-	_catalog = catalog
-
-## 未注入目录时使用默认物品目录，支持独立实例化库存。
+func set_catalog(catalog: ItemCatalog) -> void: _catalog = catalog
+func get_catalog() -> ItemCatalog: return _catalog
 func _ready() -> void:
-	if _catalog == null:
-		_catalog = ItemCatalog.build()
+	if _catalog == null: _catalog = ItemCatalog.build()
 
-func get_catalog() -> ItemCatalog:
-	return _catalog
-
-# 库存修改接口。
-
-## 校验物品并找到空格后保存副本，成功时发出库存变化信号。
-func try_add(item: ItemInstance) -> bool:
-	if not _is_acceptable(item):
-		return false
-	var index := _first_free_index()
-	if index < 0:
-		return false
-	## 保存物品副本，防止调用者通过原始引用改写库存。
-	_bag[index] = _copy_instance(item)
+func _notify(slot: StringName = &"") -> void:
+	if muted: return
+	if slot != &"": equipment_changed.emit(slot, "")
 	inventory_changed.emit()
-	return true
 
-## 按实例 ID 换装；把旧装备放回来源位置，保持物品总数不变。
-func try_equip(instance_id: String, slot: StringName) -> bool:
-	if instance_id.is_empty() or not _equipment.has(slot):
-		return false
-
-	var bag_index := _find_in_bag(instance_id)
-	var source_slot := _find_equipped_slot(instance_id)
-	if bag_index < 0 and source_slot == &"":
-		return false
-
-	var incoming: ItemInstance = _bag[bag_index] if bag_index >= 0 else _equipment[source_slot]
-	if incoming == null:
-		return false
-	var definition := _definition_for(incoming)
-	if definition == null:
-		return false
-	if slot_for_category(definition.category) != slot:
-		return false
-
-	var displaced: ItemInstance = _equipment[slot]
-	if source_slot == slot:
-		return true
-
-	## 所有拒绝条件已检查完，再一起交换两处引用，避免只改到一半。
-	if bag_index >= 0:
-		_bag[bag_index] = displaced
-		_equipment[slot] = incoming
-	else:
-		_equipment[source_slot] = displaced
-		_equipment[slot] = incoming
-	equipment_changed.emit(slot, instance_id)
-	inventory_changed.emit()
-	return true
-
-## 直接装备外部物品，供初始装备使用；原槽位非空时需有空背包格接收旧装备。
-func try_equip_direct(item: ItemInstance, slot: StringName) -> bool:
-	if not _is_acceptable(item) or not _equipment.has(slot):
-		return false
+func item_size(item: ItemInstance, rotated: bool) -> Vector2i:
 	var definition := _definition_for(item)
-	if definition == null or slot_for_category(definition.category) != slot:
-		return false
+	var size := definition.footprint if definition else Vector2i.ONE
+	return Vector2i(size.y,size.x) if rotated else size
+
+func occupied(exclude: String = "") -> Array[Rect2i]:
+	var areas: Array[Rect2i] = []
+	for i in _bag.size():
+		var item := _bag[i]
+		if item != null and item.instance_id != exclude:
+			areas.append(Rect2i(Vector2i(i % columns, i / columns), item_size(item,item.rotated)))
+	return areas
+
+func can_place(item: ItemInstance, cell: Vector2i, rotated: bool, exclude: String = "") -> bool:
+	var definition := _definition_for(item)
+	return definition != null and (not rotated or definition.rotatable) and InventoryGrid.fits(columns,rows,cell,item_size(item,rotated),occupied(exclude))
+
+## 自动拾取先合并同品质堆叠，再找矩形空位；全部装下才提交。
+func try_add(item: ItemInstance) -> bool:
+	if not _is_acceptable(item): return false
+	var remaining := item.quantity
+	var definition := _definition_for(item)
+	var merges := {}
+	if definition.max_stack > 1:
+		for i in _bag.size():
+			var existing := _bag[i]
+			if existing != null and existing.definition_id == item.definition_id and existing.rarity == item.rarity and existing.modifiers == item.modifiers:
+				var amount := mini(remaining,definition.max_stack-existing.quantity)
+				if amount > 0:
+					merges[i] = amount
+					remaining -= amount
+	var cell := Vector2i(-1,-1)
+	var rotated := item.rotated and definition.rotatable
+	if remaining > 0:
+		if remaining > definition.max_stack: return false
+		cell = InventoryGrid.first_fit(columns,rows,item_size(item,rotated),occupied())
+		if cell.x < 0 and definition.rotatable:
+			rotated = not rotated
+			cell = InventoryGrid.first_fit(columns,rows,item_size(item,rotated),occupied())
+		if cell.x < 0: return false
+	for i in merges: _bag[i].quantity += merges[i]
+	if remaining > 0:
+		var copy := _copy_instance(item)
+		copy.quantity = remaining
+		copy.rotated = rotated
+		_bag[cell.y * columns + cell.x] = copy
+	_notify()
+	return true
+
+func try_add_at(item: ItemInstance, cell: Vector2i, rotated: bool) -> bool:
+	if not _is_acceptable(item) or item.quantity > _definition_for(item).max_stack: return false
+	var target := item_at(cell)
+	if can_stack(item,target):
+		target.quantity += item.quantity
+		_notify()
+		return true
+	if not can_place(item,cell,rotated): return false
+	var copy := _copy_instance(item)
+	copy.rotated = rotated
+	_bag[cell.y * columns + cell.x] = copy
+	_notify()
+	return true
+
+func try_move(id: String, cell: Vector2i, rotated: bool) -> bool:
+	var i := _find_in_bag(id)
+	if i < 0: return false
+	var target := item_at(cell)
+	if target != _bag[i] and can_stack(_bag[i],target):
+		target.quantity += _bag[i].quantity
+		_bag[i] = null
+		_notify()
+		return true
+	if not can_place(_bag[i],cell,rotated,id): return false
+	var item := _bag[i]
+	_bag[i] = null
+	item.rotated = rotated
+	_bag[cell.y * columns + cell.x] = item
+	_notify()
+	return true
+
+func item_at(cell: Vector2i) -> ItemInstance:
+	for i in _bag.size():
+		if _bag[i] != null and Rect2i(Vector2i(i%columns,i/columns),item_size(_bag[i],_bag[i].rotated)).has_point(cell): return _bag[i]
+	return null
+
+func can_stack(item: ItemInstance, target: ItemInstance) -> bool:
+	if item==null or target==null or item==target: return false
+	var definition := _definition_for(item)
+	return definition!=null and definition.max_stack>1 and item.definition_id==target.definition_id and item.rarity==target.rarity and item.modifiers==target.modifiers and item.quantity+target.quantity<=definition.max_stack
+
+## 换装先模拟移走新装备，再安放旧装备；大武器装不下时完整回滚。
+func try_equip(id: String, slot: StringName) -> bool:
+	if not _equipment.has(slot): return false
+	if _find_equipped_slot(id) == slot: return true
+	var i := _find_in_bag(id)
+	if i < 0 or slot_for_category(_definition_for(_bag[i]).category) != slot: return false
+	var incoming := _bag[i]
 	var displaced: ItemInstance = _equipment[slot]
-	if displaced == null:
-		_equipment[slot] = _copy_instance(item)
-	else:
-		var index := _first_free_index()
-		if index < 0:
-			return false
-		_bag[index] = displaced
-		_equipment[slot] = _copy_instance(item)
-	equipment_changed.emit(slot, item.instance_id)
-	inventory_changed.emit()
+	var prior := get_snapshot()
+	var was_muted := muted
+	muted = true
+	_bag[i] = null
+	_equipment[slot] = incoming
+	if displaced != null and not try_add(displaced):
+		restore_from_snapshot(prior,false)
+		muted = was_muted
+		return false
+	muted = was_muted
+	_notify(slot)
 	return true
 
-## 先清空再从快照恢复；跳过空条目及缺少 ID 的条目，文件版本由调用方检查。
-func restore_from_snapshot(snapshot: Dictionary) -> void:
-	for index in _bag.size():
-		_bag[index] = null
-	for slot in _equipment.keys():
-		_equipment[slot] = null
-	var bag: Array = snapshot.get("bag", [])
-	for index in mini(bag.size(), _bag.size()):
-		_bag[index] = _instance_from_dictionary(bag[index])
-	var equipment: Dictionary = snapshot.get("equipment", {})
-	for slot in _equipment.keys():
-		if equipment.has(slot):
-			_equipment[slot] = _instance_from_dictionary(equipment[slot])
-	equipment_changed.emit(&"", "")
-	inventory_changed.emit()
-
-## 由字典重建独立物品实例；空条目或缺少 ID 时返回 null。
-func _instance_from_dictionary(entry: Variant) -> ItemInstance:
-	if not (entry is Dictionary) or (entry as Dictionary).is_empty():
-		return null
-	var dictionary := entry as Dictionary
-	var instance := ItemInstance.new()
-	instance.instance_id = String(dictionary.get("instance_id", ""))
-	instance.definition_id = StringName(String(dictionary.get("definition_id", "")))
-	instance.rarity = int(dictionary.get("rarity", 0))
-	instance.modifiers = ItemCatalog.duplicate_modifiers(dictionary.get("modifiers", {}) as Dictionary)
-	if instance.instance_id.is_empty() or instance.definition_id.is_empty():
-		return null
-	return instance
-
-## 把装备移到指定背包格；该格非空时交换两件物品，物品总数不变。
-func try_unequip_to_slot(instance_id: String, bag_index: int) -> bool:
-	if instance_id.is_empty() or bag_index < 0 or bag_index >= _bag.size():
+func try_equip_direct(item: ItemInstance, slot: StringName) -> bool:
+	if not _is_acceptable(item) or not _equipment.has(slot) or slot_for_category(_definition_for(item).category) != slot: return false
+	var old: ItemInstance = _equipment[slot]
+	var was_muted := muted
+	muted = true
+	_equipment[slot] = _copy_instance(item)
+	if old != null and not try_add(old):
+		_equipment[slot] = old
+		muted = was_muted
 		return false
-	var source_slot := _find_equipped_slot(instance_id)
-	if source_slot == &"":
-		return false
-	var incoming: ItemInstance = _equipment[source_slot]
-	var displaced: ItemInstance = _bag[bag_index]
-	_bag[bag_index] = incoming
-	_equipment[source_slot] = displaced
-	equipment_changed.emit(source_slot, instance_id)
-	inventory_changed.emit()
+	muted = was_muted
+	_notify(slot)
 	return true
 
-## 导出独立的普通字典和数组，用于存档或界面读取。
+func try_unequip_to_slot(id: String, index: int) -> bool:
+	if index < 0 or index >= _bag.size(): return false
+	return try_unequip(id,Vector2i(index % columns,index / columns),false)
+
+func try_unequip(id: String, cell := Vector2i(-1,-1), rotated := false) -> bool:
+	var slot := _find_equipped_slot(id)
+	if slot == &"": return false
+	var item: ItemInstance = _equipment[slot]
+	var prior := get_snapshot()
+	var was_muted := muted
+	muted = true
+	_equipment[slot] = null
+	var ok := try_add(item) if cell.x < 0 else try_add_at(item,cell,rotated)
+	if not ok: restore_from_snapshot(prior,false)
+	muted = was_muted
+	if ok: _notify(slot)
+	return ok
+
+func try_split(id: String) -> bool:
+	var item := get_in_bag(id)
+	if item == null or item.quantity < 2: return false
+	var copy := _copy_instance(item)
+	copy.quantity = item.quantity / 2
+	copy.instance_id = id + "_split_" + str(Time.get_ticks_usec())
+	var cell := InventoryGrid.first_fit(columns,rows,item_size(copy,copy.rotated),occupied())
+	if cell.x < 0: return false
+	item.quantity -= copy.quantity
+	_bag[cell.y*columns+cell.x] = copy
+	_notify()
+	return true
+
+func consume(id: String, amount := 1) -> bool:
+	var i := _find_in_bag(id)
+	if i < 0 or amount < 1 or _bag[i].quantity < amount: return false
+	_bag[i].quantity -= amount
+	if _bag[i].quantity == 0: _bag[i] = null
+	_notify()
+	return true
+
+func take_from_bag(id: String) -> ItemInstance:
+	var item := get_in_bag(id)
+	if item == null: return null
+	var copy := _copy_instance(item)
+	consume(id,item.quantity)
+	return copy
+
+## v1 无空间坐标，按顺序重排；未知定义和溢出原样进入可领取的恢复仓储。
+func restore_from_snapshot(snapshot: Dictionary, notify := true) -> void:
+	var was_muted := muted
+	muted = true
+	_bag.fill(null)
+	for slot in legal_slots(): _equipment[slot] = null
+	recovery = snapshot.get("recovery",[]).duplicate(true)
+	var equipment: Dictionary = snapshot.get("equipment",{})
+	for slot in equipment:
+		var entry: Dictionary = equipment[slot]
+		var item := _instance_from_dictionary(entry)
+		if item == null: continue
+		var definition := _definition_for(item)
+		if _equipment.has(slot) and definition != null and slot_for_category(definition.category) == StringName(slot) and not has_instance(item.instance_id):
+			_equipment[slot] = item
+		else: recovery.append(entry.duplicate(true))
+	for entry in snapshot.get("bag",[]):
+		var item := _instance_from_dictionary(entry)
+		if item == null: continue
+		if has_instance(item.instance_id): continue
+		var placed := false
+		if entry.has("x") and entry.has("y"):
+			placed = try_add_at(item,Vector2i(int(entry.x),int(entry.y)),item.rotated)
+		if not placed: placed = try_add(item)
+		if not placed: recovery.append(entry.duplicate(true))
+	muted = was_muted
+	if notify: _notify(&"weapon")
+
 func get_snapshot() -> Dictionary:
-	var bag_copy: Array[Dictionary] = []
-	for entry in _bag:
-		bag_copy.append(instance_to_dictionary(entry))
-	var equipment_copy := {}
-	for slot in _equipment.keys():
-		equipment_copy[slot] = instance_to_dictionary(_equipment[slot])
-	return {"bag": bag_copy, "equipment": equipment_copy}
-
-# 供玩法和界面使用的查询。
+	var bag: Array[Dictionary] = []
+	for i in _bag.size():
+		var entry := instance_to_dictionary(_bag[i])
+		if not entry.is_empty():
+			entry.x = i % columns
+			entry.y = i / columns
+		bag.append(entry)
+	var equipment := {}
+	for slot in legal_slots(): equipment[slot] = instance_to_dictionary(_equipment[slot])
+	return {"bag":bag,"equipment":equipment,"columns":columns,"rows":rows,"recovery":recovery.duplicate(true)}
 
 func bag_used() -> int:
-	var used := 0
-	for entry in _bag:
-		if entry != null:
-			used += 1
-	return used
+	var count := 0
+	for item in _bag:
+		if item != null: count += 1
+	return count
 
-func is_bag_full() -> bool:
-	return _first_free_index() < 0
+func used_cells() -> int:
+	var count := 0
+	for area in occupied(): count += area.size.x*area.size.y
+	return count
+
+func is_bag_full() -> bool: return used_cells() >= columns*rows
+func _definition_for(item: ItemInstance) -> ItemDefinition:
+	return _catalog.definition(item.definition_id) if _catalog != null and item != null else null
+func _is_acceptable(item: ItemInstance) -> bool:
+	return item != null and not item.instance_id.is_empty() and item.quantity > 0 and _definition_for(item) != null and not has_instance(item.instance_id)
+func _find_in_bag(id: String) -> int:
+	for i in _bag.size():
+		if _bag[i] != null and _bag[i].instance_id == id: return i
+	return -1
+func _find_equipped_slot(id: String) -> StringName:
+	for slot in legal_slots():
+		if _equipment[slot] != null and _equipment[slot].instance_id == id: return slot
+	return &""
+func _copy_instance(item: ItemInstance) -> ItemInstance: return _instance_from_dictionary(instance_to_dictionary(item))
+
+static func _instance_from_dictionary(entry: Variant) -> ItemInstance:
+	if not entry is Dictionary or entry.get("instance_id","").is_empty() or entry.get("definition_id","").is_empty(): return null
+	var item := ItemInstance.new()
+	item.instance_id = str(entry.instance_id)
+	item.definition_id = StringName(entry.definition_id)
+	item.rarity = int(entry.get("rarity",0))
+	item.modifiers = ItemCatalog.duplicate_modifiers(entry.get("modifiers",{}))
+	item.quantity = maxi(1,int(entry.get("quantity",1)))
+	item.rotated = bool(entry.get("rotated",false))
+	return item
+
+static func instance_to_dictionary(item: ItemInstance) -> Dictionary:
+	if item == null: return {}
+	return {"instance_id":item.instance_id,"definition_id":str(item.definition_id),"rarity":item.rarity,"modifiers":ItemCatalog.duplicate_modifiers(item.modifiers),"quantity":item.quantity,"rotated":item.rotated}
 
 ## 返回库存内部实例供读取；更换装备应使用换装接口。
 func get_equipped(slot: StringName) -> ItemInstance:
@@ -198,16 +314,6 @@ func get_in_bag(instance_id: String) -> ItemInstance:
 	var index := _find_in_bag(instance_id)
 	return _bag[index] if index >= 0 else null
 
-## 移除背包物品并返回其副本，随后通知库存变化。
-func take_from_bag(instance_id: String) -> ItemInstance:
-	var index := _find_in_bag(instance_id)
-	if index < 0:
-		return null
-	var result := _copy_instance(_bag[index])
-	_bag[index] = null
-	inventory_changed.emit()
-	return result
-
 func has_instance(instance_id: String) -> bool:
 	return _find_in_bag(instance_id) >= 0 or _find_equipped_slot(instance_id) != &""
 
@@ -225,59 +331,3 @@ static func modifier_total(item: ItemInstance, key: StringName) -> float:
 	if item == null:
 		return 0.0
 	return float(item.modifiers.get(key, 0.0))
-
-# 内部校验、查找与复制。
-
-## 添加前检查非空 ID、已知定义和全库存唯一性。
-func _is_acceptable(item: ItemInstance) -> bool:
-	if item == null or item.instance_id.is_empty():
-		return false
-	if _definition_for(item) == null:
-		return false
-	## 实例 ID 必须在整个背包和装备区内唯一。
-	return not has_instance(item.instance_id)
-
-func _definition_for(item: ItemInstance) -> ItemDefinition:
-	if _catalog == null:
-		return null
-	return _catalog.definition(item.definition_id)
-
-func _first_free_index() -> int:
-	for index in _bag.size():
-		if _bag[index] == null:
-			return index
-	return -1
-
-func _find_in_bag(instance_id: String) -> int:
-	for index in _bag.size():
-		var entry: ItemInstance = _bag[index]
-		if entry != null and entry.instance_id == instance_id:
-			return index
-	return -1
-
-func _find_equipped_slot(instance_id: String) -> StringName:
-	for slot in _equipment.keys():
-		var entry: ItemInstance = _equipment[slot]
-		if entry != null and entry.instance_id == instance_id:
-			return slot
-	return &""
-
-## 复制实例及其属性字典，避免新旧对象共享可变数据。
-func _copy_instance(item: ItemInstance) -> ItemInstance:
-	var copy := ItemInstance.new()
-	copy.instance_id = item.instance_id
-	copy.definition_id = item.definition_id
-	copy.rarity = item.rarity
-	copy.modifiers = ItemCatalog.duplicate_modifiers(item.modifiers)
-	return copy
-
-## 把物品转换为可保存的字典；空槽位用空字典表示。
-static func instance_to_dictionary(item: ItemInstance) -> Dictionary:
-	if item == null:
-		return {}
-	return {
-		"instance_id": item.instance_id,
-		"definition_id": String(item.definition_id),
-		"rarity": item.rarity,
-		"modifiers": ItemCatalog.duplicate_modifiers(item.modifiers),
-	}

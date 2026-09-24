@@ -5,17 +5,18 @@ const PITCH := -35.0
 const CENTER := Vector3(0,0.88,0)
 const CREATURES := ["goblin","golem","slime"]
 const ACTIONS := {
-	"player":["light_ready","light_rise","light_stab","sword_ready","sword_slash","sword_thrust","heavy_drag","heavy_swing","bow_ready","bow_draw","hurt","death_fall"],
+	"steward":["town_idle"],"healer":["town_idle"],
+	"player":["light_ready","light_rise","light_stab","sword_ready","sword_slash","sword_thrust","sword_overhead","weapon_guard","roll","heavy_drag","heavy_swing","bow_ready","bow_draw","hurt","death_fall"],
 	"guard":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
 	"skeleton":["shield_ready","shield_slash","shield_thrust","hurt","death_fall"],
 	"archer":["bow_ready","bow_draw","hurt","death_fall"],
 	"goblin":["idle","walk","attack","hurt","death_fall"],
 	"golem":["idle","walk","attack","hurt","death_fall"],
 	"slime":["idle","walk","attack","hurt","death_fall"]}
-const LABELS := {"light_ready":"反持戒备","light_rise":"匕首上挥","light_stab":"匕首下刺","sword_ready":"双手持剑","sword_slash":"宝剑横斩","sword_thrust":"宝剑突刺","heavy_drag":"重刀拖地","heavy_swing":"重刀前劈","shield_ready":"剑盾戒备","shield_slash":"剑盾横斩","shield_thrust":"剑盾突刺","bow_ready":"持弓戒备","bow_draw":"拉弓/释放","hurt":"受击卸力","death_fall":"死亡倒地"}
+const LABELS := {"sword_overhead":"过顶下劈","weapon_guard":"举武器格挡","roll":"翻滚","light_ready":"反持戒备","light_rise":"匕首上挥","light_stab":"匕首下刺","sword_ready":"双手持剑","sword_slash":"宝剑横斩","sword_thrust":"宝剑突刺","heavy_drag":"重刀拖地","heavy_swing":"重刀前劈","shield_ready":"剑盾戒备","shield_slash":"剑盾横斩","shield_thrust":"剑盾突刺","bow_ready":"持弓戒备","bow_draw":"拉弓/释放","hurt":"受击卸力","death_fall":"死亡倒地"}
 
 static func folder(asset: String) -> String: return "res://assets/characters/"+asset+"_baked"
-static func ready(asset: String) -> String: return "idle" if asset in CREATURES else "shield_ready" if asset in ["guard","skeleton"] else "bow_ready" if asset=="archer" else "light_ready"
+static func ready(asset: String) -> String: return "town_idle" if asset in ["steward","healer"] else "idle" if asset in CREATURES else "shield_ready" if asset in ["guard","skeleton"] else "bow_ready" if asset=="archer" else "light_ready"
 static func parts(asset: String) -> Array: return ["full"] if asset in CREATURES else ["upper","lower"]
 ## 分辨率属于单个资产；保持采样范围不变，提高像素密度不会放大世界中的人物。
 static func cell(_asset: String) -> int: return CELL
@@ -23,8 +24,9 @@ static func pixel(asset: String) -> float: return 2.56/float(cell(asset))
 static func source_model(asset: String) -> String: return "res://assets/characters/"+asset+"_source.glb"
 static func source_scene(asset: String) -> String: return "res://assets/characters/"+asset+"_rig.tscn"
 static func phases(action: String) -> int:
+	if action=="town_idle": return 12
 	if action in ["idle","walk"]: return 12
-	return 1 if action.ends_with("ready") or action=="heavy_drag" else 9 if action in ["bow_draw","hurt"] else 33
+	return 1 if action.ends_with("ready") or action in ["heavy_drag","weapon_guard"] else 9 if action in ["bow_draw","hurt"] else 33
 static func key(part: String, action: String, direction: int, move := 0, phase := 0) -> String:
 	return "%s/%s/%d/%d/%d" % [part,action,direction,move,phase]
 
@@ -44,7 +46,7 @@ static func select(state: Dictionary, asset := "player") -> Dictionary:
 	if action=="bow_draw": phase=clampi(int(state.get("draw",0)),0,8)
 	var upper:=key("upper",action,direction,0,phase)
 	var lower:=key("lower",action,direction,0,phase)
-	if action=="death_fall": return {"upper":upper,"lower":lower}
+	if action in ["death_fall","roll"]: return {"upper":upper,"lower":lower}
 	var step: int=state.get("step",-1)
 	var crouch: int=state.get("crouch",0)
 	var jump: int=state.get("jump",-1)
@@ -64,6 +66,9 @@ static func select(state: Dictionary, asset := "player") -> Dictionary:
 ## 作业清单也是预览与验证的枚举入口，避免烘焙范围与选帧条件各写一套。
 static func jobs(asset: String) -> Array[Dictionary]:
 	var result: Array[Dictionary]=[]
+	if asset in ["steward","healer"]:
+		for part in ["upper","lower"]: result.append({"part":part,"id":"town_idle","clip":"town_idle","frames":12,"moves":1})
+		return result
 	if asset in CREATURES:
 		for clip in ACTIONS[asset]: result.append({"part":"full","id":clip,"clip":clip,"frames":phases(clip),"moves":1})
 		return result

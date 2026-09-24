@@ -190,6 +190,7 @@ func run() -> void:
 		var aimed: Vector3=lab.combat.assisted_point(center+Vector3.RIGHT,lab.camera.unproject_position(center)+Vector2(25,0))
 		check(lab.combat.assist_target==enemy and aimed.y<enemy.position.y+enemy.body_height,enemy.art_id+" 辅助瞄准按体型选取高度")
 		lab.combat.cooldown=0
+		lab.combat.apply_weapon(load("res://data/weapons/bow.tres"))
 		lab.combat.shoot(center)
 		await frames(40)
 		check(enemy.hp<enemy.max_hp,enemy.art_id+" 玩家实际箭矢弹道命中身体")

@@ -67,7 +67,10 @@ func _physics_process(delta: float) -> void:
 			elif hit.collider.has_method("receive_strike"):
 				region = hit.collider.receive_strike(hit.position, hit.normal, velocity)
 				if notify.is_valid(): notify.call("弓箭命中：" + region)
-			elif notify.is_valid(): notify.call("箭被实体挡住")
+			else:
+				var sounds:=get_tree().get_first_node_in_group("encounter_sound")
+				if sounds!=null: sounds.sound("arrow_impact",global_position)
+				if notify.is_valid(): notify.call("箭被实体挡住")
 			if hit.collider is Node3D:
 				attachment = Attachment.new()
 				attachment.bind(self,hit.collider,region,velocity)

@@ -21,7 +21,7 @@ func run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://work/humanoid")
 	for asset in Spec.ACTIONS: await validate_asset(asset)
 	await authoring()
-	var scene: Node3D=load("res://scenes/battlefield.tscn").instantiate()
+	var scene: Node3D=load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	scene.results_enabled=false
 	root.add_child(scene)
 	for i in 120:

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"amber_pendant"
+display_name = "琥珀吊坠"
+category = 3
+footprint = Vector2i(1, 2)
+max_stack = 1
+icon_index = 15
+heal_amount = 0
+sell_value = 0
+description = "透光时能看到封存的叶片，生命上限+5。"
+base_modifiers = {"max_health": 5.0}

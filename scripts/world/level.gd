@@ -73,6 +73,7 @@ func _ready() -> void:
 	player.spawn = spawn_point()
 	add_child(player)
 	player.reset_position()
+	effects.observer=player
 	camera = Camera3D.new()
 	camera.name = "FixedAngleCamera"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -172,7 +173,7 @@ func start_encounter() -> void:
 		for teammate in get_tree().get_nodes_in_group("tactical_enemies"):
 			if not enemy.navigation_excluded.has(teammate.get_rid()): enemy.navigation_excluded.append(teammate.get_rid())
 	if mission_enabled:
-		objective=preload("res://scripts/world/objective.gd").new()
+		objective=create_objective()
 		objective.player=player
 		objective.exit_point=spawn_point()*Vector3(1,0,1)
 		objective.pickup_point=objective_point()
@@ -182,12 +183,16 @@ func start_encounter() -> void:
 		progression.persist=progress_enabled
 		add_child(progression)
 		objective.progress=progression
+		if objective.has_method("bind_progress"): objective.bind_progress(progression)
 		if results_enabled:
 			run_flow=preload("res://scripts/ui/run_screen.gd").new()
 			run_flow.setup(player, objective, progression, combat_hint)
 			add_child(run_flow)
 
 ## 地图子类覆盖这些配置接口；坐标均使用当前关卡的三维坐标。
+func create_objective() -> Node3D:
+	return preload("res://scripts/world/objective.gd").new()
+
 func spawn_point() -> Vector3:
 	return Vector3.ZERO
 

@@ -143,7 +143,7 @@ func verify_shield_alert(guard: CharacterBody3D) -> void:
 ## 加载最新战场，覆盖三名守卫的不同出生位置及两种攻击动作。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing", true)
-	lab = load("res://scenes/battlefield.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	lab.results_enabled = false
 	root.add_child(lab)
 	current_scene = lab

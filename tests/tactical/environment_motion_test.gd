@@ -43,7 +43,7 @@ func run() -> void:
 		return
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/environment_motion/regression")
-	scene = load("res://scenes/waystation_blockout.tscn").instantiate()
+	scene = load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 	scene.combat_enabled = false
 	root.add_child(scene)
 	current_scene = scene

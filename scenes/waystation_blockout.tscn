@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://k2ukl5ppd7pd"]
+[gd_scene format=3 uid="uid://cehibugbc84ao"]
 
-[ext_resource type="Script" uid="uid://bu77ed2cnyn23" path="res://scripts/world/waystation_blockout.gd" id="1"]
+[ext_resource type="Script" path="res://tests/fixtures/legacy/waystation_blockout.gd" id="1"]
 [ext_resource type="Shader" uid="uid://beouwskyjo17" path="res://scripts/presentation/interior_roof.gdshader" id="11_pqd3k"]
 [ext_resource type="Texture2D" uid="uid://bi86w1r35lcdy" path="res://assets/environment/textures/roof.png" id="12_me43e"]
 [ext_resource type="Script" uid="uid://b7je6y27x3gqf" path="res://scripts/presentation/architecture_piece.gd" id="architecture_kit"]
@@ -550,10 +550,10 @@ script = ExtResource("1")
 [node name="Terrain" type="Node3D" parent="." unique_id=295220816]
 
 [node name="Ground" type="StaticBody3D" parent="Terrain" unique_id=1752558387]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.5, 0)
 collision_layer = 13
 collision_mask = 0
+metadata/occlusion_role = "support"
 
 [node name="Collision" type="CollisionShape3D" parent="Terrain/Ground" unique_id=1522541287]
 shape = SubResource("shape_1")
@@ -611,10 +611,10 @@ material_override = ExtResource("env_platform")
 mesh = SubResource("mesh_5")
 
 [node name="WarehouseTerrace" type="StaticBody3D" parent="Terrain" unique_id=1557018117]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0.9, -10)
 collision_layer = 13
 collision_mask = 0
+metadata/occlusion_role = "support"
 
 [node name="Collision" type="CollisionShape3D" parent="Terrain/WarehouseTerrace" unique_id=1202654772]
 shape = SubResource("shape_101")
@@ -624,10 +624,10 @@ material_override = ExtResource("env_platform")
 mesh = SubResource("mesh_101")
 
 [node name="SouthAccess" type="StaticBody3D" parent="Terrain" unique_id=2130105031]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 4)
 collision_layer = 13
 collision_mask = 0
+metadata/occlusion_role = "support"
 
 [node name="Collision" type="CollisionShape3D" parent="Terrain/SouthAccess" unique_id=1700334928]
 shape = SubResource("ramp_shape_102")
@@ -645,10 +645,10 @@ kind = "bridge"
 extent = Vector3(4, 0.1, 8)
 
 [node name="NorthAccess" type="StaticBody3D" parent="Terrain" unique_id=779526520]
-metadata/occlusion_role = "support"
 transform = Transform3D(-1, 0, 2.5351817e-06, 0, 1, 0, -2.5351817e-06, 0, -1, 5, 0, -24)
 collision_layer = 13
 collision_mask = 0
+metadata/occlusion_role = "support"
 
 [node name="Collision" type="CollisionShape3D" parent="Terrain/NorthAccess" unique_id=1592889137]
 shape = SubResource("ramp_shape_103")
@@ -802,11 +802,11 @@ script = ExtResource("architecture_kit")
 extent = Vector3(0.5, 3.6, 6)
 
 [node name="WestStoreFloor" type="MeshInstance3D" parent="Architecture" unique_id=734847357]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0.03, 5)
 material_override = ExtResource("env_floor")
 cast_shadow = 0
 mesh = SubResource("mesh_95")
+metadata/occlusion_role = "support"
 
 [node name="StoreLowFront" type="StaticBody3D" parent="Architecture" unique_id=737916089]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.55, 8)
@@ -924,11 +924,11 @@ kind = "wall"
 extent = Vector3(4, 1.1, 0.6)
 
 [node name="WarehouseFloor" type="MeshInstance3D" parent="Architecture" unique_id=1976973860]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.825, -9)
 material_override = ExtResource("env_floor")
 cast_shadow = 0
 mesh = SubResource("mesh_110")
+metadata/occlusion_role = "support"
 
 [node name="RampRailNorth" type="StaticBody3D" parent="Architecture" unique_id=179708730]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2.3, -13.5)
@@ -1133,11 +1133,11 @@ kind = "wall"
 extent = Vector3(0.6, 1.2, 2.4)
 
 [node name="CommandFloor" type="MeshInstance3D" parent="Architecture" unique_id=138377018]
-metadata/occlusion_role = "support"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.028, -30)
 material_override = ExtResource("env_floor")
 cast_shadow = 0
 mesh = SubResource("mesh_124")
+metadata/occlusion_role = "support"
 
 [node name="ShortcutPostSouth" type="StaticBody3D" parent="Architecture" unique_id=87013815]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1.6, -26.8)
@@ -1720,7 +1720,6 @@ process_physics_priority = 20
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, 5)
 script = ExtResource("roof_script")
 interior = AABB(-2.32, -0.25, -2.82, 4.64, 4.15, 5.64)
-indoor_opacity = null
 
 [node name="Slope0" type="MeshInstance3D" parent="Roofs/WestStoreRoof" unique_id=1628732002]
 transform = Transform3D(0.94923544, -0.31456655, 0, 0.31456655, 0.94923544, 0, 0, 0, 1, -1.525, 4.155369, 0)
@@ -1739,7 +1738,6 @@ process_physics_priority = 20
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.8, -9)
 script = ExtResource("roof_script")
 interior = AABB(-5.82, -0.25, -4.82, 11.64, 4.15, 9.64)
-indoor_opacity = null
 
 [node name="Slope0" type="MeshInstance3D" parent="Roofs/WarehouseRoof" unique_id=772032980]
 transform = Transform3D(0.94923544, -0.31456655, 0, 0.31456655, 0.94923544, 0, 0, 0, 1, -3.275, 4.7353, 0)
@@ -1758,7 +1756,6 @@ process_physics_priority = 20
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -30)
 script = ExtResource("roof_script")
 interior = AABB(-5.82, -0.25, -2.82, 11.64, 4.55, 5.64)
-indoor_opacity = null
 
 [node name="Slope0" type="MeshInstance3D" parent="Roofs/CommandRoof" unique_id=1544675038]
 transform = Transform3D(0.94923544, -0.31456655, 0, 0.31456655, 0.94923544, 0, 0, 0, 1, -3.275, 5.1353, 0)
@@ -1778,7 +1775,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 0, 19)
 script = ExtResource("roof_script")
 interior = AABB(-1.47, -0.25, -2.07, 2.94, 4.95, 4.14)
 can_enter = false
-indoor_opacity = null
 
 [node name="Slope0" type="MeshInstance3D" parent="Roofs/GateWestRoof" unique_id=686278473]
 transform = Transform3D(0.94923544, -0.31456655, 0, 0.31456655, 0.94923544, 0, 0, 0, 1, -1.1, 4.8145285, 0)
@@ -1798,7 +1794,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, 0, 19)
 script = ExtResource("roof_script")
 interior = AABB(-1.47, -0.25, -2.07, 2.94, 4.95, 4.14)
 can_enter = false
-indoor_opacity = null
 
 [node name="Slope0" type="MeshInstance3D" parent="Roofs/GateEastRoof" unique_id=453051642]
 transform = Transform3D(0.94923544, -0.31456655, 0, 0.31456655, 0.94923544, 0, 0, 0, 1, -1.1, 4.8145285, 0)

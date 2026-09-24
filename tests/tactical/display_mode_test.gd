@@ -22,7 +22,7 @@ func key(code: Key,alt := false,echo := false) -> void:
 	event.pressed = false
 	Input.parse_input_event(event)
 func create_scene() -> void:
-	scene = load("res://scenes/waystation_blockout.tscn").instantiate()
+	scene = load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 	scene.combat_enabled = false
 	root.add_child(scene)
 	current_scene = scene

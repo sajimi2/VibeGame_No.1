@@ -28,11 +28,11 @@ Invoke-GodotCheck 'import' @('--headless','--editor','--import')
 [string[]]$displayArgs = if ($Rendered) { @() } else { @('--headless') }
 Invoke-GodotCheck 'startup' ($displayArgs + @('--script','res://tests/startup_smoke.gd'))
 if ($Suite -eq 'smoke') { return }
-$tests = @('baked_player','skeleton_pipeline','pixel_weapon','weapon_choreography','atlas_pipeline','arrow_attachment','locomotion_art','rock_collision','guard_reaction','attack_motion','melee_aoe','creature_encounter','environment_art','occlusion_presentation','environment_resolution','environment_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
+$tests = @('woodpath_region','woodpath_expedition','baked_player','skeleton_pipeline','pixel_weapon','weapon_choreography','courtyard_combat','courtyard_camera','terrace_ground','rolling_meadow','atlas_pipeline','arrow_attachment','locomotion_art','rock_collision','guard_reaction','attack_motion','melee_aoe','creature_encounter','environment_art','occlusion_presentation','environment_resolution','environment_motion','battlefield','guard_encounter','mission','short_level','camp_loop','space_combat','combat_polish')
 $tests += @('wall_occlusion','near_wall_reveal','occlusion_support','selective_wall')
-$artTests = @('painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style','environment_art','occlusion_presentation','environment_resolution')
+$artTests = @('art_unity','courtyard_camera','terrace_ground','painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style','meadow_readability','environment_art','occlusion_presentation','environment_resolution')
 if ($Suite -eq 'art') { $tests = $artTests }
-if ($Suite -eq 'all') { $tests += @('height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback','waystation_blockout','waystation_combat','painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style') }
+if ($Suite -eq 'all') { $tests += @('art_unity','height_lab','height_edge','art_route','outpost_sample','letter_interaction','feedback_edges','tower_feedback','waystation_blockout','waystation_combat','painted_cottage','painted_cottage_motion','painted_courtyard','painted_courtyard_motion','courtyard_presentation','courtyard_shadow_style','meadow_readability') }
 foreach ($test in $tests) {
     # 绕石压力测试含数万物理帧，用固定 60Hz 加速离线模拟；画面由 locomotion_art 单独验证。
     [string[]]$testDisplay = if ($test -eq 'rock_collision') { @('--headless','--fixed-fps','60') } else { $displayArgs }

@@ -11,7 +11,7 @@ func check(ok: bool,label: String) -> void:
 	print(("PASS " if ok else "FAIL ")+label)
 ## 检查辅助瞄准、高差视距、盾挡与收招弱点，以及弓手两连射。
 func run() -> void:
-	lab=load("res://scenes/tactical_height.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.results_enabled=false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)
@@ -49,12 +49,13 @@ func run() -> void:
 	guard.state="recover"
 	player.test_mode=false
 	var click := InputEventMouseButton.new()
-	click.button_index=MOUSE_BUTTON_RIGHT
+	lab.combat.apply_weapon(load("res://data/weapons/bow.tres"))
+	click.button_index=MOUSE_BUTTON_LEFT
 	click.position=cursor
 	click.pressed=true
 	Input.parse_input_event(click)
 	await frames(24)
-	check(guard.hp==40,"production right click assist lands a physical arrow")
+	check(guard.hp==40,"equipped bow left click assist lands a physical arrow")
 	player.test_mode=true
 	guard.hp=60
 	guard.position=Vector3(-2,0.02,3)

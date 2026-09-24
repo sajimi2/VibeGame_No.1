@@ -80,6 +80,9 @@ func _process(delta: float) -> void:
 	if not showing:
 		if player.hp<=0: present(false)
 		elif objective.claimed and not finished: present(true)
+	if objective.has_method("bind_progress"):
+		route_hint.text=""
+		return
 	var quest=objective
 	var position: Vector3=player.position
 	if not hint_provider.call().is_empty():
@@ -108,6 +111,8 @@ func present(success: bool) -> void:
 		details.text+="首通奖励：大砍刀、60 经验；升至 2 级，生命上限 105。\n奖励已放入背包，可以立即换装。" if objective.first_reward else "本次委托完成。首通奖励此前已领取，本轮不重复发放。\n现有装备与成长已保留。"
 	else:
 		details.text="本次用时 %s。重新出发会重置敌人和密函。\n已获得的装备与成长保留，不扣物品。\n可试试借墙断开弓手瞄准，或从守卫侧后方进攻。" % time_text
+	if not success and objective.has_method("bind_progress"):
+		details.text="你倒在了林间。重试会重置敌人，已搜物品、箱子与故事进度保留。\n本篇章不扣装备；可以先从营地仓库取绷带，并借围墙绕开敌人。"
 	bag_button.visible=success
 	continue_button.visible=success
 	panel.show()

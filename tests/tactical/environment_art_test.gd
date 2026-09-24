@@ -23,7 +23,7 @@ func screen() -> Image:
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	DirAccess.make_dir_recursive_absolute("res://work/environment")
-	scene=load("res://scenes/waystation_blockout.tscn").instantiate()
+	scene=load("res://tests/fixtures/legacy/waystation_blockout.tscn").instantiate()
 	scene.combat_enabled=false
 	root.add_child(scene)
 	current_scene=scene
@@ -64,7 +64,7 @@ func run() -> void:
 	scene.queue_free()
 	await process_frame
 	# 另两个有效场景同样装配新草地和木架坡桥，不把只改驿站当作全部环境完成。
-	for path in ["res://scenes/battlefield.tscn","res://scenes/tactical_height.tscn","res://tools/environment_preview.tscn"]:
+	for path in ["res://tests/fixtures/legacy/battlefield.tscn","res://tests/fixtures/legacy/tactical_height.tscn","res://tools/environment_preview.tscn"]:
 		var other: Node3D=load(path).instantiate()
 		other.encounter_enabled=false
 		root.add_child(other)

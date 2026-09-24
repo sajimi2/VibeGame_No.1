@@ -5,6 +5,8 @@ extends Resource
 @export var instance_id: String = ""
 @export var definition_id: StringName = &""
 @export var rarity: int = 0
+@export var quantity := 1
+@export var rotated := false
 ## 兼容快照的属性键：attack、armor、max_health、max_stamina、move_speed。
 ## 值为浮点加成，具体取值由物品目录决定。
 @export var modifiers: Dictionary = {}

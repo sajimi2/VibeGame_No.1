@@ -29,7 +29,7 @@ func capture(label: String) -> void:
 	root.get_texture().get_image().save_png("res://work/guard_"+label+".png")
 ## 布置敌我位置，验证守卫与弓手的感知、攻击、受击及音效。
 func run() -> void:
-	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

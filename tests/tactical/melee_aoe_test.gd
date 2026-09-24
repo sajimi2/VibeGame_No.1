@@ -40,6 +40,7 @@ func arrange(kind: String, positions: Array, index: int = 0) -> void:
 	lab.player.test_motion=Vector2.ZERO
 	lab.combat.apply_weapon(load("res://data/weapons/"+kind+".tres"))
 	lab.combat.attack_index=index
+	lab.combat.charge_hits=3 if kind=="oath_blade" and index==3 else 0
 	await frames(12)
 
 ## 走生产攻击入口与物理帧，记录首次真实落点；空挥预采样不依赖人工猜测刀尖位置。
@@ -95,16 +96,16 @@ func run() -> void:
 	await arrange("sword",[Vector3(.85,0,-1.1),Vector3(-.85,0,-1.1)])
 	lab.combat.attack(lab.combat.muzzle()+Vector3.FORWARD*4)
 	await frames(14)
-	check(enemies[0].hp==180 and enemies[1].hp==200,"挥到一侧时只伤该侧，不提前结算整个扇面")
+	check(enemies[0].hp==200 and enemies[1].hp==180,"挥到一侧时只伤该侧，不提前结算整个扇面")
 	await frames(25)
-	check(enemies[1].hp==180,"刀刃扫到另一侧后才结算另一目标")
+	check(enemies[0].hp==180,"刀刃扫到另一侧后才结算另一目标")
 	await arrange("sword",[Vector3(-.85,0,-1.1),Vector3(0,0,-1.0),Vector3(.85,0,-1.1),Vector3(.35,0,-1.65),Vector3(0,0,1.0)])
 	await attack("sword_sweep")
 	check(damaged()==3,"横斩整段动作最多命中三人")
 	check(enemies[4].hp==200,"横扫不打身后敌人")
 	await arrange("sword",[Vector3(0,0,-.8),Vector3(0,0,-1.45),Vector3(.85,0,-1.0)],1)
 	await attack()
-	check(damaged()==1 and enemies[2].hp==200,"同一宝剑的突刺仍限一人、保留窄范围")
+	check(damaged()==1 and enemies[2].hp==200,"同一宝剑的过顶下劈仍限一人、保留窄范围")
 	await arrange("knife",[Vector3(-.25,0,-.9),Vector3(.35,0,-1.0)])
 	await attack()
 	check(damaged()==1,"匕首维持单次单目标")
@@ -159,6 +160,19 @@ func run() -> void:
 	await frames(8)
 	await attack()
 	check(not lab.combat.impact_emitted and enemies[0].hp==200,"空中下砸不生成地面范围伤害")
+	# 同一断剑第三次仍是短刃，第四次才扩大实际命中范围；复用真实物理墙回归。
+	await arrange("oath_blade",[Vector3(0,0,-2.0)],2)
+	await attack()
+	check(enemies[0].hp==200,"第三次断刃够不到远处敌人")
+	await arrange("oath_blade",[Vector3(0,0,-2.0)],3)
+	await attack()
+	check(enemies[0].hp==172,"第四次光刃实际命中远处敌人一次")
+	await arrange("oath_blade",[Vector3(0,0,-2.0)],3)
+	wall=lab.box("OathWall",Vector3(0,1,-1.1),Vector3(4,2,.15),"wall")
+	await frames(3)
+	await attack()
+	check(enemies[0].hp==200,"光刃不穿透实体墙")
+	wall.queue_free()
 	print("MELEE_AOE: %d checks, %d failures"%[checks,failures])
 	lab.queue_free()
 	await process_frame

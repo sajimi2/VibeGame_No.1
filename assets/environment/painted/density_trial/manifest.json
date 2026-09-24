@@ -1,0 +1,89 @@
+{
+	"assets": {
+		"chest_0": {
+			"size": [
+				53,
+				75
+			],
+			"source_region_size": [
+				526,
+				748
+			],
+			"view_size": [
+				1.41333333333333,
+				2.0
+			]
+		},
+		"chest_1": {
+			"size": [
+				53,
+				75
+			],
+			"source_region_size": [
+				526,
+				748
+			],
+			"view_size": [
+				1.41333333333333,
+				2.0
+			]
+		},
+		"chest_2": {
+			"size": [
+				53,
+				75
+			],
+			"source_region_size": [
+				525,
+				748
+			],
+			"view_size": [
+				1.41333333333333,
+				2.0
+			]
+		},
+		"chest_3": {
+			"size": [
+				53,
+				75
+			],
+			"source_region_size": [
+				526,
+				748
+			],
+			"view_size": [
+				1.41333333333333,
+				2.0
+			]
+		},
+		"wall": {
+			"size": [
+				147,
+				77
+			],
+			"source_region_size": [
+				1383,
+				729
+			],
+			"view_size": [
+				3.92,
+				2.05333333333333
+			]
+		},
+		"wall_z": {
+			"size": [
+				98,
+				116
+			],
+			"source_region_size": [
+				1077,
+				1272
+			],
+			"view_size": [
+				2.61333333333333,
+				3.09333333333333
+			]
+		}
+	},
+	"pixels_per_view_meter": 37.5
+}

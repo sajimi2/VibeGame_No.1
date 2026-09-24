@@ -2,6 +2,7 @@ shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never;
 uniform sampler2D illustration : source_color, filter_nearest, repeat_disable;
 uniform vec3 prop_origin;
+uniform vec3 ground_normal=vec3(0.0,1.0,0.0);
 uniform vec3 to_camera;
 varying vec3 world_point;
 uniform vec3 sway_world;
@@ -15,7 +16,7 @@ void fragment() {
 	vec4 color=texture(illustration,UV);
 	if (color.a<.5) discard;
 	// 只借地表深度避免穿过房屋，不写遮挡深度；人物随后绘制，花叶不染灰手脚。
-	vec3 ground=world_point+to_camera*((prop_origin.y-world_point.y)/to_camera.y);
+	vec3 ground=world_point+to_camera*(dot(prop_origin-world_point,ground_normal)/max(.05,dot(to_camera,ground_normal)));
 	vec4 clip=PROJECTION_MATRIX*VIEW_MATRIX*vec4(ground,1.0);
 #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
 	DEPTH=clip.z/clip.w*.5+.5;

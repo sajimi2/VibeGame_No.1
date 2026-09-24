@@ -8,6 +8,7 @@ static var profiles: Dictionary={}
 var sway_world:=Vector2.ZERO
 var anchor: Node3D
 var footprint:=Rect2()
+var ground_height: Callable
 
 ## 入树后装配体量；公共样式持有所有视觉参数，静态物件不订阅逐帧回调。
 func setup(id: String,factor: float,fallback_size: Vector3=Vector3.ONE) -> void:
@@ -73,6 +74,28 @@ func sync_transform() -> void:
 	var origin:=anchor.global_position
 	global_position=origin+Vector3(footprint.get_center().x,.008,footprint.get_center().y)
 	material_override.set_shader_parameter("foot_origin",Vector2(origin.x,origin.z))
+	if ground_height.is_valid(): _fit_mesh()
+
+## 可选坡地接收面，仅装配/移动时重建。颜色、光向和柔边仍由公共样式控制。
+func fit_ground(sample: Callable) -> void:
+	ground_height=sample
+	_fit_mesh()
+
+func _fit_mesh() -> void:
+	var builder:=SurfaceTool.new()
+	builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var count_x:=maxi(1,ceili(footprint.size.x/.25))
+	var count_z:=maxi(1,ceili(footprint.size.y/.25))
+	for z in count_z+1:
+		for x in count_x+1:
+			var local:=Vector2(float(x)/count_x-.5,float(z)/count_z-.5)*footprint.size
+			var world:=Vector2(global_position.x,global_position.z)+local
+			builder.add_vertex(Vector3(local.x,float(ground_height.call(world))+.018-global_position.y,local.y))
+	for z in count_z:
+		for x in count_x:
+			var a:=z*(count_x+1)+x
+			for index in [a,a+1,a+count_x+1,a+1,a+count_x+2,a+count_x+1]: builder.add_index(index)
+	mesh=builder.commit()
 
 ## 晃动只偏移上部投影，接触区留在脚点；限幅与网格留白共用样式，避免切边。
 func set_sway_world(value: Vector2) -> void:

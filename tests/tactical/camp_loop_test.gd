@@ -12,7 +12,7 @@ func check(ok: bool,label: String) -> void:
 ## 覆盖接取、取信、交付、换装、隔离存档恢复及背包暂停闭环。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	lab=load("res://scenes/tactical_height.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.results_enabled=false
 	root.add_child(lab)
 	current_scene=lab
@@ -46,7 +46,7 @@ func run() -> void:
 	check(quest.completed and quest.interact(),"return and hand-in grants reward")
 	check(progress.level==2 and player.max_hp==105,"reward raises level and maximum health")
 	check(progress.inventory.has_instance("camp_reward_cleaver"),"reward weapon goes into bag")
-	check(not progress.grant_reward() and progress.inventory.bag_used()==2,"reward cannot be duplicated beside starter sword")
+	check(not progress.grant_reward() and progress.inventory.bag_used()==4,"reward cannot be duplicated beside starter sword, oath blade and bow")
 	var fast: float=lab.combat.attack_interval
 	check(progress.equip("camp_reward_cleaver"),"equip reward at camp")
 	check(lab.combat.melee_range>2.3 and lab.combat.attack_interval>fast and lab.combat.melee_damage==26,"heavy weapon changes reach speed and damage")
@@ -115,9 +115,13 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	check(progress.open and paused,"I opens bag and pauses gameplay")
-	# 背包新增宝剑后格序会变化；按物品标签点击真实按钮，不依赖第一格是猎刀。
-	for button in progress.view.content.get_child(progress.view.content.get_child_count()-1).get_children():
-		if button.text=="猎刀": button.pressed.emit(); break
+	# 空间背包不再每格创建按钮；选择实际猎刀条目后通过同一界面操作发起换装。
+	for entry in progress.view.bag_grid.entries:
+		if entry.get("definition_id","")=="hunting_knife":
+			progress.view.selected=entry
+			progress.view.selected_source="bag"
+			progress.view._action("equip")
+			break
 	check(progress.inventory.get_equipped(&"weapon").definition_id==&"hunting_knife", "bag button swaps equipped weapon")
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw

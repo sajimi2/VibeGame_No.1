@@ -37,7 +37,7 @@ func walk_to(point: Vector3) -> bool:
 ## 检查最新战场布局、敌人通行、任务交付与重试结果。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	lab=load("res://scenes/battlefield.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	root.add_child(lab)
 	current_scene=lab
 	while not is_instance_valid(lab.progression): await frames(1)

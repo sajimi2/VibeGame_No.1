@@ -1,0 +1,164 @@
+{
+	"oak_calm": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.0163132137031,
+		"depth_box": [
+			3.8,
+			4.8,
+			3.0
+		],
+		"depth_mode": 1,
+		"height": 2.1,
+		"radius": 0.42,
+		"region": [
+			0,
+			23,
+			1226,
+			1246
+		],
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/source/oak_calm.png",
+		"width": 4.8
+	},
+	"oak_young": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.5878453038674,
+		"depth_box": [
+			2.6,
+			4.2,
+			2.4
+		],
+		"depth_mode": 1,
+		"height": 2.0,
+		"radius": 0.3,
+		"region": [
+			65,
+			27,
+			905,
+			1437
+		],
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/source/oak_young.png",
+		"width": 3.2
+	},
+	"wall_z": {
+		"anchor": [
+			0.5,
+			0.72
+		],
+		"aspect": 0.968516984258492,
+		"depth_box": [
+			0.65,
+			1.45,
+			4.0
+		],
+		"region": [
+			63,
+			21,
+			1207,
+			1169
+		],
+		"shape": "box",
+		"size": [
+			0.6,
+			1.05,
+			4.0
+		],
+		"texture": "res://assets/environment/painted/woodpath/source/wall_z.png",
+		"width": 2.6
+	},
+	"waystation_ruin": {
+		"anchor": [
+			0.5,
+			0.75
+		],
+		"aspect": 0.829570284049527,
+		"collision_parts": [
+			{
+				"at": [
+					0,
+					1.1,
+					-1.6
+				],
+				"size": [
+					5.4,
+					2.2,
+					0.4
+				]
+			},
+			{
+				"at": [
+					-2.5,
+					1,
+					0
+				],
+				"size": [
+					0.4,
+					2,
+					3.2
+				]
+			},
+			{
+				"at": [
+					2.5,
+					1,
+					0
+				],
+				"size": [
+					0.4,
+					2,
+					3.2
+				]
+			},
+			{
+				"at": [
+					-1.7,
+					0.8,
+					1.6
+				],
+				"size": [
+					1.6,
+					1.6,
+					0.4
+				]
+			},
+			{
+				"at": [
+					1.7,
+					0.8,
+					1.6
+				],
+				"size": [
+					1.6,
+					1.6,
+					0.4
+				]
+			}
+		],
+		"depth_box": [
+			5.0,
+			3.0,
+			3.0
+		],
+		"region": [
+			0,
+			6,
+			1373,
+			1139
+		],
+		"shape": "box",
+		"size": [
+			5.0,
+			2.4,
+			3.0
+		],
+		"texture": "res://assets/environment/painted/woodpath/source/waystation_ruin.png",
+		"width": 8.0
+	}
+}

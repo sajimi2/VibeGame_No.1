@@ -25,7 +25,7 @@ func _ready() -> void:
 	art.block(relic,Vector3(0.58,0.055,0.43),Vector3.UP*0.41,"b29857")
 	art.block(relic,Vector3(0.16,0.18,0.04),Vector3(0,0.3,0.23),"d8c68a")
 	marker=Label3D.new()
-	marker.text="哨站密函"
+	marker.text="待取密函"
 	marker.position=pickup_point+Vector3.UP*0.9
 	marker.billboard=BaseMaterial3D.BILLBOARD_ENABLED
 	marker.pixel_size=0.012
@@ -65,7 +65,7 @@ func interact() -> bool:
 	if player.global_position.distance_to(exit_point)<2.1:
 		if not accepted:
 			accepted=true
-			inform("已接取委托：到高地取得密函")
+			inform("已接取委托：到密函标记处取得密函")
 			return true
 		if completed and not claimed:
 			first_reward=not progress.rewarded
@@ -74,9 +74,9 @@ func interact() -> bool:
 				inform("交付完成，按 I 查看背包与奖励")
 				player.hp=player.max_hp
 				return true
-		return inform("奖励已领取，按 I 打开背包" if claimed else "先到高地取得密函，再回营地交付" if not completed else "背包已满，请腾出位置后交付")
+		return inform("奖励已领取，按 I 打开背包" if claimed else "先到密函标记处取得密函，再回营地交付" if not completed else "背包已满，请腾出位置后交付")
 	if carried or completed: return inform("密函已在身上，返回营地按 E 交付")
-	if player.global_position.distance_to(pickup_point)>1.4: return inform("请靠近高地上的密函小箱子，再按 E")
+	if player.global_position.distance_to(pickup_point)>1.4: return inform("请靠近标记处的密函小箱子，再按 E")
 	var ray := PhysicsRayQueryParameters3D.create(player.global_position+Vector3.UP*0.6,pickup_point+Vector3.UP*0.5,1|4)
 	if not get_world_3d().direct_space_state.intersect_ray(ray).is_empty(): return inform("密函被障碍物挡住了，请绕到箱子旁")
 	accepted=true
@@ -94,11 +94,11 @@ func _unhandled_input(event: InputEvent) -> void:
 ## 更新营地安全区、回满生命和携信返营状态，并刷新任务提示。
 func _physics_process(_delta: float) -> void:
 	message_time=maxf(0,message_time-_delta)
-	marker.text="哨站密函 · E 取得" if player.global_position.distance_to(pickup_point)<1.8 else "哨站密函"
+	marker.text="待取密函 · E 取得" if player.global_position.distance_to(pickup_point)<1.8 else "待取密函"
 	player.safe_zone=player.global_position.distance_to(exit_point)<2.1
 	if player.safe_zone and player.hp>0: player.hp=player.max_hp
 	if carried and player.hp>0 and player.global_position.distance_to(exit_point)<1.5: completed=true
-	hud.text="已领奖 · I 打开背包换装；R 再挑战（保留装备）" if claimed else "密函已带回 · E 交付领奖" if completed else "已取得密函 → 返回营地" if carried else "目标：前往高地取得密函（E） · 无需清空敌人" if accepted else "营地委托：按 E 接取密函任务 · I 背包"
+	hud.text="已领奖 · I 打开背包换装；R 再挑战（保留装备）" if claimed else "密函已带回 · E 交付领奖" if completed else "已取得密函 → 返回营地" if carried else "目标：前往标记处取得密函（E） · 无需清空敌人" if accepted else "营地委托：按 E 接取密函任务 · I 背包"
 
 	if message_time>0: hud.text+="\n"+message
 

@@ -26,7 +26,7 @@ static func _collect(node: Node3D, local: Transform3D, result: Array) -> void:
 				var swap := b
 				b = c
 				c = swap
-			result.append({"points": [local*a,local*b,local*c], "color":color})
+			result.append({"points": [local*a,local*b,local*c], "color":color,"unlit":bool(node.get_meta("pixel_unlit",false))})
 	for child in node.get_children():
 		if child is Node3D: _collect(child,local*child.transform,result)
 

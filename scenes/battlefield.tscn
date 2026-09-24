@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://bvm7kkmwwmg2o"]
+[gd_scene format=3 uid="uid://b1dpsp76iaasi"]
 
-[ext_resource type="Script" uid="uid://b6tm2lq28sw0k" path="res://scripts/world/battlefield.gd" id="1"]
+[ext_resource type="Script" path="res://tests/fixtures/legacy/battlefield.gd" id="1"]
 [ext_resource type="Script" uid="uid://civoe526qdnrm" path="res://scripts/world/battle_prop.gd" id="2"]
 
 [sub_resource type="BoxShape3D" id="ground_collision"]

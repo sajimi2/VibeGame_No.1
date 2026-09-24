@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/weapons/oath_blade.tres" id="2"]
+[resource]
+script = ExtResource("1")
+id = &"oath_blade"
+display_name = "誓约断剑"
+category = 0
+weapon_profile = ExtResource("2")
+
+footprint = Vector2i(1, 2)
+icon_index = 3

@@ -24,7 +24,13 @@ func setup(id: String,definition: Dictionary,baked: Dictionary,scale_factor: flo
 	var size:=Vector2(float(spec.width),float(spec.width)*float(baked.aspect))*scale_factor
 	var basis:=Basis.from_euler(Vector3(deg_to_rad(-35),deg_to_rad(25),0))
 	var anchor:=Vector2(spec.anchor[0],spec.anchor[1])
-	var texture: Texture2D=load(FOLDER+"textures/"+id+".png")
+	var texture: Texture2D=load(spec.get("texture",FOLDER+"textures/"+id+".png"))
+	if spec.has("region"):
+		var region: Array=spec.region
+		var atlas:=AtlasTexture.new()
+		atlas.atlas=texture
+		atlas.region=Rect2(region[0],region[1],region[2],region[3])
+		texture=atlas
 	art=MeshInstance3D.new()
 	art.name="Illustration"
 	var quad:=QuadMesh.new()
@@ -40,12 +46,14 @@ func setup(id: String,definition: Dictionary,baked: Dictionary,scale_factor: flo
 		art_material.shader=preload("res://scripts/presentation/ground_decoration.gdshader")
 		art_material.render_priority=-110
 	art_material.set_shader_parameter("illustration",texture)
+	if spec.has("pixels_per_meter") and spec.shape!="none":
+		art_material.set_shader_parameter("logical_size",(size*preload("res://scripts/presentation/pixel_standard.gd").ENVIRONMENT_PIXELS_PER_METER).round())
 	art_material.set_shader_parameter("prop_origin",global_position)
 	art_material.set_shader_parameter("foot_uv",anchor.y)
 	art_material.set_shader_parameter("to_camera",basis.z)
 	art_material.set_shader_parameter("depth_size",vector(spec.depth_box)*scale_factor)
 	# 树冠外扩只影响轮廓，不能把树前人物判到巨大盒子的内部；花草只占地表深度。
-	if spec.shape!="none": art_material.set_shader_parameter("depth_mode",1 if id=="oak" else 0)
+	if spec.shape!="none": art_material.set_shader_parameter("depth_mode",int(spec.get("depth_mode",1 if id=="oak" else 0)))
 	art.material_override=art_material
 	add_child(art)
 	if spec.shape!="none":
@@ -54,7 +62,7 @@ func setup(id: String,definition: Dictionary,baked: Dictionary,scale_factor: flo
 		shadow=preload("res://scripts/presentation/illustration_shadow.gd").new()
 		shadow.name="PaintedShadow"
 		add_child(shadow)
-		shadow.setup(id,scale_factor,vector(spec.depth_box))
+		shadow.setup(spec.get("shadow_profile",id),scale_factor,vector(spec.depth_box))
 	set_notify_transform(true)
 
 ## 轻微视觉晃动的单一入口：画稿与上部影形同步，脚底接触影和碰撞代理保持原位。
@@ -106,6 +114,16 @@ func _make_body(factor: float) -> void:
 		height=cylinder.height
 	shape.position.y=height*.5
 	body.add_child(shape)
+	# 开放式遗迹用少量墙段碰撞留出门洞，完整画稿不等于整块实心建筑。
+	if spec.has("collision_parts"):
+		shape.disabled=true
+		for part in spec.collision_parts:
+			var piece:=CollisionShape3D.new()
+			var box:=BoxShape3D.new()
+			box.size=vector(part.size)*factor
+			piece.shape=box
+			piece.position=vector(part.at)*factor
+			body.add_child(piece)
 	# 参考网格只参与原墙遮挡采样；layers=0 不绘制，但保持 visible 供采样器读取。
 	proxy=MeshInstance3D.new()
 	proxy.name="OcclusionProxy"

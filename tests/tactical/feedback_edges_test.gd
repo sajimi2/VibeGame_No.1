@@ -18,7 +18,7 @@ func capture(label: String) -> void:
 	root.get_texture().get_image().save_png("res://work/feedback_"+label+".png")
 ## 验证坡道侧面通行、敌人视野以及光照反馈的边界情况。
 func run() -> void:
-	lab=load("res://scenes/tactical_height.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

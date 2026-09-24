@@ -13,3 +13,6 @@ base_modifiers = {
 }
 bonus_pool = Array[StringName]([&"attack"])
 weapon_profile = ExtResource("2_weapon")
+
+footprint = Vector2i(1, 2)
+icon_index = 0

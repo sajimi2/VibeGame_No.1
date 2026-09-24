@@ -242,7 +242,7 @@ func production() -> void:
 	Adapter.cache.clear()
 	var previous_testing: bool = ProjectSettings.get_setting("tactical/testing",false)
 	ProjectSettings.set_setting("tactical/testing",true)
-	var field := preload("res://scenes/battlefield.tscn").instantiate()
+	var field := preload("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	field.results_enabled = false
 	root.add_child(field)
 	while not is_instance_valid(field.guard): await physics_frame

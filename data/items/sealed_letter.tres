@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"sealed_letter"
+display_name = "封蜡密信"
+category = 8
+footprint = Vector2i(1, 2)
+max_stack = 1
+icon_index = 8
+heal_amount = 0
+sell_value = 0
+description = "封蜡下露出第二道压痕。阅读可记录线索，交付会移走原件。"
+base_modifiers = {}

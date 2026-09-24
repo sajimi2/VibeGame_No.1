@@ -16,7 +16,15 @@
 
 | 专项 | 当前责任 |
 | --- | --- |
-| `startup_smoke` | F5 装配、五敌人、正交相机、装备与安全出生点 |
+| `pixel_density_trial` | 局部前后对照：真实投影2/3点、墙/人物/宝箱密度、四帧开合、移动、切回与碰撞保留；独立运行，不替代正式F5验收；截图work/pixel_density_trial |
+| `art_unity` | 无整屏二次降采样、树/墙28px/m、清晰中文与背包层级、交互名称字号不随镜头缩小；截图work/art_unity_v4，纳入art/all；无头明确跳过，不代替风格验收 |
+| `woodpath_region` | 实际GPU路线步行、独立NPC播放、调查线索、宝箱正反动画、残屋门洞与药材箱、18类音频资源；路线验证禁用敌人AI；截图 work/woodpath_v2，纳入core |
+| `woodpath_expedition` | 隔离库存占格/旋转/堆叠/满包回滚、v1迁移与恢复仓储、v2备份、跨箱事务、7装备部位、消费/证据/双结果、真实鼠标拖放与按键、防重复奖励、实际步行至屋内/井边/旧箱/藏物、BGM循环；渲染截图 `work/expedition/`，纳入core |
+| `startup_smoke` | F5 小院装配、三敌人、正交相机、装备与安全出生点 |
+| `courtyard_camera` | 小院角色居中、真实滚轮阻尼缩放、上下限/反向、移动跟随、背包暂停与 UI 固定尺寸、缩放后室内透视与静止真实鼠标瞄准；GPU 截图 `work/camera_zoom/`。core/art；无头明确跳过真实指针 |
+| `terrace_ground` | 保留粗格对照（story_mode=false）：单/双/L 形合并、半格与坑、坡道实际碰撞、实走进出/翻滚/追击/高台命中/阻弹；GPU 截图 `work/terraces/`。core/art；命令追加 `-- seed=42` 检查随机平台真实登顶与退出。图像拼接仍需目视验收 |
+| `rolling_meadow` | 原小院步行进出东侧缓坡、种子复现、真实碰撞高度/坡度、跑跳滚、连通寻路与实际敌人追击、坡上挥剑/土丘阻弹、贴坡阴影；GPU 截图 `work/meadow_*.png`，F3 网格；已纳入 core |
+| `meadow_readability` | 实际 GPU 三机位材质前后/灰模对照、院内像素不变、网格关闭与碰撞隔离；截图 `work/meadow_readability/`。纳入 art/all，无头明确跳过；画面差分不代替人眼验收 |
 | `painted_courtyard` / `painted_courtyard_motion` | 小院真实穿门、绕井/绕车、墙碰撞、纯装饰隔离与 V/F3/F4；GPU 矮墙/石头前后深度，窗口/全屏粗细两档滚屏；截图与指标 `work/painted_courtyard` |
 | `courtyard_presentation` | 实际 GPU 树前零灰显、树后透视与灰显保留、花草不遮人；影子开关画面差分及井/车/墙独立影子；原灰模退出颜色显示且保留几何、内景地板承托保护，默认原始环境精度 |
 | `painted_cottage` / `painted_cottage_motion` | 分层插画实际穿门/绕屋/碰撞阻弹、墙/顶渲染前后深度、V 保持物理、双屋隔离与承托保护；GPU 窗口/全屏及粗/细两档新旧滚屏，截图 `work/painted_cottage` |
@@ -46,3 +54,7 @@
 Blender 独立验证：运行 `tools/blender/validate_characters.py`，读取七份 `.blend`，检查实际骨架、权重、动作及手部/矛/石拳/胶体顶点运动；结果写 `work/checks/blender_characters.json`。工具不写回源文件。
 
 - `courtyard_shadow_style_test.gd`：真实 GPU 检查共享阴影浓度/柔边、人物与环境世界光向、房屋旧代理退出和 V 恢复、轻微风摆归零/不动碰撞、平移锚点同步，以及未配置新物件的默认影形。只证明指定渲染/状态行为，美术风格仍由试玩确认。
+
+`courtyard_combat`：小院三敌/任务装配，独立弓左键与右键格挡、实际命中蓄能、翻滚碰撞/免伤、五格图标与暂停边界；GPU 模式保存横劈、过顶下劈、翻滚八帧及背包截图。`locomotion_art` 后退跳的系统指针部分需要 Rendered，无头显式跳过；其余移动检查照常运行。
+
+旧荒堡/驿站/高度场入口已移至 `tests/fixtures/legacy/`，只为已有物理专项提供固定夹具。活跃场景只有绘画小院与当前小院林路篇章，不能通过旧BAT启动。

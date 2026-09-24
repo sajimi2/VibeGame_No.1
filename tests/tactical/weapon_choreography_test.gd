@@ -123,6 +123,7 @@ func accuracy() -> void:
 		await place()
 		lab.player.test_crouch = crouched
 		await frames(15)
+		lab.combat.apply_weapon(load("res://data/weapons/bow.tres"))
 		lab.combat.shoot(lab.player.position+Vector3.FORWARD*10+Vector3.UP)
 		await frames(12)
 		check(is_equal_approx(lab.combat.last_spread,0.18 if crouched else 0.75),"实际%s使用对应散布" % ("蹲射" if crouched else "站射"))
@@ -132,6 +133,7 @@ func weapon_revision() -> void:
 	# 遍历可用物品，而非只验刚修过的一把刀；共边必须恰好出现两次且有向体积为正。
 	var catalog := ItemCatalog.build()
 	for id in catalog.ids():
+		if catalog.definition(id).weapon_profile.ranged: continue
 		var model := preload("res://scripts/presentation/weapon_art.gd").melee_model(catalog.definition(id).weapon_profile.model_id)
 		var vertices: PackedVector3Array = model.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var edges := {}
@@ -163,7 +165,7 @@ func weapon_revision() -> void:
 		restored.setup(lab.player,lab.combat)
 		restored.save_path = save_path
 		lab.add_child(restored)
-		check(restored.inventory.has_instance("camp_sword") and restored.inventory.bag_used()==1 and restored.inventory.get_equipped(&"weapon").instance_id=="camp_knife","旧存档第 %d 次恢复：原装备保留、宝剑仅一把" % (attempt+1))
+		check(restored.inventory.has_instance("camp_sword") and restored.inventory.bag_used()==3 and restored.inventory.has_instance("camp_oath_blade") and restored.inventory.has_instance("camp_bow") and restored.inventory.get_equipped(&"weapon").instance_id=="camp_knife","旧存档第 %d 次恢复：原装备保留、宝剑、断剑和弓各一把" % (attempt+1))
 		restored.queue_free()
 		await process_frame
 	var combat = lab.combat
@@ -206,7 +208,7 @@ func weapon_revision() -> void:
 		combat.attack(player.position+Vector3.FORWARD*3+Vector3.UP)
 		kinds.append(combat.attack_action.id)
 		await frames(40)
-	check(kinds==["sword_slash","sword_thrust"],"玩家宝剑实际交替执行双手横斩与突刺")
+	check(kinds==["sword_slash","sword_overhead"],"玩家宝剑实际交替执行双手横斩与过顶下劈")
 	var guard = lab.guard
 	guard.state = "windup"
 	guard.action_duration = 0.32
@@ -275,7 +277,7 @@ func capture_actions() -> void:
 	lab.combat.set_physics_process(false)
 	lab.player.art_step = -1
 	lab.player.facing = Vector2(sin(lab.camera.rotation.y+PI/2),cos(lab.camera.rotation.y+PI/2))
-	for kind in ["light_rise","light_stab","heavy_swing","sword_slash","sword_thrust"]:
+	for kind in ["light_rise","light_stab","heavy_swing","sword_slash","sword_overhead"]:
 		lab.combat.apply_weapon(load("res://data/weapons/cleaver.tres" if kind == "heavy_swing" else "res://data/weapons/sword.tres" if kind.begins_with("sword") else "res://data/weapons/knife.tres"))
 		lab.combat.cooldown = 0
 		lab.combat.attack(lab.player.position+Vector3(lab.player.facing.x,0,lab.player.facing.y)*3+Vector3.UP)
@@ -450,7 +452,7 @@ func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
 	Store.root_path = "res://work/weapon_test_%d_%d/overrides" % [int(Time.get_unix_time_from_system()),Time.get_ticks_usec()]
 	Store.reload_catalog()
-	lab = load("res://scenes/battlefield.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	lab.results_enabled = false
 	root.add_child(lab)
 	current_scene = lab

@@ -9,7 +9,7 @@ func check(ok: bool,label: String) -> void:
 ## 检查越距提示、未先接任务时直接取信，以及随后正常返营领奖。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	var lab=load("res://scenes/tactical_height.tscn").instantiate()
+	var lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.results_enabled=false
 	root.add_child(lab)
 	current_scene=lab

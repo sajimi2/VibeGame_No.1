@@ -12,7 +12,7 @@ func check(ok: bool, label: String) -> void:
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing", true)
 	var path: String = ProjectSettings.get_setting("application/run/main_scene")
-	check(path == "res://scenes/battlefield.tscn", "F5 boots the current 3D battlefield")
+	check(path == "res://scenes/courtyard_combat.tscn", "F5 boots the painted courtyard combat")
 	var scene = load(path).instantiate()
 	root.add_child(scene)
 	current_scene = scene
@@ -22,11 +22,11 @@ func run() -> void:
 	# 运行时节点需经过物理帧，才能更新出生点的安全区状态。
 	for i in 3: await physics_frame
 	check(is_instance_valid(scene.run_flow), "runtime assembly completes")
-	check(get_nodes_in_group("tactical_enemies").size() == 5, "three guards and two archers")
+	check(get_nodes_in_group("tactical_enemies").size() == 3, "two guards and one archer")
 	var defaults_ok := true
 	for enemy in get_nodes_in_group("tactical_enemies"):
-		defaults_ok=defaults_ok and enemy.max_hp==(40 if enemy.ranged else 60) and enemy.tuning.damage_scale==1.0 and enemy.tuning.windup_scale==1.0 and enemy.tuning.leash_distance==0.0
-	check(defaults_ok,"原战场沿用生命、伤害、前摇和追击范围默认值")
+		defaults_ok=defaults_ok and enemy.max_hp==(40 if enemy.ranged else 60) and enemy.tuning.damage_scale==1.0 and enemy.tuning.windup_scale==1.0 and enemy.tuning.leash_distance==14.0
+	check(defaults_ok,"林路沿用战斗参数并限制14米离岗追击")
 	check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "fixed orthographic camera")
 	check(not scene.progression.persist, "startup does not access player progress")
 	var knife := preload("res://data/weapons/knife.tres")
@@ -34,7 +34,7 @@ func run() -> void:
 	check(scene.player.safe_zone, "spawn is inside safe camp")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png("res://work/battlefield_refactored.png")
+		root.get_texture().get_image().save_png("res://work/woodpath_startup.png")
 	print("STARTUP: %d checks, %d failures" % [checks, failures])
 	scene.queue_free()
 	await process_frame

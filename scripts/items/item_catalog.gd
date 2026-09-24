@@ -42,14 +42,14 @@ func definition(id: StringName) -> ItemDefinition:
 func ids() -> Array:
 	return _definitions.keys()
 
-## 当前可获得的轻刀、中型宝剑与重刀；定义 ID 保持稳定以兼容存档。
+## 当前可获得的武器；定义 ID 保持稳定以兼容存档。
 static func default_ids() -> Array[StringName]:
-	return [&"hunting_knife", &"arming_sword", &"great_cleaver"]
+	return [&"hunting_knife", &"arming_sword", &"great_cleaver", &"oath_blade", &"hunting_bow"]
 
 ## 一次创建并加载当前物品目录。
 static func build() -> ItemCatalog:
 	var catalog := ItemCatalog.new()
-	catalog.load_definitions(default_ids())
+	catalog.load_definitions(all_ids())
 	return catalog
 
 ## 按定义 ID 生成物品，使用调用方提供的实例 ID，并复制属性字典。
@@ -98,3 +98,10 @@ static func sum_modifiers(instances: Array) -> Dictionary:
 		for key in instance.modifiers.keys():
 			total[key] = float(total.get(key, 0.0)) + float(instance.modifiers[key])
 	return total
+
+## 所有物品与固定武器快捷位分开，药品和证据不挤占快捷栏。
+static func all_ids() -> Array[StringName]:
+	var result := default_ids()
+	result.append(&"medicine_bundle")
+	result.append_array([&"bandage", &"healing_potion", &"signet_ring", &"sealed_letter", &"bronze_relic", &"iron_helmet", &"leather_armor", &"leather_gloves", &"leather_boots", &"travel_cloak", &"amber_pendant"])
+	return result

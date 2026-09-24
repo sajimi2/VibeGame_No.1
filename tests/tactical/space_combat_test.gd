@@ -30,7 +30,7 @@ func capture(label: String):
  root.get_texture().get_image().save_png("res://work/combat_%s.png" % label)
 ## 布置空间命中样例，检查高差、顶部判定、墙阻挡和布帘穿透。
 func run():
- lab = load("res://scenes/tactical_height.tscn").instantiate()
+ lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
  lab.encounter_enabled = false
  ProjectSettings.set_setting("tactical/testing",true)
  root.add_child(lab)
@@ -109,6 +109,7 @@ func run():
  lab.player.velocity = Vector3.ZERO
  await frames(10)
  lab.combat.cooldown = 0
+ lab.combat.apply_weapon(load("res://data/weapons/bow.tres"))
  var highshot = lab.combat.shoot(Vector3(10,1.5,-7))
  await frames(30)
  check(highshot.stopped and highshot.result.has("collider") and highshot.result.collider.has_method("receive_strike") and highshot.result.collider.last_region == "顶部", "actual platform shot hits lower target top")
@@ -131,17 +132,18 @@ func run():
  await frames(3)
  lab.combat.cooldown = 0
  var click := InputEventMouseButton.new()
- click.button_index = MOUSE_BUTTON_RIGHT
+ click.button_index = MOUSE_BUTTON_LEFT
  click.position = screen_point
  click.global_position = screen_point
  click.pressed = true
  Input.parse_input_event(click)
  await frames(20)
  click = InputEventMouseButton.new()
- click.button_index = MOUSE_BUTTON_RIGHT
+ click.button_index = MOUSE_BUTTON_LEFT
  Input.parse_input_event(click)
- check(near_dummy.strikes > count_before, "mouse aiming and right click fire through production input")
+ check(near_dummy.strikes > count_before, "mouse aiming and equipped bow left click fire through production input")
  lab.combat.cooldown = 0
+ lab.combat.apply_weapon(load("res://data/weapons/knife.tres"))
  count_before = near_dummy.strikes
  click = InputEventMouseButton.new()
  click.button_index = MOUSE_BUTTON_LEFT

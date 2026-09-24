@@ -14,7 +14,7 @@ func capture(label: String) -> void:
 	root.get_texture().get_image().save_png("res://work/art_route_" + label + ".png")
 ## 实际走上、走下不规则矮台，并检查平顶碰撞的高度和法线。
 func run() -> void:
-	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.encounter_enabled = false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

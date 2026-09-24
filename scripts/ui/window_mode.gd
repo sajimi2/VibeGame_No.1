@@ -40,7 +40,7 @@ func show_embedded_hint() -> void:
 		embedded_hint = Label.new()
 		embedded_hint.position = Vector2(20,120)
 		embedded_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		embedded_hint.text = "Godot 内嵌预览不支持全屏；关闭编辑器的嵌入游戏功能后重新运行。\n也可双击工程内的 play_waystation.bat 启动独立驿站窗口，再按 F11。"
+		embedded_hint.text = "Godot 内嵌预览不支持全屏；关闭编辑器的嵌入游戏功能后重新运行。\n也可双击工程内的 play.bat，直接全屏进入林路探索。"
 		embedded_hint.add_theme_font_size_override("font_size",16)
 		embedded_hint.add_theme_color_override("font_color",Color("ffe2a0"))
 		embedded_hint.add_theme_color_override("font_outline_color",Color("17232a"))

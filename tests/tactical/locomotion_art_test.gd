@@ -91,6 +91,9 @@ func screen_image() -> Image:
 
 ## 使用实际鼠标事件朝右瞄准、向左移动起跳，再在空中改变瞄准方向。
 func backward_jump() -> void:
+	if DisplayServer.get_name()=="headless":
+		print("SKIP 后退跳真实指针验证需要 Rendered；其余移动检查照常执行")
+		return
 	await place()
 	var player = lab.player
 	player.test_mode = false
@@ -108,6 +111,8 @@ func backward_jump() -> void:
 		var target: Vector3 = Vector3(player.position.x, 0, player.position.z) + aim_axis * 8
 		var mouse := InputEventMouseMotion.new()
 		mouse.position = lab.camera.unproject_position(target)
+		# 生产玩家逐帧采样 Viewport 指针，仅发 MouseMotion 不会移动系统指针。
+		root.warp_mouse(mouse.position)
 		Input.parse_input_event(mouse)
 		if i == 3: check(player.request_jump(), "鼠标瞄准与后退移动同时生效时能够起跳")
 		await frames(1)
@@ -135,7 +140,7 @@ func backward_jump() -> void:
 
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing", true)
-	lab = load("res://scenes/battlefield.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	lab.results_enabled = false
 	root.add_child(lab)
 	current_scene = lab

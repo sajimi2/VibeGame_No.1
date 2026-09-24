@@ -16,7 +16,7 @@ func capture(label: String) -> void:
 	root.get_texture().get_image().save_png("res://work/outpost_" + label + ".png")
 ## 实际登台和下坡，并检查像素对齐、正交投影及平台碰撞高度。
 func run() -> void:
-	lab = load("res://scenes/tactical_height.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.encounter_enabled = false
 	ProjectSettings.set_setting("tactical/testing",true)
 	root.add_child(lab)

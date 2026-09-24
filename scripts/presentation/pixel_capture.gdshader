@@ -25,7 +25,7 @@ void fragment() {
 		ALBEDO = vec3(floor(encoded / 256.0), mod(encoded, 256.0), 0.0) / 255.0;
 	} else {
 		float illumination = dot(normal, light_direction);
-		float shade = unlit ? 1.0 : (illumination > 0.72 ? 1.05 : (illumination > 0.2 ? 0.88 : (illumination > -0.4 ? 0.68 : 0.48)));
+		float shade = (unlit || UV.x > 0.5) ? 1.0 : (illumination > 0.72 ? 1.05 : (illumination > 0.2 ? 0.88 : (illumination > -0.4 ? 0.68 : 0.48)));
 		ALBEDO = clamp(floor(COLOR.rgb * shade * 31.0 + 0.5) / 31.0, vec3(0.0), vec3(1.0));
 	}
 }

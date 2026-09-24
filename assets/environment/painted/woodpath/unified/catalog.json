@@ -1,0 +1,264 @@
+{
+	"litter": {
+		"anchor": [
+			0.5,
+			0.65
+		],
+		"aspect": 0.580459770114943,
+		"depth_box": [
+			1.6,
+			0.1,
+			1
+		],
+		"region": [
+			89,
+			18,
+			1566,
+			909
+		],
+		"shape": "none",
+		"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+		"width": 1.6
+	},
+	"oak_calm": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.0163132137031,
+		"depth_box": [
+			3.8,
+			4.8,
+			3.0
+		],
+		"depth_mode": 1.0,
+		"height": 2.1,
+		"radius": 0.42,
+		"region": [
+			0.0,
+			23.0,
+			1226.0,
+			1246.0
+		],
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/source/oak_calm.png",
+		"width": 4.8
+	},
+	"oak_young": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.5878453038674,
+		"depth_box": [
+			2.6,
+			4.2,
+			2.4
+		],
+		"depth_mode": 1.0,
+		"height": 2.0,
+		"radius": 0.3,
+		"region": [
+			65.0,
+			27.0,
+			905.0,
+			1437.0
+		],
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/source/oak_young.png",
+		"width": 3.2
+	},
+	"tree_a": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.13430282292558,
+		"depth_box": [
+			3.8,
+			4.8,
+			3.0
+		],
+		"depth_mode": 1.0,
+		"height": 2.1,
+		"pixels_per_meter": 28.0,
+		"radius": 0.42,
+		"region": [
+			0,
+			19,
+			1169,
+			1326
+		],
+		"shadow_profile": "oak",
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+		"width": 4.8
+	},
+	"tree_b": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.23796548592189,
+		"depth_box": [
+			3.8,
+			4.8,
+			3.0
+		],
+		"depth_mode": 1.0,
+		"height": 2.1,
+		"pixels_per_meter": 28.0,
+		"radius": 0.36,
+		"region": [
+			2,
+			19,
+			1101,
+			1363
+		],
+		"shadow_profile": "oak",
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+		"width": 3.6
+	},
+	"tree_c": {
+		"anchor": [
+			0.5,
+			0.97
+		],
+		"aspect": 1.05671392827356,
+		"depth_box": [
+			3.8,
+			4.8,
+			3.0
+		],
+		"depth_mode": 1.0,
+		"height": 2.1,
+		"pixels_per_meter": 28.0,
+		"radius": 0.42,
+		"region": [
+			0,
+			9,
+			1199,
+			1267
+		],
+		"shadow_profile": "oak",
+		"shape": "cylinder",
+		"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+		"width": 4.4
+	},
+	"wall_z": {
+		"anchor": [
+			0.5,
+			0.72
+		],
+		"aspect": 1.18105849582173,
+		"depth_box": [
+			0.65,
+			1.45,
+			4.0
+		],
+		"pixels_per_meter": 28.0,
+		"region": [
+			27,
+			104,
+			1077,
+			1272
+		],
+		"shape": "box",
+		"size": [
+			0.6,
+			1.05,
+			4.0
+		],
+		"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+		"width": 2.6
+	},
+	"waystation_ruin": {
+		"anchor": [
+			0.5,
+			0.75
+		],
+		"aspect": 0.829570284049527,
+		"collision_parts": [
+			{
+				"at": [
+					0.0,
+					1.1,
+					-1.6
+				],
+				"size": [
+					5.4,
+					2.2,
+					0.4
+				]
+			},
+			{
+				"at": [
+					-2.5,
+					1.0,
+					0.0
+				],
+				"size": [
+					0.4,
+					2.0,
+					3.2
+				]
+			},
+			{
+				"at": [
+					2.5,
+					1.0,
+					0.0
+				],
+				"size": [
+					0.4,
+					2.0,
+					3.2
+				]
+			},
+			{
+				"at": [
+					-1.7,
+					0.8,
+					1.6
+				],
+				"size": [
+					1.6,
+					1.6,
+					0.4
+				]
+			},
+			{
+				"at": [
+					1.7,
+					0.8,
+					1.6
+				],
+				"size": [
+					1.6,
+					1.6,
+					0.4
+				]
+			}
+		],
+		"depth_box": [
+			5.0,
+			3.0,
+			3.0
+		],
+		"region": [
+			0.0,
+			6.0,
+			1373.0,
+			1139.0
+		],
+		"shape": "box",
+		"size": [
+			5.0,
+			2.4,
+			3.0
+		],
+		"texture": "res://assets/environment/painted/woodpath/source/waystation_ruin.png",
+		"width": 8.0
+	}
+}

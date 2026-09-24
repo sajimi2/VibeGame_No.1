@@ -23,7 +23,7 @@ func capture(label: String) -> void:
 ## 模拟攻击输入，检查近战动作、收招缓存、拉弓和敌人挥击时序。
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	lab=load("res://scenes/tactical_height.tscn").instantiate()
+	lab=load("res://tests/fixtures/legacy/tactical_height.tscn").instantiate()
 	lab.mission_enabled=false
 	root.add_child(lab)
 	current_scene=lab
@@ -70,6 +70,7 @@ func run() -> void:
 	check(combat.swing_time==0 and combat.queued_action==0,"buffer does not create automatic repeated attacks")
 	guard.position=Vector3(4,0.02,3)
 	await frames(8)
+	combat.apply_weapon(load("res://data/weapons/bow.tres"))
 	var arrow=combat.shoot(guard.position+Vector3.UP)
 	await frames(4)
 	check(is_instance_valid(arrow) and not arrow.visible and arrow.lifetime==0,"bow draws before projectile becomes active")

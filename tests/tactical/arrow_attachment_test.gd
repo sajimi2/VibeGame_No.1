@@ -232,7 +232,7 @@ func lifetimes() -> void:
 
 func run() -> void:
 	ProjectSettings.set_setting("tactical/testing",true)
-	lab = load("res://scenes/battlefield.tscn").instantiate()
+	lab = load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	lab.results_enabled = false
 	root.add_child(lab)
 	current_scene = lab

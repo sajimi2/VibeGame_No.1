@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"bronze_relic"
+display_name = "旧王铜像"
+category = 9
+footprint = Vector2i(2, 2)
+max_stack = 1
+icon_index = 9
+heal_amount = 0
+sell_value = 25
+description = "沉重的旧王雕像。营地管事愿出25枚钱币收购。"
+base_modifiers = {}

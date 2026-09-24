@@ -1,6 +1,7 @@
 extends MeshInstance3D
-## 环境颜色先合成、角色随后按原精度绘制；复用原深度，不复制关卡或增加角色烘焙视口。
+## 旧实验场的环境专用采样；当前故事停用该效果并用unified_world提示完整世界统一规格。
 var enabled := true
+var unified_world := false
 var caption: Label
 var caption_timer: Timer
 
@@ -55,5 +56,11 @@ func set_enabled(value: bool,notify := true) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_F2:
+		if unified_world:
+			caption.text="清晰画面 1280×720 · 素材28逻辑像素/米 · 无整屏降采样"
+			caption.show()
+			caption_timer.start(3)
+			get_viewport().set_input_as_handled()
+			return
 		set_enabled(not enabled)
 		get_viewport().set_input_as_handled()

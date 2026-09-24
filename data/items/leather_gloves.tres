@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"leather_gloves"
+display_name = "皮手套"
+category = 4
+footprint = Vector2i(2, 1)
+max_stack = 1
+icon_index = 12
+heal_amount = 0
+sell_value = 0
+description = "厚皮缝制的手套，护甲+1。"
+base_modifiers = {"armor": 1.0}

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"signet_ring"
+display_name = "榆叶家徽戒指"
+category = 8
+footprint = Vector2i(1, 1)
+max_stack = 1
+icon_index = 7
+heal_amount = 0
+sell_value = 0
+description = "内侧刻着「给归家的人」。可向知情者出示，不会消耗。"
+base_modifiers = {}

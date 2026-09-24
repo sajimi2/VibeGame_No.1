@@ -89,7 +89,7 @@ func run() -> void:
 	enemy.routes = routes
 	enemy.position = Vector3(18, 0.05, 18)
 	world.add_child(enemy)
-	var scene: Node3D = load("res://scenes/battlefield.tscn").instantiate()
+	var scene: Node3D = load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	for original in scene.get_node("Cover").get_children():
 		if original.kind != 0: continue
 		var prop := Prop.new()

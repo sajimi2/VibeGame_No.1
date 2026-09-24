@@ -6,6 +6,8 @@ uniform vec3 prop_origin;
 uniform vec3 depth_size = vec3(1.0);
 uniform vec3 to_camera;
 uniform vec4 tint : source_color = vec4(1.0);
+// 高分辨率原稿也按世界米制像素网格采样，不能比已有137px横墙更细。
+uniform vec2 logical_size=vec2(0.0);
 // 0=实物近似体积，1=树干深度面；无碰撞花草使用独立的不写深度材质。
 uniform int depth_mode = 0;
 varying vec3 card_world;
@@ -18,7 +20,8 @@ void vertex() {
 	VERTEX=(inverse(MODEL_MATRIX)*vec4(card_world,1.0)).xyz;
 }
 void fragment() {
-	vec4 color=texture(illustration,UV);
+	vec2 sample_uv=logical_size.x>0.0 ? (floor(UV*logical_size)+.5)/logical_size : UV;
+	vec4 color=texture(illustration,sample_uv);
 	if (color.a<0.5) discard;
 	// 用简单体积近似纸片的空间深度；美术轮廓仍完全由 alpha 决定，不画出盒子表面。
 	vec3 center=prop_origin+vec3(0.0,depth_size.y*0.5,0.0);

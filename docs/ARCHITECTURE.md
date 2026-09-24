@@ -7,8 +7,11 @@
 | 所有者 | 职责 / 扩展入口 | 不应承担 |
 | --- | --- | --- |
 | `world/level.gd` | 装配玩家、相机、战斗、UI、导航、遮挡；地图覆盖 `_build_environment / spawn_point / enemy_layout / navigation_bounds` | 生成画稿、图集播放细节、库存 I/O |
-| `world/battlefield.gd`、`waystation_blockout.gd`、`height_sandbox.gd` | 当前玩法地图与高低回归，场景保留实际几何和碰撞 | 新美术路线选型 |
-| `world/painted_courtyard.gd` | 已确认美术基准的场景装配、查看快捷键；尚无遭遇/任务/进度 | 未来完整游戏已实现的承诺 |
+| `world/woodpath_region.gd` | 林路布局、共用道路折线、装饰避让与画稿装配 | 任务/库存/存档 |
+| `tests/fixtures/legacy/` | 旧荒堡/驿站/高度场的物理回归夹具，不是活跃地图 | 新玩法入口 |
+| `world/painted_courtyard.gd` | 绘画小院装配及观察快捷键；combat_mode 决定是否启用玩法 | 未来完整游戏已实现的承诺 |
+| `world/terrace_layout.gd` → `terrace_ground.gd` | 粗格高度/坡向/外露边 → 平台与侧壁网格、同源碰撞；由小院注入种子 | 玩家移动、战斗、导航或进度状态 |
+| `world/rolling_meadow.gd` | 保留旧连续缓坡对照，`outskirts_mode=1` 才装配 | 默认地图生成 |
 | `actors/player.gd` | 移动、姿态、瞄准、受伤；速度经统一 `move_and_slide` | 图片制作、奖励和保存 |
 | `actors/enemy.gd` / `creature.gd` | 感知、最后目击、路径、出招状态；物种资源与遭遇调参 | UI、玩家进度 |
 | `combat/` | 动作窗口、近战扫线、弓箭线段、命中与附着 | 用美术轮廓代替伤害判定 |
@@ -16,7 +19,7 @@
 | `art/`、`tools/` | 来源协议、图集工作台、离线烘焙与制作导出 | 游戏每帧重新生成角色 |
 | `items/`、`contracts/` | 物品定义、实例、库存深拷贝、装备意图/快照 | 直接控制 HUD |
 | `progression/camp_progress.gd` | 换装/成长/背包显示/持久化的协调 | 场景美术 |
-| `persistence/tactical_save.gd` | v1 JSON 读写 | 任务/战斗逻辑 |
+| `persistence/tactical_save.gd` | v1/v2 JSON、升级备份、临时写入后替换 | 任务/战斗逻辑 |
 | `ui/` | HUD、背包、结果、窗口输入 | 修改库存内部数据或重算伤害 |
 
 以上路径以 `scripts/` 为根。游戏未增加 Autoload；现有 Autoload 是 Godot AI 工具辅助。第三方插件不参与自有业务整理。
@@ -25,9 +28,21 @@
 
 `level._ready`：terrain_builder → 环境/光照 → 地图 → 效果 → 玩家 → 相机 → 环境颜色通道/墙遮挡 → HUD → 战斗。相机固定 -35°/25°、正交、`17 / VIEW_ZOOM`，VIEW_ZOOM=1.2；只将渲染相机对齐像素，物理坐标保持连续。
 
-墙遮挡注册延迟到地图网格生成后；绘画房屋和实物在其后绑定最终材质副本。顺序不能反过来，否则绘画读取原材质而看不到控制器发布的透视状态。小院 `encounter/mission/progress/results` 均关闭；F5 的 `start_encounter` 等待物理同步后建立导航、敌人、任务、成长和结算。
+小院覆盖跟随焦点为玩家脚点上方半个站立身高；M 仍切全院焦点。滚轮在 `_unhandled_input` 设置目标视野，物理帧在跟随/遮挡采样前以指数阻尼更新 `camera.size`；上下限为默认视野的 0.5/2 倍。默认大小和人物源保持原基准，UI 不参与世界缩放；暂停不接收缩放。调参入口集中在 `world/painted_courtyard.gd`。
+
+墙遮挡注册延迟到地图网格生成后；绘画房屋和实物在其后绑定最终材质副本。顺序不能反过来，否则绘画读取原材质而看不到控制器发布的透视状态。纯美术小院 `encounter/mission/progress/results` 均关闭；`courtyard_combat.gd` 子类启用玩法并提供三敌布局/任务坐标，F5 的 `start_encounter` 等待物理同步后建立导航、敌人、任务、成长和结算。
 
 `enemy_layout` 可以携带 `creature / art_id / enemy_tuning`。物种决定实体和攻击，art_id 只换外观；调参在入树前应用。驿站 18m 离岗和回营归队是其遭遇配置，不应改成所有关卡全局默认。
+
+旧粗格对照模式在 X=8 接上 `terrace_ground`，覆盖 X[8,48] / Z[-20,28]。原东侧平板截断，坑底不会被旧地板托住。`terrace_layout` 每个 4m 格记录整数高度（0.5m 一档）、坡道升高和朝向；每个 XZ 只有一个表面，半高平块仍是平面，坡道才线性升降。`exposed_edges` 比较相邻边端点，删除同高内部面，只保留正高差；凹坑与凸台共用这套规则，不另做坑特判。二级坡道入口必须留同高转接平台，不能从坡道侧壁进。
+
+`terrace_ground` 只在装配时生成两份显示网格和一份同源三角碰撞，整体标记 support，不给地板开透视洞。顶面 COLOR 存四边草沿标志，侧壁 UV2.x 存距崖顶米数；材质拼接与物理边界同源。模块以世界原点装配，常量/着色器的 4m 格与原点参数必须同步修改。玩家、战斗、导航保持原调用链，寻路按真实碰撞采样，范围 X[-10,42] / Z[-12,24]。首版不支持洞穴/桥下多层或运行时挖地。
+
+`terrace_seed=0` 为验收布局；非零种子只改变南侧平台长度、列和可选主台扩展，坡道与出入口验证后装配；主路和凹坑出口固定。`roads()` 与装饰避让共享路径数据。`extend_terraces` 只在平坦格内部放画稿，避开坡道/崖沿/道路。统一太阳应用后再注入崖壁材质，V/F3 只改表现。旧 `outskirts_mode=1` 的连续缓坡保留以下兼容入口，用户已否定其当前观感，不自动恢复为默认。
+
+`presentation/painted_courtyard.extend_meadow` 在地表就绪后复用目录画稿并采样落点。新增物件的 `illustration_shadow.fit_ground` 接收高度 Callable，装配/移动时生成贴坡网格；不增加逐帧重建。花草深度使用脚点切平面，人物已有接触影与实时投影继续走原系统。F3 只改网格显示参数，不改变地形/碰撞。
+
+缓坡可读性在 `courtyard_ground.gdshader` 控制：只在 X=8～14 平滑进入扩展区效果，降低草纹反差并增强真实法线沿公共太阳方向的大片明暗。光向由小院 `_finish` 在 `shadow_style.apply_sun` 后注入，不另设太阳；院内仍用原四档着色。`rolling_meadow.climb_path` 输出上丘曲线的 17 点，同时供地表土路与花草避让读取，不参与高度生成。`relief_strength=0` 是同机位材质对照入口，正常默认为 1。
 
 ## 已确认场景美术数据流
 
@@ -66,9 +81,9 @@
 6. 少量遮挡由 `baked_human` 灰色变体逐像素比较环境深度，只绘被挡身体；正常身体随后覆盖可见部分。中心物理射线仅作调试，不能控制全身描边开关。
 7. 显示层 `layers=0` 的几何代理仍保持 visible 供采样；禁止直接隐藏父节点让检测一起消失。新动态构件须显式注册子树，替换网格后要重新注册新节点。
 
-渲染阶段：不透明/像素裁切环境 → 环境颜色合成（-128）→ 绘画地面影子（-120）→ 花草（-110）→ 灰色身体（-1）→ 原精度人物/武器（0）→ 箭矢（1）→ UI。身体/武器进入透明阶段仍必须 `depth_draw_always` 写图集表面深度，不能仅靠排序。
+渲染阶段：不透明/像素裁切环境 → 环境颜色合成（-128）→ 绘画地面影子（-120）→ 花草（-110）→ 灰色身体（-1）→ 人物/武器（0）→ 箭矢（1）→ 地点名称/UI。身体/武器进入透明阶段仍必须 `depth_draw_always` 写图集表面深度，不能仅靠排序。
 
-F2 是颜色后处理：2×2 整数 texelFetch 面积平均，世界网格锚定；原始环境深度未降采样，不是节省世界光栅化的方案。禁止恢复归一化最近邻块中心读取，纹素边界会跳闪。小院默认关闭；旧玩法地图维持原默认。窗口/全屏保持 1280×720 逻辑画布和等比例小数缩放。
+2026-09-23用户实测否定整屏640×360采样（画面/小字受损）。当前故事不装配WorldPixelGrid，标准显示1280×720；像素密度由素材28px/m约束，F2仅提示规格，旧测试场保持旧通道。交互名称由woodpath_story投影到CanvasLayer 1，固定17px字号，在镜头更新后更新位置；其可见距离和藏物知识条件保留。源深度/物理/瞄准不变。制作与验收见 `PIXEL_ART_STANDARD.md`。
 
 ## 角色、武器与战斗
 
@@ -87,7 +102,15 @@ F2 是颜色后处理：2×2 整数 texelFetch 面积平均，世界网格锚定
 
 ## 库存、进度和输入
 
-`camp_progress.setup(player,combat)` → 创建 ActorInventory → 恢复 v1 快照 → 库存信号触发装备应用/保存/视图刷新。库存拥有实例深拷贝，UI 只发换装意图、收显示数据。`tactical_save` 只读写 JSON；版本、`user://tactical_progress_v1.json` 和装备实例 ID 本轮不迁移。自动测试设置 tactical/testing 或独立 work 存档，禁止覆盖玩家真进度。
+`camp_progress.setup(player,combat)` → ActorInventory 恢复 v1/v2 → ExpeditionState 恢复容器/事实 → 接通信号与视图 → 应用装备并保存。继续使用 `user://tactical_progress_v1.json` 路径但内部 version=2；首次升级保留 `.v1.bak`，日常替换保留 `.bak`。测试设置 tactical/testing 或独立 work 路径，不改玩家真实进度。
+
+- `items/inventory_grid` 是无状态矩形排布校验；ActorInventory 的48个数组位只在左上角存实例，其余占格由尺寸推导。物品实例增加 quantity/rotated，快照锚点带 x/y；所有查询快照都是副本。装备包含 weapon/head/body/hands/feet/cloak/accessory。换装需能收回旧装备，失败完整回滚。未知定义或迁移溢出进入 recovery，不删除。
+- `progression/expedition_state` 拥有3个野外容器、营地仓库、钱币、日志和篇章事实；补给购买先确认空间再扣款。所有容器复用库存规则；跨容器转移先试放副本，再同时提交两端，只通知一次保存。空容器有快照即不重新生成。试用武器补发检查所有容器和恢复仓储，不能把武器存箱后重启刷取。
+- `world/woodpath_story` 只负责空间交互与对话选项：距离/视线检查后交给进度模块开容器，选项执行时再次验条件；不得让界面直接修改事实或奖励。`level.create_objective()` 为薄装配入口，旧地图仍返回原任务，小院 story_mode=true 返回新篇章。
+- `camp_progress` 协调库存、装备效果、显示和保存。护甲在玩家受击时扣减（有效命中至少1），生命上限从装备重新汇总。武器槽为空时隐藏手持武器并禁用攻击/格挡，不凭空补刀。交付原件、记录结果、首通奖励一起保存；满包奖励进入恢复仓储。身体装备暂不改变人物烘焙外观。
+- `ui/inventory_panel` 发布 move/equip/unequip/use/read/split/transfer/recover 意图，`inventory_grid_view` 只绘制与命中测试。拖动期间不先移走物品；无效投放保留原状态，Esc先取消再关闭，R只旋转。容器输入由已校验的世界交互打开，暂停保证交互期间角色不离开范围。
+- F5故事以平地模式2停用粗格/缓坡实验；原代码和专项保留，测试显式 story_mode=false。新篇章不是完整开放世界；对话为固定分支，未连接在线AI。死亡重置敌人，已保存库存/容器/故事保留；R不重置已选结局。
+- 图标原稿与区域表在 `assets/ui/items/`，运行时只用 AtlasTexture；BGM来源及音量在 `assets/audio/README.md`。音乐只在小院故事中播放，背包暂停不停曲。
 
 `run_screen` 持有明确注入的玩家/任务/成长依赖。空 hint_provider 会显示默认路线提示，正式战场传一个空格是隐藏约定。暂停由背包/结果/瞄准共同参与，新输入入口需检查暂停恢复。
 
@@ -105,3 +128,21 @@ F2 是颜色后处理：2×2 整数 texelFetch 面积平均，世界网格锚定
 ## 验证入口
 
 `check.ps1 -Suite art -Rendered` 覆盖绘画小院/双屋/遮挡/阴影/移动/精度；`-Suite core` 覆盖角色、武器、战斗、任务、存档与原地图；完整列表以脚本为准。画面必须用真实 GPU，headless 的跳过不算通过。主观手感仍由用户试玩决定。
+
+## 小院战斗输入与动画增量
+
+- F5 `courtyard_combat` 继承绘画小院，仅选择玩法开关、出生/敌人/任务布局；复用 `level.start_encounter`，不复制美术装配或库存。纯美术场景继续禁用玩法，数字键只在该模式定位。
+- `player_combat` 解释左键当前装备攻击、右键格挡；可装备弓由 `weapon_data.ranged` 声明。格挡状态投影到玩家用于朝向减伤，玩家通过注入的 `can_roll` 查询攻击是否允许翻滚。翻滚时间/冷却/方向及碰撞、免伤均由玩家拥有；战斗在翻滚期间拒绝攻击并隐藏武器。
+- 断剑 `charge_hits` 属于战斗实例，不写共享 Resource 或存档。`receive_strike` 确认敌人掉血且未盾挡后每挥击最多增加一次；三次后下一次攻击消耗。真实扫线与武器曲线都允许反向横扫。
+- `roll` 强制上下身同帧；`weapon_guard` 可叠加原步态，剑术站姿屈膝/错步，移动中仍沿原下身混合。新增动作从保存的 Blender 源导出并离线烘焙。
+- 五格栏和背包是 `inventory_panel` 的两个视图，数字键和点击统一回到 `camp_progress.equip`，不维护额外装备状态。攻击、死亡、翻滚和非背包暂停期间拒绝换装。空间背包为v2，兼容迁移v1（见上文）。
+
+## 林路篇章扩展（2026-09-23）
+
+F5 `courtyard_combat` 在平地模式2装配 `woodpath_region`。后者输出三条道路折线、交互点和资产代理；同一折线既供地表 shader 绘土路，也供树群避让。普通绘画小院不注入林路。导航范围为 X[-10,77] / Z[-27,27]，战斗只保留三名敌人，离岗范围14m。路线自动检查会禁用敌人AI以检查可达性；战斗行为由独立小院专项覆盖，不能据此宣称整条路线已完成手感验收。
+
+`woodpath_story` 读取 Region.SPOTS → 距离/视线检查 → 宝箱先播放0.24秒开盖再打开容器，期间 busy 防重复，等待后再次检查距离。背包关闭信号触发反播；箱体总保持原位。NPC只是独立颜色/深度图集的轻呼吸播放，没有完整战斗/走路资产。
+
+状态仍在 `expedition_state`；新增 supply 容器只在旧快照缺该键时播种三包药材，不重置其他容器。物品定义新增可选 icon_texture，旧icon_index图集继续有效；存档仍只记录稳定定义ID，无版本变化。sell_carried 白名单消费随身物品并一次发送 changed；成长协调层保存同一快照。可回营存放物品，再回来取原箱剩余物，不新增重量/撤离损失规则。
+
+`encounter_effects` 从 sound_library 加载短采样，统一SFX总线/事件限频/并发数/距离音量。人物发出动作事件，交互桥发出容器和翻阅事件；不由声音推动伤害或状态。库存与对话复用 pixel_style，装备示意图纯显示，不拦截鼠标。

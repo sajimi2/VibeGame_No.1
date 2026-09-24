@@ -1,47 +1,49 @@
 extends Node3D
-## 集中创建程序音效、受击数字与短时效果，并管理临时节点的释放。
+## 集中播放采样音效、受击数字与短时效果，并管理临时节点的释放。
 var streams: Dictionary = {}
 
-## 预先合成并缓存各类音效，触发时直接复用音频资源。
+var observer: Node3D
+var previous_clip: Dictionary={}
+var last_play: Dictionary={}
+var rng:=RandomNumberGenerator.new()
+var voice_count:=0
+var played_events: Dictionary={}
+
+## 预载采样并建立音效总线，运行时不再生成波形或读取文件。
 func _ready() -> void:
-	for kind in ["step","swing","bow","hit","alert","death"]: streams[kind] = make_sound(kind)
+	rng.randomize()
+	add_to_group("encounter_sound")
+	if AudioServer.get_bus_index("SFX")<0:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count-1,"SFX")
+	for kind in preload("res://scripts/presentation/sound_library.gd").CLIPS:
+		streams[kind]=[]
+		for file in preload("res://scripts/presentation/sound_library.gd").CLIPS[kind]:
+			streams[kind].append(load("res://assets/audio/sfx/"+file))
 
-## 把简短波形与噪声合成为 16 位 PCM 数据；固定种子使同类音效可复现。
-func make_sound(kind: String) -> AudioStreamWAV:
-	var rate := 22050
-	var duration := 0.10 if kind == "step" else 0.32 if kind in ["alert","death"] else 0.17
-	var data := PackedByteArray()
-	data.resize(int(rate*duration)*2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 76+kind.hash()
-	for i in data.size()/2:
-		var t := float(i)/rate
-		var fade := pow(1-t/duration,2)
-		var value := 0.0
-		match kind:
-			"step": value = (sin(t*TAU*110)*0.3+rng.randf_range(-0.25,0.25))*fade
-			"swing": value = rng.randf_range(-0.5,0.5)*sin(t/duration*PI)*fade
-			"bow": value = sin(t*TAU*(650-1200*t))*fade*0.4
-			"hit": value = (rng.randf_range(-0.6,0.6)+sin(t*TAU*85)*0.4)*fade
-			"alert": value = sin(t*TAU*(540 if t<0.16 else 730))*fade*0.35
-			"death": value = sin(t*TAU*(180-300*t))*fade*0.5
-		data.encode_s16(i*2,int(clampf(value,-1,1)*26000))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.data = data
-	return stream
-
-## 在世界位置播放空间音效，播放结束后自动释放临时播放器。
+## 音量以玩家而非高空正交相机为基准；限制并发与同帧重复，轮换同类采样。
 func sound(kind: String, where: Vector3) -> void:
-	if not streams.has(kind): return
-	var audio := AudioStreamPlayer3D.new()
-	audio.stream = streams[kind]
-	audio.volume_db = -22 if kind=="step" else -12
-	audio.max_distance = 24
+	if kind=="step" and absf(where.x)<2.4 and where.z>-2.6 and where.z<2.8: kind="step_wood"
+	if not streams.has(kind) or voice_count>=14: return
+	var now:=Time.get_ticks_msec()
+	if now-int(last_play.get(kind,-1000))<45: return
+	var distance: float=observer.global_position.distance_to(where) if is_instance_valid(observer) else 0.0
+	if distance>24: return
+	last_play[kind]=now
+	var choices: Array=streams[kind]
+	var index:=rng.randi_range(0,choices.size()-1)
+	if choices.size()>1 and index==previous_clip.get(kind,-1): index=(index+1)%choices.size()
+	previous_clip[kind]=index
+	var audio:=AudioStreamPlayer.new()
+	audio.stream=choices[index]
+	audio.bus=&"SFX"
+	audio.process_mode=Node.PROCESS_MODE_ALWAYS
+	audio.volume_db=(-13.0 if kind.begins_with("step") else -7.0)-minf(distance,22)*.8
+	audio.pitch_scale=rng.randf_range(.95,1.05)
 	add_child(audio)
-	audio.global_position = where
-	audio.finished.connect(audio.queue_free)
+	voice_count+=1
+	played_events[kind]=int(played_events.get(kind,0))+1
+	audio.finished.connect(func(): voice_count-=1; audio.queue_free())
 	audio.play()
 
 ## 显示伤害数字、音效和火花；Tween 完成后释放临时节点。
@@ -78,7 +80,7 @@ func impact(where: Vector3, amount: int, killed: bool = false) -> void:
 
 ## 生成落地尘土和脚步声，各粒子随补间动画结束释放。
 func landing(where: Vector3) -> void:
-	sound("step",where)
+	sound("land",where)
 	for i in 6:
 		var dust := MeshInstance3D.new()
 		var mesh := BoxMesh.new()

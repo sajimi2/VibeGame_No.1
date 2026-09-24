@@ -11,6 +11,11 @@ enum WeightClass { LIGHT = 0, MEDIUM = 2, HEAVY = 1 }
 @export var reach: float = 1.45
 @export var duration: float = 0.38
 @export var interval: float = 0.42
+## 可选的循环终击；0 表示普通武器，实例计数由战斗控制器持有。
+@export var finisher_hits := 0
+@export var ranged := false
+@export var finisher_damage := 0
+@export var finisher_reach := 0.0
 @export var visual_scale := Vector3(0.85, 1.0, 0.76)
 
 func allows_sprint() -> bool:

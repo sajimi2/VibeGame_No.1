@@ -10,8 +10,13 @@ const Arrow = preload("res://scripts/combat/arrow.gd")
 const Actions = preload("res://scripts/combat/action_library.gd")
 const Accuracy = preload("res://scripts/combat/bow_accuracy.gd")
 var weapon_profile: TacticalWeaponData
+var has_equipped_weapon := true
 var attack_action: Resource
 var attack_index := 0
+var finisher_attack := false
+var charge_hits := 0
+var charged_this_attack := false
+var guard_held := false
 var dust: Node3D
 var last_drag_point := Vector3.ZERO
 var bow_rng := RandomNumberGenerator.new()
@@ -49,6 +54,7 @@ var assist_marker: MeshInstance3D
 func setup(body: CharacterBody3D, callback: Callable) -> void:
 	actor = body
 	actor.combat_movement = movement_sample
+	actor.can_roll = func(): return swing_time<=0 and bow_time<=0
 	bow_rng.randomize()
 	notify = callback
 	hand = Node3D.new()
@@ -89,25 +95,45 @@ func muzzle() -> Vector3:
 
 ## 接收未被界面消费的攻击点击；收招末段允许缓存下一次动作。
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		actor.update_aim(event.position)
-		var action := 1 if event.button_index==MOUSE_BUTTON_LEFT else 2 if event.button_index==MOUSE_BUTTON_RIGHT else 0
-		if action==0: return
-		var point: Vector3 = actor.aim_point if action==1 else assisted_point(actor.aim_point,actor.cursor)
-		if cooldown>0 and cooldown<=0.12:
-			queued_action=action
-			queued_point=point
-			buffer_time=0.16
-		elif action==1: attack(point)
-		else: shoot(point)
+	if not event is InputEventMouseButton: return
+	if not has_equipped_weapon: return
+	if event.button_index==MOUSE_BUTTON_RIGHT:
+		guard_held=event.pressed
+		if not guard_held: actor.blocking=false
+		get_viewport().set_input_as_handled()
+		return
+	if event.button_index!=MOUSE_BUTTON_LEFT or not event.pressed: return
+	actor.update_aim(event.position)
+	if actor.blocking or actor.roll_time>0: return
+	var point: Vector3=assisted_point(actor.aim_point,actor.cursor) if weapon_profile.ranged else actor.aim_point
+	if cooldown>0 and cooldown<=.12:
+		queued_action=1
+		queued_point=point
+		buffer_time=.16
+	else: primary_attack(point)
+	get_viewport().set_input_as_handled()
+
+## 左键只驱动当前装备；弓不再是所有近战武器附带的右键能力。
+func primary_attack(point: Vector3) -> void:
+	if weapon_profile.ranged: shoot(point)
+	else: attack(point)
 
 ## 检查能否出刀，锁定本次方向并启动时序；实际命中由后续物理帧结算。
 func attack(point: Vector3) -> bool:
-	if get_tree().paused: return false
-	if cooldown > 0 or actor.hp<=0: return false
+	if get_tree().paused or not has_equipped_weapon: return false
+	if cooldown > 0 or actor.hp<=0 or actor.roll_time>0 or actor.blocking or weapon_profile.ranged: return false
 	var sequence := weapon_profile.attack_sequence
 	attack_action = Actions.get_action(sequence[attack_index%sequence.size()] if not sequence.is_empty() else "light_rise")
 	if attack_action == null: return false
+	# 敌人有效命中才增加蓄能；满三次后下次起手消耗光刃，空挥也消耗。
+	finisher_attack=weapon_profile.finisher_hits>0 and charge_hits>=weapon_profile.finisher_hits
+	charged_this_attack=false
+	if weapon_profile.finisher_hits>0:
+		if finisher_attack:
+			charge_hits=0
+			attack_action=Actions.get_action("sword_slash")
+		melee_range=weapon_profile.finisher_reach if finisher_attack else weapon_profile.reach
+		melee_damage=weapon_profile.finisher_damage if finisher_attack else weapon_profile.damage
 	attack_index += 1
 	impact_emitted = false
 	locked_direction = (point - muzzle()).normalized()
@@ -123,9 +149,10 @@ func attack(point: Vector3) -> bool:
 
 ## 锁定目标并创建暂不运动的箭，等拉弓前摇结束后才放行。
 func shoot(point: Vector3):
-	if get_tree().paused or cooldown > 0 or actor.hp<=0: return null
+	if not has_equipped_weapon or get_tree().paused or cooldown > 0 or actor.hp<=0 or actor.roll_time>0 or actor.blocking or not weapon_profile.ranged: return null
 	cooldown = 0.45
 	bow_time = 0.45
+	if is_instance_valid(actor.effects): actor.effects.sound("bow_draw",actor.global_position)
 	bow_target=point
 	locked_direction=(point-muzzle()).normalized()
 	actor.attack_facing=Vector2(locked_direction.x,locked_direction.z).normalized()
@@ -147,6 +174,13 @@ func _physics_process(delta: float) -> void:
 		queued_action=0
 		swing_time=0
 		bow_time=0
+		attack_index=0
+		finisher_attack=false
+		charge_hits=0
+		guard_held=false
+	if not actor.test_mode: guard_held=Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and get_viewport().gui_get_hovered_control()==null
+	actor.blocking=has_equipped_weapon and guard_held and actor.hp>0 and actor.roll_time<=0 and swing_time<=0 and bow_time<=0 and cooldown<=0
+	if actor.roll_time>0: queued_action=0
 	if not actor.test_mode:
 		assisted_point(actor.aim_point,actor.cursor)
 		assist_marker.visible=is_instance_valid(assist_target) and actor.hp>0
@@ -157,8 +191,7 @@ func _physics_process(delta: float) -> void:
 	if queued_action!=0 and cooldown<=0 and buffer_time>0:
 		var action := queued_action
 		queued_action=0
-		if action==1: attack(queued_point)
-		else: shoot(queued_point)
+		if action==1: primary_attack(queued_point)
 	if buffer_time<=0: queued_action=0
 	swing_time=maxf(0,swing_time-delta)
 	bow_time=maxf(0,bow_time-delta)
@@ -177,8 +210,8 @@ func _physics_process(delta: float) -> void:
 			var current := hand.global_basis.orthonormalized()
 			var angle := current.get_rotation_quaternion().angle_to(desired.get_rotation_quaternion())
 			hand.global_basis=current.slerp(desired,minf(1.0,14.0*delta/maxf(angle,0.001)))
-	bow.visible=bow_time>0
-	weapon.visible=bow_time<=0
+	bow.visible=weapon_profile.ranged and actor.roll_time<=0
+	weapon.visible=not weapon_profile.ranged and actor.roll_time<=0
 	if swing_time>0:
 		var elapsed := attack_duration-swing_time
 		var phase := elapsed/attack_duration
@@ -186,7 +219,7 @@ func _physics_process(delta: float) -> void:
 		actor.visual_action = attack_action.id
 		actor.visual_action_frame = roundi(phase*32)
 		# 命中扫描和身体/刀刃共享同一动作窗口；每次攻击的去重集合仍只结算一次。
-		if phase>=attack_action.windup_end and previous_angle<rad_to_deg(attack_action.sweep_to):
+		if phase>=attack_action.windup_end and not is_equal_approx(previous_angle,rad_to_deg(attack_action.sweep_to)):
 			var fraction := clampf((phase-attack_action.windup_end)/(attack_action.active_end-attack_action.windup_end),0,1)
 			var angle := rad_to_deg(lerpf(attack_action.sweep_from,attack_action.sweep_to,Motion.blend(fraction)))
 			strike(previous_angle,angle)
@@ -210,17 +243,29 @@ func _physics_process(delta: float) -> void:
 				pending_arrow=null
 				actor.effects.sound("bow",actor.global_position)
 
+	if actor.blocking:
+		actor.visual_action="weapon_guard"
+		actor.visual_action_frame=0
+	if weapon_profile.ranged and bow_time<=0: WeaponArt.set_bow_draw(bow,0.0,false)
 	# 战斗在玩家移动后更新；同帧刷新上肢与握点，避免武器领先纸片一帧。
 	var view := Vector3(actor.facing.x, 0, actor.facing.y).rotated(Vector3.UP, -actor.camera.rotation.y)
 	if swing_time > 0 or bow_time > 0:
 		view = locked_direction.rotated(Vector3.UP, -actor.camera.rotation.y)
+	if actor.roll_time>0:
+		view=Vector3(actor.roll_direction.x,0,actor.roll_direction.y).rotated(Vector3.UP,-actor.camera.rotation.y)
 	actor.direction_index = posmod(roundi(atan2(view.x, view.z) / (PI / 6)), 12)
 	actor._refresh_art(actor.art_step)
-	hand.global_position = actor.baked_visual.last_grip
-	var idle_visual := Actions.get_action(weapon_profile.idle_action)
+	hand.global_position = actor.baked_visual.last_support if weapon_profile.ranged and actor.blocking else actor.baked_visual.last_grip
+	var idle_visual := Actions.get_action("weapon_guard" if actor.blocking else weapon_profile.idle_action)
 	var visual: Resource = attack_action if swing_time>0 else idle_visual
 	var phase := (attack_duration-swing_time)/attack_duration if swing_time>0 else 0.0
+	if weapon_profile.model_id == "oath_blade":
+		var extension := 0.0
+		if swing_time>0 and finisher_attack:
+			extension = smoothstep(0.0,attack_action.windup_end,phase)*(1.0-smoothstep(.78,1.0,phase))
+		WeaponArt.set_oath_extension(weapon,extension)
 	if visual != null: weapon.rotation = visual.sample(phase).blade
+	bow.rotation=Vector3(0,0,deg_to_rad(35)) if actor.blocking else Vector3.ZERO
 	if idle_visual != null and idle_visual.ground_drag and bow_time<=0:
 		align_drag(phase)
 	if swing_time>0 and attack_action.ground_impact:
@@ -262,7 +307,8 @@ func ground_strike(point: Vector3) -> void:
 
 ## 玩家在同帧移动前查询下一步动作曲线；战斗不直接移动角色，前冲不会绕过碰撞。
 func movement_sample(delta: float) -> Dictionary:
-	if swing_time<=0 or attack_action==null or actor.hp<=0: return {}
+	if actor.blocking: return {"control":.4}
+	if swing_time<=0 or attack_action==null or actor.hp<=0 or actor.roll_time>0: return {}
 	var phase := clampf((attack_duration-swing_time+delta)/attack_duration,0,1)
 	var forward := Vector3(locked_direction.x,0,locked_direction.z).normalized()
 	return {"control":attack_action.control_scale,"velocity":forward*attack_action.forward_speed(phase)}
@@ -316,7 +362,11 @@ func apply_melee_hit(hit: Dictionary, direction: Vector3, damage_scale: float = 
 	attack_hits+=1
 	melee_hits+=1
 	var force: float=attack_action.knockback_strength if attack_action!=null else 2.0
+	var health_before: int=target.hp if target.is_in_group("tactical_enemies") else 0
 	var region: String=target.receive_strike(hit.position,hit.normal,direction,roundi(melee_damage*damage_scale),force) if target.is_in_group("tactical_enemies") else target.receive_strike(hit.position,hit.normal,direction)
+	if weapon_profile.finisher_hits>0 and not finisher_attack and not charged_this_attack and target.is_in_group("tactical_enemies") and target.hp<health_before and region!="格挡":
+		charge_hits=mini(charge_hits+1,weapon_profile.finisher_hits)
+		charged_this_attack=true
 	if notify.is_valid(): notify.call("近战命中 %d 个目标：%s"%[attack_hits,region])
 
 ## 在光标附近选择可见且射线可达的敌人，返回轻微修正后的目标点；Ctrl 临时关闭辅助。
@@ -357,15 +407,20 @@ func apply_weapon(profile: TacticalWeaponData) -> void:
 	weapon_profile = profile
 	swing_time = 0
 	attack_index = 0
+	finisher_attack = false
+	charge_hits = 0
+	guard_held = false
+	actor.blocking = false
+	queued_action = 0
 	actor.visual_action = profile.idle_action
 	actor.visual_action_frame = 0
 	weapon.hide()
 	weapon.queue_free()
-	weapon = WeaponArt.melee_model(profile.model_id)
+	weapon = MeshInstance3D.new() if profile.ranged else WeaponArt.melee_model(profile.model_id)
 	hand.add_child(weapon)
 	melee_range = profile.reach
 	melee_damage = profile.damage
 	attack_duration = profile.duration
 	attack_interval = profile.interval
 	weapon.scale = profile.visual_scale
-	PixelWeapon.attach(weapon,actor.camera,sunlight)
+	if not profile.ranged: PixelWeapon.attach(weapon,actor.camera,sunlight)

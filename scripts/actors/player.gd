@@ -28,6 +28,7 @@ var test_sprint := false
 var sprinting := false
 var jump_time := 0.0
 var jump_frame := -1
+var equipment_armor := 0
 var max_hp := 100
 var safe_zone := false
 var hp := 100
@@ -42,6 +43,14 @@ var visual_action := ""
 var visual_action_frame := 0
 var sprint_blockers: Dictionary = {}
 var combat_movement: Callable
+var can_roll: Callable
+var blocking := false
+var blocked_hits := 0
+const ROLL_DURATION := 0.56
+var roll_time := 0.0
+var roll_cooldown := 0.0
+var roll_direction := Vector2.ZERO
+var move_intent := Vector2.ZERO
 var baked_visual: Node3D
 var death_art_time := 0.0
 var effects: Node3D
@@ -105,11 +114,16 @@ func _physics_process(delta: float) -> void:
 	# 全屏切换时画布可能不变而屏幕变换已改变；每帧取转换后的鼠标坐标，不依赖鼠标移动事件。
 	if not test_mode: cursor = get_viewport().get_mouse_position()
 	death_art_time=death_art_time+delta if hp<=0 else 0.0
+	roll_time=maxf(0,roll_time-delta)
+	roll_cooldown=maxf(0,roll_cooldown-delta)
+	if hp<=0:
+		roll_time=0
+		blocking=false
 	hurt_time = maxf(0,hurt_time-delta)
 	invulnerable = maxf(0,invulnerable-delta)
 	var move := test_motion if test_mode else Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if hp <= 0: move = Vector2.ZERO
-	set_crouch(test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C))
+	set_crouch(roll_time>0 or (test_crouch if test_mode else Input.is_physical_key_pressed(KEY_C)))
 	# 碰撞即时响应蹲键，外观用六级关节姿态过渡；站起受阻时仍保持蹲姿。
 	crouch_blend = move_toward(crouch_blend, 1.0 if crouched else 0.0, delta / 0.16)
 	# 屏幕方向输入转到世界 X/Z 平面，使 WASD 与固定斜角镜头一致。
@@ -117,6 +131,7 @@ func _physics_process(delta: float) -> void:
 		var world_move := camera.global_basis.x * move.x + Vector3(camera.global_basis.z.x, 0, camera.global_basis.z.z).normalized() * move.y
 		move = Vector2(world_move.x, world_move.z)
 	# 疾跑只提高站立移动速度；仍允许移动攻击，下蹲和死亡不会带入疾跑速度。
+	move_intent=move
 	var run_held := test_sprint if test_mode else Input.is_physical_key_pressed(KEY_SHIFT)
 	sprinting = run_held and sprint_blockers.is_empty() and not crouched and hp > 0 and move.length() > 0.1
 	var speed := 2.0 if crouched else RUN_SPEED if sprinting else WALK_SPEED
@@ -133,6 +148,12 @@ func _physics_process(delta: float) -> void:
 	velocity.y -= 20 * delta
 	# 动作前冲与输入速度合并后仍走 move_and_slide，墙、巨石和坡道照常阻挡。
 	var impulse: Vector3 = combat_move.get("velocity",Vector3.ZERO) if hp>0 and is_on_floor() else Vector3.ZERO
+	if roll_time>0:
+		# 翻滚速度仍走统一碰撞移动。
+		var roll_speed := 7.5*(.6+.4*sin((1.0-roll_time/ROLL_DURATION)*PI))
+		velocity.x=roll_direction.x*roll_speed
+		velocity.z=roll_direction.y*roll_speed
+		impulse=Vector3.ZERO
 	velocity += impulse
 	var previous_position := global_position
 	var was_airborne := not is_on_floor()
@@ -154,6 +175,7 @@ func _physics_process(delta: float) -> void:
 		gait += planar_distance / (2.6 if sprinting else 1.8) * TAU
 	if not test_mode and camera != null and attack_pose == 0: update_aim(cursor)
 	if attack_pose > 0: facing = attack_facing
+	if roll_time>0: facing=roll_direction
 	var view_facing := Vector3(facing.x, 0, facing.y)
 	if camera != null: view_facing = view_facing.rotated(Vector3.UP, -camera.rotation.y)
 	direction_index = posmod(roundi(atan2(view_facing.x, view_facing.z) / (PI / 6)), 12)
@@ -176,6 +198,8 @@ func _refresh_art(step: int) -> void:
 	var running := sprinting and step >= 0
 	var state := FrameSpec.character(direction_index,step,crouched,movement_direction,attack_pose,attack_arm,attack_weight,bow_draw,crouch_frame,running,jump_frame)
 	state = FrameSpec.with_action(state,visual_action,visual_action_frame)
+	if roll_time>0:
+		state=FrameSpec.with_action(FrameSpec.character(direction_index,-1,false),"roll",clampi(roundi((1.0-roll_time/ROLL_DURATION)*32),0,32))
 	if hp<=0: state=FrameSpec.with_action(FrameSpec.character(direction_index,-1,false),"death_fall",clampi(roundi(death_art_time/.85*32),0,32))
 	if is_instance_valid(baked_visual):
 		baked_visual.tint=Color(0.72,0.70,0.68) if hp<=0 else Color(1.8,.8,.7) if hurt_time>0 else Color.WHITE
@@ -224,6 +248,9 @@ func reset_position() -> void:
 	jump_time=0
 	jump_frame=-1
 	sprinting=false
+	roll_time=0
+	roll_cooldown=0
+	blocking=false
 
 
 ## 记录鼠标位置并响应跳跃；攻击按键由 player_combat 处理。
@@ -246,18 +273,45 @@ func update_aim(mouse: Vector2) -> void:
 		if Vector2(aim.x, aim.z).length() > 0.2: facing = Vector2(aim.x, aim.z).normalized()
 
 ## 统一处理玩家扣血；死亡、受击无敌期及营地安全区内忽略伤害。
-func receive_damage(amount: int, _direction: Vector3) -> void:
+func receive_damage(amount: int, incoming: Vector3) -> void:
 	if hp <= 0 or invulnerable > 0 or safe_zone: return
+	# 翻滚中段免伤，格挡仅减少正面来袭伤害。
+	var roll_elapsed := ROLL_DURATION-roll_time
+	if roll_time>0 and roll_elapsed>=.06 and roll_elapsed<=.34: return
+	var toward := Vector2(-incoming.x,-incoming.z).normalized()
+	var guarded := blocking and roll_time<=0 and facing.normalized().dot(toward)>=.5
+	if guarded:
+		amount=maxi(1,ceili(amount*.25))
+		blocked_hits+=1
+	# 装备护甲在格挡之后结算，每次有效命中至少造成1点伤害。
+	amount = maxi(1,amount-equipment_armor)
 	hp = maxi(0,hp-amount)
 	hurt_time = 0.18
-	invulnerable = 0.65
+	invulnerable = 0.2 if guarded else 0.65
 	if is_instance_valid(effects): effects.impact(global_position+Vector3.UP,amount,hp==0)
+	if guarded and is_instance_valid(effects): effects.sound("guard",global_position)
 
 ## 仅允许存活、站立且落地的角色起跳；返回是否成功，防止空中连跳。
 func request_jump() -> bool:
-	if hp<=0 or crouched or not is_on_floor() or jumped or landing_delay>0: return false
+	if hp<=0 or roll_time>0 or blocking or crouched or not is_on_floor() or jumped or landing_delay>0: return false
 	velocity.y=JUMP_SPEED
 	jumped=true
 	jump_time=0
-	if is_instance_valid(effects): effects.sound("step",global_position)
+	if is_instance_valid(effects): effects.sound("jump",global_position)
 	return true
+
+## Alt 翻滚优先沿移动方向，静止时沿朝向；禁止空中连滚或取消有效攻击。
+func request_roll() -> bool:
+	if get_tree().paused or hp<=0 or not is_on_floor() or roll_cooldown>0: return false
+	if can_roll.is_valid() and not can_roll.call(): return false
+	roll_direction=move_intent.normalized() if move_intent.length()>.1 else facing.normalized()
+	roll_time=ROLL_DURATION
+	roll_cooldown=.9
+	if is_instance_valid(effects): effects.sound("roll",global_position)
+	blocking=false
+	return true
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode==KEY_ALT:
+		request_roll()
+		get_viewport().set_input_as_handled()

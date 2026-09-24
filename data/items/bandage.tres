@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"bandage"
+display_name = "亚麻绷带"
+category = 7
+footprint = Vector2i(1, 1)
+max_stack = 5
+icon_index = 5
+heal_amount = 25
+sell_value = 0
+description = "干净的亚麻布，使用恢复25点生命。"
+base_modifiers = {}

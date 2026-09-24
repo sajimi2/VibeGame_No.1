@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/items/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"leather_boots"
+display_name = "旅行靴"
+category = 5
+footprint = Vector2i(2, 2)
+max_stack = 1
+icon_index = 13
+heal_amount = 0
+sell_value = 0
+description = "鞋跟重新钉过，护甲+1。"
+base_modifiers = {"armor": 1.0}

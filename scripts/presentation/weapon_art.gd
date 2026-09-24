@@ -89,6 +89,7 @@ static func sword() -> MeshInstance3D:
 
 ## 玩家刀具保留握柄原点；反持由动作曲线控制，模型本身始终向局部 -Z 延伸。
 static func melee_model(id: String) -> MeshInstance3D:
+	if id == "oath_blade": return oath_blade()
 	if id not in ["knife","cleaver"]: return sword()
 	var heavy := id == "cleaver"
 	var root := MeshInstance3D.new()
@@ -180,3 +181,30 @@ static func set_bow_draw(root: Node3D, amount: float, nocked: bool=true) -> void
 		root.set_meta("pixel_revision",phase)
 	root.get_node("NockedArrow").visible=nocked
 	root.get_node("NockedArrow").position.z=0.02+amount*0.30-ArrowArt.LENGTH
+
+## 断剑沿用握柄坐标，补全段独立伸长；只在离散形态变化时通知像素后端。
+static func oath_blade() -> MeshInstance3D:
+	var root := MeshInstance3D.new()
+	root.mesh=solid_blade(PackedVector3Array([Vector3(-.08,0,-.22),Vector3(.08,0,-.22),Vector3(.08,0,-.67),Vector3(.01,0,-.57),Vector3(-.08,0,-.72)]),.06)
+	root.material_override=material("929aaa")
+	block(root,Vector3(.1,.1,.30),Vector3(0,0,-.03),"403349")
+	block(root,Vector3(.4,.09,.10),Vector3(0,0,-.23),"bd9754")
+	var light := block(root,Vector3(.12,.045,1.25),Vector3(0,0,-1.245),"fff0ad")
+	light.name="OathLight"
+	light.set_meta("pixel_unlit",true)
+	light.scale.z=.001
+	root.set_meta("blade_base",Vector3(0,0,-.22))
+	root.set_meta("blade_tip",Vector3(0,0,-.72))
+	return root
+
+## 伸展限定为八档，避免动画每帧重建网格；刀光端点始终跟随可见剑尖。
+static func set_oath_extension(root: MeshInstance3D, amount: float) -> void:
+	var step := clampi(roundi(amount*8),0,8)
+	if int(root.get_meta("oath_step",0))==step: return
+	root.set_meta("oath_step",step)
+	var light: MeshInstance3D=root.get_node("OathLight")
+	var fraction := float(step)/8.0
+	light.scale.z=maxf(.001,fraction)
+	light.position.z=-.62-.625*fraction
+	root.set_meta("blade_tip",Vector3(0,0,-.72-1.15*fraction))
+	root.set_meta("pixel_revision",int(root.get_meta("pixel_revision",0))+1)

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="TacticalWeaponData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+weight_class = 2
+model_id = "bow"
+idle_action = "bow_ready"
+ranged = true
+interval = 0.45

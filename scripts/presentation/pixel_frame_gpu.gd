@@ -49,6 +49,7 @@ func set_triangles(triangles: Array, unlit := false) -> void:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	var lighting_flags := PackedVector2Array()
 	for triangle in triangles:
 		var a: Vector3 = triangle.points[0]
 		var b: Vector3 = triangle.points[1]
@@ -58,11 +59,14 @@ func set_triangles(triangles: Array, unlit := false) -> void:
 			vertices.append(point)
 			normals.append(normal)
 			colors.append(triangle.color)
+			lighting_flags.append(Vector2(1.0 if triangle.get("unlit",false) else 0.0,0))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
+	# 局部魔法刃免受光变暗，普通钢刃仍使用原有分段光照。
+	arrays[Mesh.ARRAY_TEX_UV] = lighting_flags
 	var mesh := ArrayMesh.new()
 	if not vertices.is_empty(): mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 	color_mesh.mesh = mesh

@@ -1,63 +1,40 @@
 # Outpost RPG
 
-Godot 4.7.2 / GDScript / Compatibility。当前游戏是固定斜角正交的 3D 荒堡战场：十二朝向、移动中攻击、三名守卫和两名弓手，取信后返回营地交付。
-
-## 接手与已确认美术路线
-
-先读 [HANDOFF.md](HANDOFF.md) 与 [AI_SYNC.md](AI_SYNC.md)。场景美术已确定为**固定正交视角的完整绘画资产 + 隐藏简单空间体积**，不再使用逐面生成贴图路线。人物仍是 Blender 保存源 → GLB → 96²/十二朝向离线烘焙；武器/刀光保持独立 GPU 像素化。
-
-- 美术基准：运行 `play_courtyard.bat` 或 `scenes/painted_courtyard.tscn`。V 看空间代理、F3 碰撞、F4 装饰、M 全院、1–4 定位；原始 1280×720，统一浅色柔边阴影。旧 `play_painted_cottage.bat` 转发同一入口。
-- 新小院尚无敌人/任务/井箱交互；F5 荒堡与驿站仍是现有完整玩法/高低回归，未被本轮自动换装。
-- 活跃源图、配准、简模与运行图集中于 `assets/environment/painted/`；制作规范见 [场景美术](docs/ENVIRONMENT_ART.md)。
+Godot 4.7.2 / GDScript / Compatibility。当前是固定斜角正交、三维空间与像素绘画呈现的短篇探索原型：「失踪信使」。小院安全营地连通分岔林路与灰榆驿站，包含少量即时战斗、地点调查、搜刮整理、两位NPC和两种委托结果。
 
 ## 运行
-- 在 Godot 打开 `project.godot`，**F5 直接运行最新战场**；`play.bat dev` / `play_battlefield.bat dev` 同样运行源码。
-- 驿站混合遭遇：打开 `scenes/waystation_blockout.tscn` 按 **F6**，或双击 `play_waystation.bat`。78×78m 场地含西侧野地、1.8m 高台、木架坡桥和石木建筑；室外被屋顶遮挡时开透视圆，室内整组屋顶淡化后再叠圆；小遮挡仅将被挡的身体片段显示为灰色。两名哥布林、两只史莱姆、一名石头人、两名守卫和三名弓手分组驻守。哥布林锁向突刺后撤；石头人预告砸地，跳跃/离开圈可躲、重刀可打断；史莱姆蓄势直线冲撞、撞墙停下。I 切换三把现有近战武器，返回出生营地恢复生命，R 重开；无任务奖励，不读写真实进度。根节点关闭 `Combat Enabled` 可恢复无战斗勘察（M 全图、1–5 区域跳转）。
-- `scenes/tactical_height.tscn` 是保留的 3D 高度/布帘/坡道试验场，F6 或 `play_height.bat dev`。
-- 不带 `dev` 的批处理运行 `builds/windows` 中的导出包；修改源码后须重新导出。EXE 与同名 PCK 必须配套。
-- WASD 移动，Shift 疾跑，Space 跳跃，C 下蹲，左键近战，右键弓箭，E 交互，I 背包，Ctrl 暂停辅瞄，R 重试。
-- **F11 或 Alt＋Enter** 切换窗口/全屏，退出全屏恢复原窗口大小、位置或最大化状态，背包暂停时也可使用。用独立游戏窗口验证（如 `play_waystation.bat`）；编辑器内嵌预览的窗口由编辑器控制。当前运行时仍为 1280×720 画布，保持宽高比并允许小数倍率铺满；1920×1080 全屏为 1.5×，非 16:9 屏幕仅保留比例所需的黑边。
-- **F2 环境精度对比**：旧玩法地图默认只把环境显示为较粗的 2×2 像素块（等效 640×360），再次按键恢复原始环境。人物、武器和界面精度不变，暂停也可对比；不重新烘焙资产，不改变镜头与碰撞。新绘画小院默认关闭；旧玩法地图重开默认开启。
-- 近战分工：匕首单体；宝剑横斩最多扫三人、突刺单体；大砍刀下砸在落点周围 1.25m 产生冲击，连同刀刃最多四人并强化击退。同一刀不重复扣血，盾牌仍减伤，墙体/高差仍阻隔。
-- 图集工作台：打开 `tools/art_preview.tscn`，按 **F6**。查看七种角色与箭矢，导出原尺寸 PNG + JSON；编辑 PNG 后载入 JSON、应用，再重新运行查看。类人支持分层补色与握点；哥布林/石头人/史莱姆使用整身帧，无额外握点选项。使用与扩展说明见 [美术资产](docs/ART_PIPELINE.md)。
-- 环境资产库：打开 `tools/environment_preview.tscn` 按 **F6**，查看建筑墙、石墙、塔、箱、推车和木架桥；PNG、材质和可调尺寸构件集中在 `assets/environment/`。编辑与碰撞边界见 [环境美术](docs/ENVIRONMENT_ART.md)。
-- F5 已启用玩家匕首/宝剑/大砍刀/弓、守卫剑盾、弓手弓及刀光的像素表现。模型对照工具：打开 `tools/weapon_pixel_lab.tscn`，按 **F6**；1 宝剑、2 大砍刀、3 匕首、Tab 原版/像素对照、V 导出当前帧。工具场景不读写进度，说明见 [武器像素化](docs/WEAPON_PIXEL_EXPERIMENT.md)。
 
-## 阅读代码
-先读 [当前架构](docs/ARCHITECTURE.md)。生命周期入口是 `scripts/world/level.gd`，地图参数是 `scripts/world/battlefield.gd`。
+- 双击 `play.bat`（或 `play_courtyard.bat`）运行最新源码，默认全屏；不再读取可能过时的 builds 导出包。启动器优先使用 GODOT_BIN，其次相邻 Godot 4.7.2 文件夹，最后 PATH 中的 godot.exe。
+- Godot 打开 `project.godot` 后 F5，同样进入 `scenes/courtyard_combat.tscn`。编辑器内嵌窗口受编辑器控制，需要独立全屏时使用BAT。
+- WASD移动，Shift疾跑，Alt翻滚，空格跳跃，左键使用当前武器，按住右键格挡，1–5切换随身武器；第五格为独立弓。滚轮阻尼缩放。
+- E交谈/调查/搜查，I行囊与日志。拖动整理，拖动时R旋转，右键操作，Shift单击快速转移。7个装备槽，8×6行囊；营地仓库可存物品。装备当前不改变人物外观。
+- F11 / Alt+Enter切换全屏；退出时恢复原窗口状态。设计画布1280×720，保持比例缩放，非16:9屏幕有必要黑边。背包可独立调节音乐和音效。
+- 走东面大路或北侧林径寻找信使背包；药车、路标、南侧石堆可以调查。信件、戒指和药师证词影响交付。遗迹内药材占3×3格，可回营向药师换钱；装不下的物品留在原处。
+- R重新出发保留既有物品和任务结果，重置敌人；不是重新开档。当前没有篇章重置按钮，也没有硬核撤离丢失物品规则。
 
-| 目录 | 职责 |
-|---|---|
-| `scripts/world/` | 关卡装配、战场/驿站/高度试验场、地形生成、导航、任务 |
-| `scripts/actors/` | 玩家移动/姿态；敌人感知、状态机、移动和攻击 |
-| `scripts/combat/` | 玩家输入和攻击时序、命中检测、弹道、武器参数类型 |
-| `scripts/presentation/` | 程序美术、武器模型、刀光、声音与投影 |
-| `scripts/art/`、`data/art_sources/` | 资产来源协议、稳定帧键、图集拼装、校验和手绘覆盖持久化 |
-| `scripts/items/`、`scripts/contracts/` | 库存、物品定义和快照结构 |
-| `scripts/progression/`、`scripts/persistence/` | 装备/首通成长与 JSON 存档 I/O |
-| `scripts/ui/` | HUD、背包、结算界面 |
-| `data/weapons/` | 当前 3D 武器的伤害、米制距离、秒制时序和显示比例 |
-| `data/encounters/` | 关卡敌人难度参数；驿站强化不修改原战场默认值 |
-| `data/enemies/` | 新物种的体型、血量、速度、攻击距离与分段时序 |
-| `tests/` | 当前功能回归；不是早期 Demo 业务代码 |
+## 接手与制作
 
-## 验证与导出
-在 PowerShell 中运行：
+先读 [HANDOFF.md](HANDOFF.md)、[AI_SYNC.md](AI_SYNC.md)、[架构](docs/ARCHITECTURE.md)。地图和资产扩展入口是 `woodpath_region.gd`，交互是 `woodpath_story.gd`，箱子/日志/钱币状态是 `expedition_state.gd`。
+
+- 场景沿用完整固定单视角画稿＋隐藏简单空间代理。[环境规范](docs/ENVIRONMENT_ART.md)，[林路原稿和配准](assets/environment/painted/woodpath/README.md)。纯美术基准 `scenes/painted_courtyard.tscn` 与F5篇章分开。
+- 人物沿用保存的 Blender源 → GLB → 96×96十二朝向颜色/深度/握点。[人物管线](docs/ART_PIPELINE.md)。管事与药师为独立源，仅烘焙轻呼吸；玩家动作源不为NPC制作重建。
+- 武器/刀光保持独立GPU像素化：[武器说明](docs/WEAPON_PIXEL_EXPERIMENT.md)。图集工作台 `tools/art_preview.tscn`，模型对照 `tools/weapon_pixel_lab.tscn`。
+- 物品图标原稿与提示词 `assets/ui/items/`；[像素字体许可](assets/ui/fonts/README.md)；[音效来源](assets/audio/sfx/README.md)。BGM为用户提供的 Sunlit Woodpath，原文件完整保留。
+
+## 验证
+
 ```powershell
-./scripts/check.ps1 -Suite smoke   # 导入及隔离进度的 F5 入口
-./scripts/check.ps1 -Suite core    # 当前战斗/任务/装备核心回归
-./scripts/check.ps1 -Suite all     # 加上高度、视野、投影等边界回归
-./scripts/check.ps1 -Suite smoke -Rendered
-./scripts/export_height.ps1       # 导出荒堡战场
-./scripts/export_height.ps1 -Sandbox
+./scripts/check.ps1 -Suite smoke
+./scripts/check.ps1 -Suite core
+./scripts/check.ps1 -Suite core -Rendered
 ```
-可用 `-GodotPath` 或 `GODOT_BIN` 指定引擎。测试说明见 [tests/README.md](tests/README.md)。日志/截图在 `work/`，导出包在 `builds/`，两者均不提交。
 
-## 保存和历史
-- 存档仍是 `user://tactical_progress_v1.json`，v1 JSON、物品 ID、20 格库存快照保持兼容。
-- 编辑器运行的项目名仍为 `Outpost RPG`；导出包保留原 `Outpost RPG Height Lab` 身份，因此不搬动既有存档目录。战场和试验场在同一种运行方式下共享成长。
-- 旧 2D 四关、T01–T07 报告和旧测试已从活跃工程移除；完整回退节点是 [9c4dc82](https://github.com/sajimi2/VibeGame_No.1/commit/9c4dc82ef5445503f2a7511232f8dd6f8a86a38c)，标签 `backup/pre-3d-cleanup-20260917`。不要在有未提交工作的目录中直接覆盖恢复。
-- 第三方 Godot AI 工具保持原样，使用见 [GODOT_AI_SETUP.md](GODOT_AI_SETUP.md)；个人 `.codex/` 配置不提交。
-## 角色三维源模型与离线图集
+单项范围见 [tests/README.md](tests/README.md)。新篇章专项为 woodpath_expedition / woodpath_region；相机、战斗、全屏有各自专项。测试通过 tactical/testing 隔离玩家进度，日志和截图放 work/；自动检查和画面检查不等于主观好玩验收。
 
-七种角色统一采用 **Blender → GLB → Godot 离线烘焙 96×96**，十二朝向，显示大小沿用已确认的 1.2 倍观察基准。可编辑源集中在 `assets/characters/blender/`；工作台同时查看 3D 源模型和像素图集。导出入口 `tools/blender/export_characters.py`，烘焙入口 `tools/bake_characters.gd`。编辑、补色回导与限制见 [美术流程](docs/ART_PIPELINE.md)。
+## 进度与历史
+
+存档仍用 `user://tactical_progress_v1.json`，内部version=2。旧v1迁移保留备份，溢出/未知物品保存在恢复仓储，不丢弃。已完成委托继续保留；新药材箱只在快照中缺失时初始化。
+
+旧荒堡/旧驿站/高度场场景和脚本已退出活跃目录，物理回归依赖集中 `tests/fixtures/legacy/`，旧BAT及过时导出脚本移出。共享材质/角色工具仍保留。粗格/缓坡是历史对照，F5不使用。不要为了查历史重置当前工作区。
+
+当前未接在线AI，无开放世界生成、建造种植、重量饥饿或完整NPC生活模拟。第三方 Godot AI 插件保持原样，接入见 [GODOT_AI_SETUP.md](GODOT_AI_SETUP.md)。

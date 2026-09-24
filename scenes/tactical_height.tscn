@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://7c7biix4fgpg"]
 
-[ext_resource type="Script" path="res://scripts/world/height_sandbox.gd" id="1"]
+[ext_resource type="Script" path="res://tests/fixtures/legacy/height_sandbox.gd" id="1"]
 
-[node name="HeightLab" type="Node3D"]
+[node name="HeightLab" type="Node3D" unique_id=946811558]
 script = ExtResource("1")

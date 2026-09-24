@@ -36,7 +36,7 @@ func run() -> void:
 			var sample: Dictionary=source.sample(clips[row],direction,[0,3,20,19,32][row],{"part":"full","ready":"shield_ready","move":0,"gait":-1})
 			overview.blit_rect(sample.texture.get_image(),Rect2i(0,0,96,96),Vector2i(direction*96,row*96))
 	overview.save_png("res://work/skeleton96/actions_12_directions.png")
-	var scene: Node3D=load("res://scenes/battlefield.tscn").instantiate()
+	var scene: Node3D=load("res://tests/fixtures/legacy/battlefield.tscn").instantiate()
 	scene.results_enabled=false
 	root.add_child(scene)
 	for i in 120:
