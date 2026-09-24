@@ -1,0 +1,170 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_vodys"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustrated_prop.gdshader" id="2_m7isk"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/courtyard/textures/cart.png" id="3_bh4vo"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/masonry.png" id="4_wn3md"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="5_akva4"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="6_ln8w0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_w5lhj"]
+render_priority = 0
+shader = ExtResource("2_m7isk")
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+shader_parameter/illustration = ExtResource("3_bh4vo")
+shader_parameter/prop_origin = Vector3(5.1, 0, 5.9)
+shader_parameter/depth_size = Vector3(2, 1.6, 2.5)
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/tint = null
+shader_parameter/logical_size = null
+shader_parameter/depth_mode = 0
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.8
+
+[sub_resource type="QuadMesh" id="QuadMesh_fb10i"]
+size = Vector2(2.8, 2.4410257)
+subdivide_depth = 12
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dg1jm"]
+size = Vector3(1.55, 1.1, 1.8)
+
+[sub_resource type="Shader" id="Shader_p1cxi"]
+code = "#define WALL_REVEAL_PASS
+shader_type spatial;
+render_mode cull_disabled, specular_disabled;
+#include \"res://scripts/presentation/environment_surface.gdshaderinc\"
+#ifdef WALL_REVEAL_PASS
+#include \"res://scripts/presentation/wall_reveal.gdshaderinc\"
+#endif
+void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
+	surface_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+	surface_normal = normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
+	ALBEDO = surface_color(surface_position,surface_normal);
+	ROUGHNESS = 1.0;
+	if (soft_edges) {
+		vec2 cell = floor(surface_position.xz*12.0);
+		float patch = fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+		float edge = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		if (edge < 0.025+patch*0.035) discard;
+	}
+}
+void light() {
+	float amount = max(dot(NORMAL,LIGHT),0.0);
+	float band = banded ? floor(amount*4.0+0.5)/4.0 : amount;
+	DIFFUSE_LIGHT += band*ATTENUATION*LIGHT_COLOR/PI;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6lf0j"]
+render_priority = 0
+shader = SubResource("Shader_p1cxi")
+shader_parameter/surface_texture = ExtResource("4_wn3md")
+shader_parameter/texels_per_meter = 25.0
+shader_parameter/soft_edges = false
+shader_parameter/banded = null
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_2lanj"]
+size = Vector3(1.55, 1.1, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xlnsn"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 0.85, 0.32)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bylcl"]
+render_priority = -120
+shader = ExtResource("5_akva4")
+shader_parameter/foot_origin = Vector2(5.1, 5.9)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.17, -0.45900002, 0.8, 0.73, 0.24000001, -0.998, 0.68, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(-0.68, 0.05, 0.16, 0.34, 0.68, 0.05, 0.16, 0.34, 0, 0.1, 0.7, 0.6, 0, 0, 0, 0)
+shader_parameter/lobe_count = 2
+shader_parameter/contact_count = 3
+shader_parameter/stem_end = Vector2(0, 0)
+shader_parameter/stem_radius = 0.0
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_n7xo2"]
+size = Vector2(2.41, 2.7979999)
+
+[node name="Cart" type="Node3D" unique_id=1017278517]
+process_physics_priority = 30
+script = ExtResource("1_vodys")
+asset_id = "cart"
+spec = {
+"anchor": [0.65, 0.8],
+"depth_box": [2.0, 1.6, 2.5],
+"shape": "box",
+"size": [1.55, 1.1, 1.8],
+"width": 2.8
+}
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=1770623523]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.5581634, 0.5998714, -0.20318086)
+material_override = SubResource("ShaderMaterial_w5lhj")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_fb10i")
+
+[node name="SimpleBody" type="StaticBody3D" parent="." unique_id=1571749253]
+collision_layer = 13
+collision_mask = 0
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="SimpleBody" unique_id=743409460]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("BoxShape3D_dg1jm")
+
+[node name="OcclusionProxy" type="MeshInstance3D" parent="SimpleBody" unique_id=1217650166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+layers = 0
+material_override = SubResource("ShaderMaterial_6lf0j")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_2lanj")
+
+[node name="CollisionGuide" type="MeshInstance3D" parent="SimpleBody" unique_id=1919002381]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_xlnsn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_2lanj")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=1390994696]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.165, 0.008, 5.501)
+top_level = true
+material_override = SubResource("ShaderMaterial_bylcl")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_n7xo2")
+script = ExtResource("6_ln8w0")
+footprint = Rect2(-1.1400001, -1.7980001, 2.41, 2.7979999)

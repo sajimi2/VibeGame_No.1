@@ -1,0 +1,76 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/animated_container.gd" id="1_kx13f"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/source/chest_motion.png" id="2_hw4q0"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="3_v867g"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="4_wyc6a"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_afpir"]
+atlas = ExtResource("2_hw4q0")
+region = Rect2(0, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_db0e2"]
+atlas = ExtResource("2_hw4q0")
+region = Rect2(525.75, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gbvtw"]
+atlas = ExtResource("2_hw4q0")
+region = Rect2(1051.5, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q6olh"]
+atlas = ExtResource("2_hw4q0")
+region = Rect2(1577.25, 0, 525.75, 748)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6rb7r"]
+size = Vector3(1, 0.62, 0.65)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3i0e7"]
+render_priority = -120
+shader = ExtResource("3_v867g")
+shader_parameter/foot_origin = Vector2(63, -5)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.11000001, -0.29700002, 0.65, 0.42, 0.19, -0.813, 0.59, 0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(0, 0, 0.6, 0.38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/lobe_count = 2
+shader_parameter/contact_count = 1
+shader_parameter/stem_end = Vector2(0, 0)
+shader_parameter/stem_radius = 0.0
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_gtis1"]
+size = Vector2(1.98, 2.043)
+
+[node name="Container_chest" type="Node3D" unique_id=1436988353]
+process_mode = 3
+script = ExtResource("1_kx13f")
+frames = Array[AtlasTexture]([SubResource("AtlasTexture_afpir"), SubResource("AtlasTexture_db0e2"), SubResource("AtlasTexture_gbvtw"), SubResource("AtlasTexture_q6olh")])
+
+[node name="Illustration" type="Sprite3D" parent="." unique_id=528728816]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.19313008, 0.6526418, -0.41416878)
+cast_shadow = 0
+pixel_size = 0.0026628627
+alpha_cut = 1
+texture_filter = 0
+texture = SubResource("AtlasTexture_afpir")
+
+[node name="StaticBody3D2" type="StaticBody3D" parent="." unique_id=875557274]
+collision_layer = 9
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="StaticBody3D2" unique_id=1889626891]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.31, 0)
+shape = SubResource("BoxShape3D_6rb7r")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=861530693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63.09, 0.008, -5.3415)
+top_level = true
+material_override = SubResource("ShaderMaterial_3i0e7")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_gtis1")
+script = ExtResource("4_wyc6a")
+footprint = Rect2(-0.90000004, -1.3629999, 1.98, 2.043)

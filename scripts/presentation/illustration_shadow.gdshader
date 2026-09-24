@@ -1,6 +1,7 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never;
 uniform vec2 foot_origin;
+uniform vec2 foot_scale=vec2(1.0);
 uniform vec4 lobes[16];
 uniform vec4 contacts[4];
 uniform int lobe_count=0;
@@ -42,6 +43,7 @@ float hull(vec2 p) {
 void fragment() {
 	// 世界网格保持小像素台阶；多团树冠取并集，重叠处不叠出深色圆圈。
 	vec2 p=(floor(world_point*pixels_per_meter)+.5)/pixels_per_meter-foot_origin;
+	p/=max(foot_scale,vec2(.001));
 	float body=0.0;
 	for(int i=0;i<16;i++) { if(i>=lobe_count) break; body=max(body,lobe(p-sway,lobes[i])); }
 	if(polygon_count>2) body=max(body,hull(p-sway));

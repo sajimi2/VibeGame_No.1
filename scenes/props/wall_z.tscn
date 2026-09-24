@@ -1,0 +1,193 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_fyohe"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustrated_prop.gdshader" id="2_8xame"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png" id="3_0kn3r"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/masonry.png" id="4_iiu3s"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="5_3tiqd"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="6_v342b"]
+[ext_resource type="Shader" path="res://scripts/presentation/woodland_footing.gdshader" id="7_7el31"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3idb3"]
+atlas = ExtResource("3_0kn3r")
+region = Rect2(27, 104, 1077, 1272)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lvf23"]
+render_priority = 0
+shader = ExtResource("2_8xame")
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+shader_parameter/illustration = SubResource("AtlasTexture_3idb3")
+shader_parameter/prop_origin = Vector3(52.8, 0, -11)
+shader_parameter/depth_size = Vector3(0.65, 1.45, 4)
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/tint = null
+shader_parameter/logical_size = Vector2(73, 86)
+shader_parameter/depth_mode = 0
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.72
+
+[sub_resource type="QuadMesh" id="QuadMesh_dvbyg"]
+size = Vector2(2.6, 3.0707521)
+subdivide_depth = 12
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_b4t85"]
+size = Vector3(0.6, 1.05, 4)
+
+[sub_resource type="Shader" id="Shader_p1cxi"]
+code = "#define WALL_REVEAL_PASS
+shader_type spatial;
+render_mode cull_disabled, specular_disabled;
+#include \"res://scripts/presentation/environment_surface.gdshaderinc\"
+#ifdef WALL_REVEAL_PASS
+#include \"res://scripts/presentation/wall_reveal.gdshaderinc\"
+#endif
+void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
+	surface_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+	surface_normal = normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
+	ALBEDO = surface_color(surface_position,surface_normal);
+	ROUGHNESS = 1.0;
+	if (soft_edges) {
+		vec2 cell = floor(surface_position.xz*12.0);
+		float patch = fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+		float edge = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		if (edge < 0.025+patch*0.035) discard;
+	}
+}
+void light() {
+	float amount = max(dot(NORMAL,LIGHT),0.0);
+	float band = banded ? floor(amount*4.0+0.5)/4.0 : amount;
+	DIFFUSE_LIGHT += band*ATTENUATION*LIGHT_COLOR/PI;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kgewx"]
+render_priority = 0
+shader = SubResource("Shader_p1cxi")
+shader_parameter/surface_texture = ExtResource("4_iiu3s")
+shader_parameter/texels_per_meter = 25.0
+shader_parameter/soft_edges = false
+shader_parameter/banded = null
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_fckl2"]
+size = Vector3(0.6, 1.05, 4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_crr0s"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 0.85, 0.32)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_55c1o"]
+render_priority = -120
+shader = ExtResource("5_3tiqd")
+shader_parameter/foot_origin = Vector2(52.8, -11)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.18850002, -0.50895005, 0.325, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(0, 0, 0.2925, 1.8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/lobe_count = 1
+shader_parameter/contact_count = 1
+shader_parameter/stem_end = Vector2(0, 0)
+shader_parameter/stem_radius = 0.0
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_04s8q"]
+size = Vector2(1.406, 4.90895)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5oqkv"]
+render_priority = -125
+shader = ExtResource("7_7el31")
+shader_parameter/extent = null
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_x5dlw"]
+size = Vector2(1.1, 4.4)
+
+[node name="WallZ" type="Node3D" unique_id=425876713]
+process_physics_priority = 30
+script = ExtResource("1_fyohe")
+asset_id = "wall_z"
+spec = {
+"anchor": [0.5, 0.72],
+"aspect": 1.18105849582173,
+"depth_box": [0.65, 1.45, 4.0],
+"pixels_per_meter": 28.0,
+"region": [27.0, 104.0, 1077.0, 1272.0],
+"shape": "box",
+"size": [0.6, 1.05, 4.0],
+"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+"width": 2.6
+}
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=136453659]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.16375971, 0.5533909, -0.35118383)
+material_override = SubResource("ShaderMaterial_lvf23")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_dvbyg")
+
+[node name="SimpleBody" type="StaticBody3D" parent="." unique_id=253055067]
+collision_layer = 13
+collision_mask = 0
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="SimpleBody" unique_id=779875318]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.525, 0)
+shape = SubResource("BoxShape3D_b4t85")
+
+[node name="OcclusionProxy" type="MeshInstance3D" parent="SimpleBody" unique_id=1335035587]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.525, 0)
+layers = 0
+material_override = SubResource("ShaderMaterial_kgewx")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_fckl2")
+
+[node name="CollisionGuide" type="MeshInstance3D" parent="SimpleBody" unique_id=978672016]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.525, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_crr0s")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_fckl2")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=1339265849]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52.9105, 0.008, -11.354475)
+top_level = true
+material_override = SubResource("ShaderMaterial_55c1o")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_04s8q")
+script = ExtResource("6_v342b")
+footprint = Rect2(-0.5925, -2.80895, 1.406, 4.90895)
+
+[node name="GroundContact" type="MeshInstance3D" parent="." unique_id=877887311]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+material_override = SubResource("ShaderMaterial_5oqkv")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_x5dlw")

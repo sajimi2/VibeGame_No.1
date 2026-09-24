@@ -1,3 +1,4 @@
+@tool
 extends Node3D
 ## 独立绘画层：完整插画经少量配准点拆成墙/屋顶纸片，原小屋仍持有物理与遮挡状态。
 ## 不修改 Blender 网格，也不重新实现战斗/透视算法；只订阅对应墙组和屋顶的材质参数。
@@ -15,6 +16,10 @@ var registration: Dictionary
 var ground_shadow: MeshInstance3D
 var original_casters: Dictionary={}
 
+func _ready() -> void:
+	ground_shadow=get_node_or_null("PaintedHouseShadow")
+	set_notify_transform(true)
+
 ## 关卡的原墙遮挡注册结束后调用一次；绑定的是显示副本，绝不隐藏阴影代理的原材质。
 func setup(source: Node3D) -> void:
 	cottage=source
@@ -30,16 +35,17 @@ func setup(source: Node3D) -> void:
 	# 显示与空间代理完全分离：包括内侧和墙厚端面，原墙网格只留给几何采样与碰撞。
 	for path in ["FrontWall","WallEast","WallWest","WallBack","SupportFloor"]:
 		for visual in cottage.get_node(path).get_children():
-			if visual is MeshInstance3D: original_layers[visual]=visual.layers
-	for piece in cottage.roof.pieces: roof_layers[piece.get_instance_id()]=piece.layers
+			if visual is MeshInstance3D: original_layers[visual]=visual.get_meta("original_layers",visual.layers)
+	for piece in cottage.roof.pieces: roof_layers[piece.get_instance_id()]=piece.get_meta("original_layers",piece.layers)
 	# 仅在新绘画路线接管投影；不隐藏网格，不干扰屋顶/墙的视线采样与碰撞。
 	for visual in cottage.find_children("*","MeshInstance3D",true,false):
 		if visual.cast_shadow!=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
 			original_casters[visual]={"casting":visual.cast_shadow,"layers":visual.layers}
-	ground_shadow=preload("res://scripts/presentation/illustration_shadow.gd").new()
-	ground_shadow.name="PaintedHouseShadow"
-	add_child(ground_shadow)
-	ground_shadow.setup("cottage",1.0)
+	if ground_shadow==null:
+		ground_shadow=preload("res://scripts/presentation/illustration_shadow.gd").new()
+		ground_shadow.name="PaintedHouseShadow"
+		add_child(ground_shadow)
+		ground_shadow.setup("cottage",1.0)
 	set_notify_transform(true)
 	ready_for_comparison=true
 	set_enabled(true)
@@ -114,6 +120,12 @@ func _interior() -> void:
 			bindings.back().parameters=[]
 
 func _card(label: String,vertices: PackedVector3Array,uv: PackedVector2Array,indices: PackedInt32Array,image: String,source: ShaderMaterial,roof: bool) -> void:
+	if has_node(label):
+		var saved: MeshInstance3D=get_node(label)
+		saved.material_override=saved.material_override.duplicate()
+		cards.append(saved)
+		bindings.append({"material":saved.material_override,"source":source,"parameters":Style.ROOF_PARAMETERS if roof else Style.WALL_PARAMETERS})
+		return
 	var arrays:=[]
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX]=vertices

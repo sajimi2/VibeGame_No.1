@@ -77,8 +77,11 @@ func _build_environment() -> void:
 
 ## 延迟到原墙注册之后绑定，绘画层不取代控制器的状态所有权。
 func _finish() -> void:
-	painting=preload("res://scripts/presentation/painted_cottage.gd").new()
-	cottage.add_child(painting)
+	painting=cottage.get_node_or_null("Painting")
+	if painting==null:
+		painting=preload("res://scripts/presentation/painted_cottage.gd").new()
+		painting.name="Painting"
+		cottage.add_child(painting)
 	painting.setup(cottage)
 	# 环境美术投影与人物实时投影共用白天光向；不再保留第二个时间推算方向。
 	var shadow_style=preload("res://assets/environment/painted/courtyard/shadow_style.tres")

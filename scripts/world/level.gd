@@ -45,21 +45,27 @@ func _ready() -> void:
 		window_mode.name = "GameWindowMode"
 		get_window().add_child.call_deferred(window_mode)
 	RenderingServer.set_default_clear_color(Color("202e36"))
-	var environment_node := WorldEnvironment.new()
+	var environment_node := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	var saved_environment:=environment_node!=null
+	if not saved_environment: environment_node=WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("202e36")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("b9cbd4")
 	environment.ambient_light_energy = 0.48
-	environment_node.environment = environment
-	add_child(environment_node)
-	var sunlight := DirectionalLight3D.new()
+	if saved_environment: environment=environment_node.environment
+	else:
+		environment_node.environment = environment
+		add_child(environment_node)
+	var sunlight := get_node_or_null("Sunlight") as DirectionalLight3D
+	var saved_sun:=sunlight!=null
+	if not saved_sun: sunlight=DirectionalLight3D.new()
 	sunlight.rotation_degrees = Vector3(-55, -30, 0)
 	sunlight.light_color = Color("ffe4b5")
 	sunlight.light_energy = 0.8
 	sunlight.shadow_enabled = true
-	add_child(sunlight)
+	if not saved_sun: add_child(sunlight)
 	lighting = Lighting.new()
 	add_child(lighting)
 	lighting.pixel_material=Lighting.pixel_pass(self)

@@ -1,3 +1,19 @@
+# 当前状态 · 2026-09-24 可在Godot编辑的正式地图
+
+用户授权先commit/push回退点，再将地图改为可手动摆放的场景。改造前完整快照 `ae836bf` 已推送到 `origin/codex/skeleton-blender-96`，没有重置旧进度或修改独立2D/学习工程。
+
+正式入口 `scenes/courtyard_combat.tscn` 已有Map/Ground、Courtyard、WoodpathRegion、Cottage、Interactions、PlayerSpawn和EditorCamera。18种模板位于 `scenes/props/`：画稿、隐藏碰撞、投影均已落盘；NPC保存现有图集站姿供编辑观察，运行仍用原播放器。Map存在时不跑旧布局生成器；物件集合只绑定现有孩子。@tool只同步已保存的物件/阴影，不伪造整个地图的临时预览。小屋沿用原墙/屋顶控制器并绑定已保存画稿。
+
+woodpath_story通过Map中的interaction_id绑定既有任务/容器ID，坐标派生自真实节点global_position。拖动箱子同时移动画面/碰撞/标签/E范围；药车、路标、石堆的调查Marker跟随父物件。复制墙/树和删除普通景物可保存重载，不在运行时补回。地图首次进入编辑器触发Godot自动3D压缩，已恢复原无损/no-mipmap并对直接引用素材关闭detect_3d自动转换，保护像素和深度图。
+
+操作见 `docs/EDITING_MAP.md`，HANDOFF/README/架构/协作规则已同步。道路形状、敌人布局、跟随镜头、统一光照、UI和角色制作管线未一起重构；单视角画稿不可随意转动。任务ID沿用存档，复制相同ID不能当作新容器。结构入口Map/Courtyard/WoodpathRegion/Cottage暂不重命名。一次性迁移工具在已有Map时拒绝覆盖，日常只编辑tscn。
+
+本轮实际验证：GPU `editable_scene` **27项0失败**（磁盘重载、复制/删除、真实碰撞、宝箱新旧位置交互、运行中移动、药车调查点、移动小屋后的透视）；GPU `woodpath_region` **41项0失败**（实走路线/两NPC/开合/搜查等）；无头 `woodpath_expedition` **77项0失败**、`courtyard_combat` **43项0失败**、startup **8项0失败**。引擎编辑模式 `editable_scene_editor` **8项0失败**，验证不启动总控也有画面/碰撞，移动同步材质与阴影，NPC站姿/箱帧存在。合计204项断言通过，不算主观试玩验收。首次编辑模式测试误用了不存在的树名，修正为按asset_id发现后重跑通过。相关GPU截图已查看，日志/临时编辑场景在忽略目录 `work/editable_scene/`。
+
+编辑器导入无解析错误；仍报告UID重复及退出资源释放告警，不记为零错误导入。桌面检查遇到外部文件重载提示，随后用户用Esc停止Computer Use，已停止所有桌面控制；未完成真实编辑器中手工拖动的UI验收，不冒充MCP验证。当前会话没有暴露Godot MCP工具。所有自动玩法检查均隔离真实存档。后续提交应以实际git log/status为准。
+
+---
+
 # 当前状态 · 2026-09-23 局部像素尺子对照
 
 用户批准先用人物、宝箱、横竖墙、小块草地做局部实验，不宣称整图统一。新增 `play_pixel_density_lab.bat` / `tools/pixel_density_lab.tscn`，复用当前驿站东南墙角；F6切原版/校准，F7原视野/2点/3点观察档，保留阻尼、走动和开箱。实验隔离进度、隐藏并停用敌人AI，F5没有装配实验资源。

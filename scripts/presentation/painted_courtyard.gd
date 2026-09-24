@@ -2,11 +2,22 @@ extends Node3D
 ## 资产目录持有图片/尺寸，layout 持有摆放；这里只装配物件和装饰，不控制玩家或 UI。
 const Prop=preload("res://scripts/presentation/illustrated_prop.gd")
 const FOLDER="res://assets/environment/painted/courtyard/"
+@export_storage var authored_layout := false
 var props: Array[Node3D]=[]
 var flowers: Array[Node3D]=[]
 var ambience: Node3D
 
 func _ready() -> void:
+	if authored_layout:
+		for child in find_children("*","Node3D",true,false):
+			if child.get_script()==Prop:
+				if child.asset_id=="flowers": flowers.append(child)
+				else: props.append(child)
+		ambience=preload("res://scripts/presentation/courtyard_ambience.gd").new()
+		ambience.name="ButterfliesAndLeaves"
+		add_child(ambience)
+		ambience.setup(JSON.parse_string(FileAccess.get_file_as_string(FOLDER+"layout.json")))
+		return
 	var catalog: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(FOLDER+"catalog.json"))
 	var baked: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(FOLDER+"baked.json"))
 	var layout: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(FOLDER+"layout.json"))

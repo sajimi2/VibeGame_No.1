@@ -6,12 +6,17 @@ const MAIN=[Vector2(.8,14),Vector2(12,14),Vector2(20,10),Vector2(32,10),Vector2(
 const SIDE=[Vector2(20,10),Vector2(22,0),Vector2(30,-9),Vector2(42,-17),Vector2(54,-17),Vector2(60,-7)]
 const RETURN=[Vector2(60,-7),Vector2(66,3),Vector2(55,15),Vector2(42,8)]
 const SPOTS={"steward":Vector3(-1,0,13.6),"healer":Vector3(-4.4,0,8.2),"stash":Vector3(2.4,0,14.7),"satchel":Vector3(60,0,-8),"chest":Vector3(63,0,-5),"cache":Vector3(42,0,-20),"trail":Vector3(29,0,-8),"sign":Vector3(18,0,12),"memorial":Vector3(53,0,15),"supply":Vector3(62.2,0,-16)}
+@export_storage var authored_layout := false
 var props: Array[Node3D]=[]
 var catalog: Dictionary
 var old_catalog: Dictionary
 var old_baked: Dictionary
 
 func _ready() -> void:
+	if authored_layout:
+		for child in find_children("*","Node3D",true,false):
+			if child.get_script()==Prop: props.append(child)
+		return
 	catalog=JSON.parse_string(FileAccess.get_file_as_string(ROOT+"unified/catalog.json"))
 	old_catalog=JSON.parse_string(FileAccess.get_file_as_string("res://assets/environment/painted/courtyard/catalog.json")).assets
 	old_baked=JSON.parse_string(FileAccess.get_file_as_string("res://assets/environment/painted/courtyard/baked.json"))

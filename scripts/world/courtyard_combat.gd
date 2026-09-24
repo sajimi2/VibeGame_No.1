@@ -4,13 +4,29 @@ var region: Node3D
 const Region=preload("res://scripts/world/woodpath_region.gd")
 ## 正式战斗复用已验收的小院装配；美术实验入口仍保持无敌人的观察模式。
 func _ready() -> void:
+	# 旧专项显式关闭故事时使用原实验地形，不把正式Map与实验生成器叠在一起。
+	if not story_mode and has_node("Map"):
+		get_node("Map").free()
 	combat_mode=true
 	if story_mode: outskirts_mode=2
 	super._ready()
 func level_title() -> String: return "林间小院 / 失踪信使" if story_mode else "林间小院 / 剑与弓"
 func create_objective() -> Node3D:
-	return preload("res://scripts/world/woodpath_story.gd").new() if story_mode else super.create_objective()
+	if not story_mode: return super.create_objective()
+	var story=preload("res://scripts/world/woodpath_story.gd").new()
+	story.authored_map=get_node_or_null("Map")
+	return story
+
+func spawn_point() -> Vector3:
+	var marker=get_node_or_null("Map/PlayerSpawn")
+	return marker.global_position if marker!=null else super.spawn_point()
 func _build_environment() -> void:
+	# 正式地图直接使用编辑器保存的节点；删除物件后不从坐标表补回。
+	if story_mode and has_node("Map"):
+		cottage=get_node("Map/Cottage")
+		courtyard=get_node("Map/Courtyard")
+		region=get_node("Map/WoodpathRegion")
+		return
 	super._build_environment()
 	if story_mode:
 		region=Region.new()

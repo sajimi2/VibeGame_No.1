@@ -1,3 +1,4 @@
+@tool
 extends MeshInstance3D
 ## 固定白天的美术投影：按物件体量编排地面轮廓，脱离正面画稿，避免整张树被拉成长条。
 const ShaderFile=preload("res://scripts/presentation/illustration_shadow.gdshader")
@@ -7,8 +8,15 @@ var style=DEFAULT_STYLE
 static var profiles: Dictionary={}
 var sway_world:=Vector2.ZERO
 var anchor: Node3D
-var footprint:=Rect2()
+@export_storage var footprint:=Rect2()
 var ground_height: Callable
+
+## 从场景恢复静态影形；每个实例独享材质，移动一个物件不影响其他影子。
+func _ready() -> void:
+	if mesh==null or material_override==null: return
+	anchor=get_parent()
+	material_override=material_override.duplicate()
+	sync_transform()
 
 ## 入树后装配体量；公共样式持有所有视觉参数，静态物件不订阅逐帧回调。
 func setup(id: String,factor: float,fallback_size: Vector3=Vector3.ONE) -> void:
@@ -72,7 +80,10 @@ func setup(id: String,factor: float,fallback_size: Vector3=Vector3.ONE) -> void:
 func sync_transform() -> void:
 	if not is_instance_valid(anchor) or material_override==null: return
 	var origin:=anchor.global_position
-	global_position=origin+Vector3(footprint.get_center().x,.008,footprint.get_center().y)
+	var factor:=anchor.global_basis.get_scale()
+	global_basis=Basis.from_scale(factor)
+	global_position=origin+Vector3(footprint.get_center().x*factor.x,.008,footprint.get_center().y*factor.z)
+	material_override.set_shader_parameter("foot_scale",Vector2(factor.x,factor.z))
 	material_override.set_shader_parameter("foot_origin",Vector2(origin.x,origin.z))
 	if ground_height.is_valid(): _fit_mesh()
 

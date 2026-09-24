@@ -58,3 +58,7 @@ Blender 独立验证：运行 `tools/blender/validate_characters.py`，读取七
 `courtyard_combat`：小院三敌/任务装配，独立弓左键与右键格挡、实际命中蓄能、翻滚碰撞/免伤、五格图标与暂停边界；GPU 模式保存横劈、过顶下劈、翻滚八帧及背包截图。`locomotion_art` 后退跳的系统指针部分需要 Rendered，无头显式跳过；其余移动检查照常运行。
 
 旧荒堡/驿站/高度场入口已移至 `tests/fixtures/legacy/`，只为已有物理专项提供固定夹具。活跃场景只有绘画小院与当前小院林路篇章，不能通过旧BAT启动。
+
+## 可编辑地图
+
+`editable_scene_test.gd` 验证搬移/复制/删除保存重载、真实碰撞与交互，已纳入core/art。`editable_scene_editor_test.gd` 单独使用 `--headless --editor --script res://tests/tactical/editable_scene_editor_test.gd` 检查编辑模式的画稿与脚点同步；编辑器退出仍可能报告既有资源释放告警。两者不替代用户在Godot中的手工编辑与试玩。

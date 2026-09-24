@@ -38,3 +38,7 @@ Godot 4.7.2 / GDScript / Compatibility。当前是固定斜角正交、三维空
 旧荒堡/旧驿站/高度场场景和脚本已退出活跃目录，物理回归依赖集中 `tests/fixtures/legacy/`，旧BAT及过时导出脚本移出。共享材质/角色工具仍保留。粗格/缓坡是历史对照，F5不使用。不要为了查历史重置当前工作区。
 
 当前未接在线AI，无开放世界生成、建造种植、重量饥饿或完整NPC生活模拟。第三方 Godot AI 插件保持原样，接入见 [GODOT_AI_SETUP.md](GODOT_AI_SETUP.md)。
+
+## 在 Godot 编辑地图
+
+主场景 `scenes/courtyard_combat.tscn` → 展开 `Map`。树、墙、宝箱和NPC可以直接选中移动保存；模板位于 `scenes/props/`。操作与边界见 [地图编辑说明](docs/EDITING_MAP.md)。

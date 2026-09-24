@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_2u6yq"]
+[ext_resource type="Shader" path="res://scripts/presentation/ground_decoration.gdshader" id="2_7pyan"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/unified/source/litter.png" id="3_4nvqx"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i8e0g"]
+atlas = ExtResource("3_4nvqx")
+region = Rect2(89, 18, 1566, 909)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vebpv"]
+render_priority = -110
+shader = ExtResource("2_7pyan")
+shader_parameter/illustration = SubResource("AtlasTexture_i8e0g")
+shader_parameter/prop_origin = Vector3(13.017932, 0.03, 20.8692)
+shader_parameter/ground_normal = null
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.65
+
+[sub_resource type="QuadMesh" id="QuadMesh_6cu0h"]
+size = Vector2(1.2354091, 0.7171053)
+subdivide_depth = 12
+
+[node name="Litter" type="Node3D" unique_id=1585776792]
+process_physics_priority = 30
+script = ExtResource("1_2u6yq")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=449904727]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.026074363, 0.088112734, -0.055916652)
+material_override = SubResource("ShaderMaterial_vebpv")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_6cu0h")

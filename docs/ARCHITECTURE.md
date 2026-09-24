@@ -7,7 +7,7 @@
 | 所有者 | 职责 / 扩展入口 | 不应承担 |
 | --- | --- | --- |
 | `world/level.gd` | 装配玩家、相机、战斗、UI、导航、遮挡；地图覆盖 `_build_environment / spawn_point / enemy_layout / navigation_bounds` | 生成画稿、图集播放细节、库存 I/O |
-| `world/woodpath_region.gd` | 林路布局、共用道路折线、装饰避让与画稿装配 | 任务/库存/存档 |
+| `world/woodpath_region.gd` | 正式Map的物件集合绑定；保留旧实验布局生成及道路折线 | 任务/库存/存档 |
 | `tests/fixtures/legacy/` | 旧荒堡/驿站/高度场的物理回归夹具，不是活跃地图 | 新玩法入口 |
 | `world/painted_courtyard.gd` | 绘画小院装配及观察快捷键；combat_mode 决定是否启用玩法 | 未来完整游戏已实现的承诺 |
 | `world/terrace_layout.gd` → `terrace_ground.gd` | 粗格高度/坡向/外露边 → 平台与侧壁网格、同源碰撞；由小院注入种子 | 玩家移动、战斗、导航或进度状态 |
@@ -23,6 +23,16 @@
 | `ui/` | HUD、背包、结果、窗口输入 | 修改库存内部数据或重算伤害 |
 
 以上路径以 `scripts/` 为根。游戏未增加 Autoload；现有 Autoload 是 Godot AI 工具辅助。第三方插件不参与自有业务整理。
+
+## 正式地图的人工编辑入口（2026-09-24）
+
+`scenes/courtyard_combat.tscn/Map` 保存固定地图，`scenes/props/` 保存18种可复用物件场景。树、石墙、地板、屋内空间代理、画稿和箱子碰撞在运行前已存在；`courtyard_combat._build_environment` 只绑定这些节点，不从旧layout重建。收藏集合的 `authored_layout` 只做节点发现。无Map的历史实验保持旧生成入口；明确关闭story_mode的回归会移除正式Map后装配实验布局。
+
+`illustrated_prop` / `animated_container` 的 `@tool` 只绑定已保存节点、独立材质并同步脚点，不是整个地图的编辑器生成器。物件平移时画稿深度原点、顶层阴影同步；碰撞是同根子节点。小屋保存原Roof、七片画稿和物理体，墙注册之后 `painted_cottage.setup` 绑定现有画稿，不覆盖网格/变换。NPC的EditorPose只供摆放，运行时隐藏并继续现有离线图集播放。
+
+任务由 `courtyard_combat.create_objective` 注入Map。`woodpath_story.bind_progress` 收集 `metadata/interaction_id`，把节点与既有容器ID/剧情事实绑定；`_refresh_spots` 从global_position派生标签/距离/声音坐标。药车、路标和纪念石堆的调查Marker是其子节点。原SPOTS只服务未迁移实验；不作为正式地图位置来源。ID关联既有存档，不能复制同ID当作新库存；本轮未改存档结构。
+
+详见 `EDITING_MAP.md`。地表道路折线、敌人布局、相机跟随和UI仍由原模块负责。地图节点的保存不等于任意转动单视角插画；固定视角约束不变。新场景直接引用的像素/深度纹理关闭detect_3d自动压缩，保留无损无mipmap规格，防止编辑器首次看到3D引用就重新有损导入。
 
 ## 装配顺序与状态所有权
 

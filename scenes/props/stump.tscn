@@ -1,0 +1,175 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_3lvlk"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustrated_prop.gdshader" id="2_7uwoy"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/courtyard/textures/stump.png" id="3_8w2fx"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/masonry.png" id="4_quqtn"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="5_kfngf"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="6_ikytp"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_76t38"]
+render_priority = 0
+shader = ExtResource("2_7uwoy")
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+shader_parameter/illustration = ExtResource("3_8w2fx")
+shader_parameter/prop_origin = Vector3(3.8, 0, 9.2)
+shader_parameter/depth_size = Vector3(1, 0.7, 1)
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/tint = null
+shader_parameter/logical_size = null
+shader_parameter/depth_mode = 0
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.88
+
+[sub_resource type="QuadMesh" id="QuadMesh_cxu8d"]
+size = Vector2(1.35, 1.1368421)
+subdivide_depth = 12
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_mdigf"]
+height = 0.52
+radius = 0.39
+
+[sub_resource type="Shader" id="Shader_p1cxi"]
+code = "#define WALL_REVEAL_PASS
+shader_type spatial;
+render_mode cull_disabled, specular_disabled;
+#include \"res://scripts/presentation/environment_surface.gdshaderinc\"
+#ifdef WALL_REVEAL_PASS
+#include \"res://scripts/presentation/wall_reveal.gdshaderinc\"
+#endif
+void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
+	surface_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+	surface_normal = normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
+	ALBEDO = surface_color(surface_position,surface_normal);
+	ROUGHNESS = 1.0;
+	if (soft_edges) {
+		vec2 cell = floor(surface_position.xz*12.0);
+		float patch = fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+		float edge = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		if (edge < 0.025+patch*0.035) discard;
+	}
+}
+void light() {
+	float amount = max(dot(NORMAL,LIGHT),0.0);
+	float band = banded ? floor(amount*4.0+0.5)/4.0 : amount;
+	DIFFUSE_LIGHT += band*ATTENUATION*LIGHT_COLOR/PI;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tc6bo"]
+render_priority = 0
+shader = SubResource("Shader_p1cxi")
+shader_parameter/surface_texture = ExtResource("4_quqtn")
+shader_parameter/texels_per_meter = 25.0
+shader_parameter/soft_edges = false
+shader_parameter/banded = null
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_xxl5n"]
+top_radius = 0.39
+bottom_radius = 0.39
+height = 0.52
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_852es"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 0.85, 0.32)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d7dqg"]
+render_priority = -120
+shader = ExtResource("5_kfngf")
+shader_parameter/foot_origin = Vector2(3.8, 9.2)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.1, -0.27, 0.45, 0.42, -0.26000002, -0.008000001, 0.3, 0.22, 0.32, -0.028000005, 0.27, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(0, 0, 0.46, 0.37, -0.27, 0.1, 0.3, 0.18, 0.28, 0.08, 0.3, 0.18, 0, 0, 0, 0)
+shader_parameter/lobe_count = 3
+shader_parameter/contact_count = 3
+shader_parameter/stem_end = Vector2(0, 0)
+shader_parameter/stem_radius = 0.0
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ooe63"]
+size = Vector2(1.7600001, 1.66)
+
+[node name="Stump" type="Node3D" unique_id=442172439]
+process_physics_priority = 30
+script = ExtResource("1_3lvlk")
+asset_id = "stump"
+spec = {
+"anchor": [0.52, 0.88],
+"depth_box": [1.0, 0.7, 1.0],
+"height": 0.52,
+"radius": 0.39,
+"shape": "cylinder",
+"width": 1.35
+}
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=1067962845]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.12918876, 0.3538737, -0.21315882)
+material_override = SubResource("ShaderMaterial_76t38")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_cxu8d")
+
+[node name="SimpleBody" type="StaticBody3D" parent="." unique_id=2111575784]
+collision_layer = 13
+collision_mask = 0
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="SimpleBody" unique_id=1427242583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26, 0)
+shape = SubResource("CylinderShape3D_mdigf")
+
+[node name="OcclusionProxy" type="MeshInstance3D" parent="SimpleBody" unique_id=357505091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26, 0)
+layers = 0
+material_override = SubResource("ShaderMaterial_tc6bo")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_xxl5n")
+
+[node name="CollisionGuide" type="MeshInstance3D" parent="SimpleBody" unique_id=399337265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_852es")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_xxl5n")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=1780484814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.81, 0.008, 9.04)
+top_level = true
+material_override = SubResource("ShaderMaterial_d7dqg")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_ooe63")
+script = ExtResource("6_ikytp")
+footprint = Rect2(-0.87000006, -0.99, 1.7600001, 1.66)

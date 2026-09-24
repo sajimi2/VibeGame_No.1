@@ -1,6 +1,7 @@
 @tool
 extends Node3D
 ## 室外按真实视线开透视圆；室内叠加整组低不透明度，两个渐变通道互不替代。
+@export_storage var authored_geometry := false
 @export var interior:=AABB(Vector3(-3,-.25,-3),Vector3(6,4.5,6))
 const Style=preload("res://scripts/presentation/occlusion_style.gd")
 @export var fade_seconds:=Style.FADE_SECONDS
@@ -23,12 +24,14 @@ func _ready() -> void:
 	roof_material.shader=preload("res://scripts/presentation/interior_roof.gdshader")
 	roof_material.set_shader_parameter("surface_texture",load("res://assets/environment/textures/roof.png"))
 	for child in get_children():
-		if child is MeshInstance3D and child.mesh!=null:
+		if child is MeshInstance3D and child.mesh!=null and not child.get_meta("shadow_proxy",false):
 			pieces.append(child)
 			child.material_override=roof_material
 			# 阴影代理不执行屏幕空间开洞，避免人物移动时屋子的太阳阴影跟着变化。
 			child.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if authored_geometry: continue
 			var shadow:=MeshInstance3D.new()
+			shadow.set_meta("shadow_proxy",true)
 			shadow.mesh=child.mesh
 			shadow.transform=child.transform
 			shadow.material_override=preload("res://scripts/presentation/environment_library.gd").material("roof")

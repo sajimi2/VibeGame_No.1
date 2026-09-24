@@ -5,6 +5,9 @@ const Library=preload("res://scripts/presentation/environment_library.gd")
 var roof: Node3D
 
 func _ready() -> void:
+	if has_node("Roof"):
+		roof=get_node("Roof")
+		return
 	roof=Roof.new()
 	roof.name="Roof"
 	roof.interior=AABB(Vector3(-2.15,-.2,-2.65),Vector3(4.3,3.0,5.3))

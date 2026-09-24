@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_6t6w1"]
+[ext_resource type="Shader" path="res://scripts/presentation/ground_decoration.gdshader" id="2_6oxs6"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/courtyard/textures/flowers.png" id="3_88g7l"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rwr3y"]
+render_priority = -110
+shader = ExtResource("2_6oxs6")
+shader_parameter/illustration = ExtResource("3_88g7l")
+shader_parameter/prop_origin = Vector3(-3, 0.015, 3.2)
+shader_parameter/ground_normal = null
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.98
+
+[sub_resource type="QuadMesh" id="QuadMesh_qbyf7"]
+size = Vector2(0.8089266, 0.47800207)
+subdivide_depth = 12
+
+[node name="Flowers" type="Node3D" unique_id=1923995106]
+process_physics_priority = 30
+script = ExtResource("1_6t6w1")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=308737136]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.05561739, 0.18794706, -0.119271874)
+material_override = SubResource("ShaderMaterial_rwr3y")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_qbyf7")

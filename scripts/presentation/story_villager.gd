@@ -4,9 +4,11 @@ var camera: Camera3D
 var hp := 100
 var visual: Node3D
 var tint := Color.WHITE
-var asset_id := "steward"
+@export var asset_id := "steward"
 var clock := 0.0
 func _ready() -> void:
+	var preview=get_node_or_null("EditorPose")
+	if preview!=null: preview.hide()
 	collision_layer = 0
 	collision_mask = 0
 	visual = preload("res://scripts/presentation/baked_human.gd").new()

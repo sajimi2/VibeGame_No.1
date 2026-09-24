@@ -52,8 +52,9 @@ func run() -> void:
 	check(lab.player.safe_zone,"小院为安全营地")
 	check(story.spots.satchel.distance_to(lab.player.position)>50,"主要目标离开营地")
 	check(lab.region.props.size()>70,"新林地完成装配")
-	for node in story.get_children():
-		if node is CharacterBody3D: check(node.visual.asset_id in ["steward","healer"] and node.visual.active,"NPC独立图集播放")
+	for id in ["steward","healer"]:
+		var node=story.interaction_nodes[id]
+		check(node.visual.asset_id==id and node.visual.active,"NPC独立图集播放："+id)
 	await shot("camp")
 	lab.progression.toggle()
 	await shot("equipment")

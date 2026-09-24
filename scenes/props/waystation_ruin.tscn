@@ -1,0 +1,229 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_jsjjb"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustrated_prop.gdshader" id="2_xtwg0"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/source/waystation_ruin.png" id="3_fxl4g"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/masonry.png" id="4_i4xtv"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="5_fkobt"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="6_5d38x"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_eceng"]
+atlas = ExtResource("3_fxl4g")
+region = Rect2(0, 6, 1373, 1139)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5e16a"]
+render_priority = 0
+shader = ExtResource("2_xtwg0")
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+shader_parameter/illustration = SubResource("AtlasTexture_eceng")
+shader_parameter/prop_origin = Vector3(61, 0, -16)
+shader_parameter/depth_size = Vector3(5, 3, 3)
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/tint = null
+shader_parameter/logical_size = null
+shader_parameter/depth_mode = 0
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.75
+
+[sub_resource type="QuadMesh" id="QuadMesh_ecrjw"]
+size = Vector2(8, 6.6365623)
+subdivide_depth = 12
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nnxs2"]
+size = Vector3(5, 2.4, 3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mqnci"]
+size = Vector3(5.4, 2.2, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2g64h"]
+size = Vector3(0.4, 2, 3.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_en8tl"]
+size = Vector3(0.4, 2, 3.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4bgyb"]
+size = Vector3(1.6, 1.6, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sh0li"]
+size = Vector3(1.6, 1.6, 0.4)
+
+[sub_resource type="Shader" id="Shader_p1cxi"]
+code = "#define WALL_REVEAL_PASS
+shader_type spatial;
+render_mode cull_disabled, specular_disabled;
+#include \"res://scripts/presentation/environment_surface.gdshaderinc\"
+#ifdef WALL_REVEAL_PASS
+#include \"res://scripts/presentation/wall_reveal.gdshaderinc\"
+#endif
+void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
+	surface_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+	surface_normal = normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
+	ALBEDO = surface_color(surface_position,surface_normal);
+	ROUGHNESS = 1.0;
+	if (soft_edges) {
+		vec2 cell = floor(surface_position.xz*12.0);
+		float patch = fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+		float edge = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		if (edge < 0.025+patch*0.035) discard;
+	}
+}
+void light() {
+	float amount = max(dot(NORMAL,LIGHT),0.0);
+	float band = banded ? floor(amount*4.0+0.5)/4.0 : amount;
+	DIFFUSE_LIGHT += band*ATTENUATION*LIGHT_COLOR/PI;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fxak0"]
+render_priority = 0
+shader = SubResource("Shader_p1cxi")
+shader_parameter/surface_texture = ExtResource("4_i4xtv")
+shader_parameter/texels_per_meter = 25.0
+shader_parameter/soft_edges = false
+shader_parameter/banded = null
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_carn7"]
+size = Vector3(5, 2.4, 3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_l6bxi"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 0.85, 0.32)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ygexy"]
+render_priority = -120
+shader = ExtResource("5_fkobt")
+shader_parameter/foot_origin = Vector2(61, -16)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.39000002, -1.0530001, 2.5, 1.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(0, 0, 2.25, 1.35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/lobe_count = 1
+shader_parameter/contact_count = 1
+shader_parameter/stem_end = Vector2(0, 0)
+shader_parameter/stem_radius = 0.0
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_chlma"]
+size = Vector2(5.7400002, 4.503)
+
+[node name="WaystationRuin" type="Node3D" unique_id=1673439529]
+process_physics_priority = 30
+script = ExtResource("1_jsjjb")
+asset_id = "waystation_ruin"
+spec = {
+"anchor": [0.5, 0.75],
+"aspect": 0.829570284049527,
+"collision_parts": [{
+"at": [0.0, 1.1, -1.6],
+"size": [5.4, 2.2, 0.4]
+}, {
+"at": [-2.5, 1.0, 0.0],
+"size": [0.4, 2.0, 3.2]
+}, {
+"at": [2.5, 1.0, 0.0],
+"size": [0.4, 2.0, 3.2]
+}, {
+"at": [-1.7, 0.8, 1.6],
+"size": [1.6, 1.6, 0.4]
+}, {
+"at": [1.7, 0.8, 1.6],
+"size": [1.6, 1.6, 0.4]
+}],
+"depth_box": [5.0, 3.0, 3.0],
+"region": [0.0, 6.0, 1373.0, 1139.0],
+"shape": "box",
+"size": [5.0, 2.4, 3.0],
+"texture": "res://assets/environment/painted/woodpath/source/waystation_ruin.png",
+"width": 8.0
+}
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=730137053]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.4021821, 1.3590884, -0.8624823)
+material_override = SubResource("ShaderMaterial_5e16a")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_ecrjw")
+
+[node name="SimpleBody" type="StaticBody3D" parent="." unique_id=913232968]
+collision_layer = 13
+collision_mask = 0
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="SimpleBody" unique_id=937618209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("BoxShape3D_nnxs2")
+disabled = true
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="SimpleBody" unique_id=1518463521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1.6)
+shape = SubResource("BoxShape3D_mqnci")
+
+[node name="CollisionShape3D3" type="CollisionShape3D" parent="SimpleBody" unique_id=1820417086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1, 0)
+shape = SubResource("BoxShape3D_2g64h")
+
+[node name="CollisionShape3D4" type="CollisionShape3D" parent="SimpleBody" unique_id=756561673]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1, 0)
+shape = SubResource("BoxShape3D_en8tl")
+
+[node name="CollisionShape3D5" type="CollisionShape3D" parent="SimpleBody" unique_id=183090505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7, 0.8, 1.6)
+shape = SubResource("BoxShape3D_4bgyb")
+
+[node name="CollisionShape3D6" type="CollisionShape3D" parent="SimpleBody" unique_id=1298840399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 0.8, 1.6)
+shape = SubResource("BoxShape3D_sh0li")
+
+[node name="OcclusionProxy" type="MeshInstance3D" parent="SimpleBody" unique_id=1964567313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+layers = 0
+material_override = SubResource("ShaderMaterial_fxak0")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_carn7")
+
+[node name="CollisionGuide" type="MeshInstance3D" parent="SimpleBody" unique_id=1129854746]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_l6bxi")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_carn7")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=212590135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61.32, 0.008, -16.6015)
+top_level = true
+material_override = SubResource("ShaderMaterial_ygexy")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_chlma")
+script = ExtResource("6_5d38x")
+footprint = Rect2(-2.55, -2.853, 5.7400002, 4.503)

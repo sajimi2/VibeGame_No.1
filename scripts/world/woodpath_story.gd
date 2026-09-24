@@ -13,6 +13,8 @@ var hud: Label
 var dialogue: CanvasLayer
 var state: Node
 var speaking := ""
+var authored_map: Node3D
+var interaction_nodes: Dictionary = {}
 var spots: Dictionary = {}
 var labels: Dictionary = {}
 var message := ""
@@ -47,7 +49,20 @@ func _ready() -> void:
 func bind_progress(value: Node) -> void:
 	progress = value
 	state = progress.expedition
-	spots = Region.SPOTS.duplicate()
+	if authored_map!=null:
+		# ID关联已有故事/存档，坐标只从真实场景节点取得；不再创建固定交互物。
+		for node in authored_map.find_children("*","Node3D",true,false):
+			var id: String=node.get_meta("interaction_id","")
+			if id.is_empty(): continue
+			if interaction_nodes.has(id):
+				push_error("重复交互ID，请勿复制任务容器ID："+id)
+				continue
+			interaction_nodes[id]=node
+			if id in ["steward","healer"]: node.camera=player.camera
+			if id in ["chest","stash","cache","supply"]: containers[id]=node
+		_refresh_spots()
+	else:
+		spots = Region.SPOTS.duplicate()
 	var names := {"steward":"营地管事 · 奥伦", "healer":"井边药师 · 米菈","stash":"营地仓库","satchel":"信使遗留背包","chest":"驿站货箱","cache":"榆树根的藏匿处","trail":"倾覆药车 · 调查","sign":"旧林路路标 · 调查","memorial":"无名旅人的石堆 · 调查","supply":"遗迹中的药材箱"}
 	for id in spots:
 		var label := Label.new()
@@ -60,6 +75,7 @@ func bind_progress(value: Node) -> void:
 		label.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		point_labels.add_child(label)
 		labels[id] = label
+		if authored_map!=null: continue
 		if id in ["steward","healer"]:
 			var villager := preload("res://scripts/presentation/story_villager.gd").new()
 			villager.position = spots[id]
@@ -83,7 +99,16 @@ func bind_progress(value: Node) -> void:
 	if not state.facts.get("woodpath_expanded",false):
 		state.note("woodpath_expanded","林路重新开放。营地以东是废弃驿站；旧物品和委托结果仍保留。路标、倾覆药车与南侧石堆可调查。")
 
+## 标签、距离和声音共用实时脚点；父节点整体平移也不会留下旧交互位置。
+func _refresh_spots() -> void:
+	if authored_map==null: return
+	spots.clear()
+	for id in interaction_nodes:
+		var node=interaction_nodes[id]
+		if is_instance_valid(node): spots[id]=node.global_position
+
 func can_reach(id: String) -> bool:
+	_refresh_spots()
 	if not spots.has(id) or player.hp<=0: return false
 	var target: Vector3 = spots[id]
 	if player.global_position.distance_to(target)>2.15: return false
@@ -92,9 +117,10 @@ func can_reach(id: String) -> bool:
 	return hit.is_empty() or (hit.position as Vector3).distance_to(target+Vector3.UP*.7)<.65
 
 func nearest() -> String:
+	_refresh_spots()
 	var result := ""
 	var distance := 2.15
-	for id in spots:
+	for id in spots.keys():
 		if id=="cache" and not state.facts.get("cache_known",false): continue
 		var d: float = player.global_position.distance_to(spots[id])
 		if d<distance and can_reach(id):
@@ -237,8 +263,9 @@ func _physics_process(delta: float) -> void:
 	player.safe_zone=player.position.x<8 and player.position.z>5
 	if player.safe_zone and player.hp>0: player.hp=player.max_hp
 	var id:=nearest()
-	labels.cache.visible=state.facts.get("cache_known",false)
-	get_node("HiddenCache").visible=labels.cache.visible
+	if labels.has("cache"):
+		labels.cache.visible=state.facts.get("cache_known",false)
+		containers.cache.visible=labels.cache.visible
 	hud.text="失踪信使 · 委托已落定，仍可探索林路秘密" if completed else "失踪信使 · 返回营地交信，或向药师求证" if carried else "失踪信使 · 沿东面林路调查灰榆驿站" if accepted else "失踪信使 · 靠近营地管事，按 E 交谈"
 	if not id.is_empty(): hud.text+="\nE · "+labels[id].text
 	if message_time>0: hud.text+="\n"+message
@@ -251,8 +278,12 @@ func inform(text: String) -> bool:
 ## 交互名称只显示附近已知地点；投影到2D层，保留世界脚点但不经过世界纹理采样。
 func _process(_delta: float) -> void:
 	if state==null or not is_instance_valid(player.camera): return
+	_refresh_spots()
 	for id in labels:
 		var label:Label=labels[id]
+		if not spots.has(id):
+			label.hide()
+			continue
 		var anchor:Vector3=spots[id]+Vector3.UP*(2.15 if id in ["steward","healer"] else 1.1)
 		label.visible=player.position.distance_to(spots[id])<9 and (id!="cache" or state.facts.get("cache_known",false)) and not player.camera.is_position_behind(anchor)
 		if label.visible:

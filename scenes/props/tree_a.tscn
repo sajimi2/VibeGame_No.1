@@ -1,0 +1,201 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="1_x12qh"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustrated_prop.gdshader" id="2_tipty"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/unified/source/tree_a.png" id="3_gj3dv"]
+[ext_resource type="Texture2D" path="res://assets/environment/textures/masonry.png" id="4_emkmb"]
+[ext_resource type="Shader" path="res://scripts/presentation/illustration_shadow.gdshader" id="5_5hrim"]
+[ext_resource type="Script" path="res://scripts/presentation/illustration_shadow.gd" id="6_72qls"]
+[ext_resource type="Shader" path="res://scripts/presentation/woodland_footing.gdshader" id="7_3b400"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vha6f"]
+atlas = ExtResource("3_gj3dv")
+region = Rect2(0, 19, 1169, 1326)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ox6am"]
+render_priority = 0
+shader = ExtResource("2_tipty")
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+shader_parameter/illustration = SubResource("AtlasTexture_vha6f")
+shader_parameter/prop_origin = Vector3(12.567932, 0, 20.5192)
+shader_parameter/depth_size = Vector3(3.2147171, 4.0606956, 2.5379345)
+shader_parameter/to_camera = Vector3(0.34618863, 0.57357645, 0.74240386)
+shader_parameter/tint = null
+shader_parameter/logical_size = Vector2(114, 129)
+shader_parameter/depth_mode = 1
+shader_parameter/sway_world = null
+shader_parameter/foot_uv = 0.97
+
+[sub_resource type="QuadMesh" id="QuadMesh_opom7"]
+size = Vector2(4.0606956, 4.606058)
+subdivide_depth = 12
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_a0uc7"]
+height = 1.7765542
+radius = 0.35531086
+
+[sub_resource type="Shader" id="Shader_p1cxi"]
+code = "#define WALL_REVEAL_PASS
+shader_type spatial;
+render_mode cull_disabled, specular_disabled;
+#include \"res://scripts/presentation/environment_surface.gdshaderinc\"
+#ifdef WALL_REVEAL_PASS
+#include \"res://scripts/presentation/wall_reveal.gdshaderinc\"
+#endif
+void vertex() {
+#ifdef WALL_REVEAL_PASS
+	wall_world_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+#endif
+	surface_position = (MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+	surface_normal = normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+#ifdef WALL_REVEAL_PASS
+	if (wall_pixel_hidden(SCREEN_UV)) discard;
+#endif
+	ALBEDO = surface_color(surface_position,surface_normal);
+	ROUGHNESS = 1.0;
+	if (soft_edges) {
+		vec2 cell = floor(surface_position.xz*12.0);
+		float patch = fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+		float edge = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		if (edge < 0.025+patch*0.035) discard;
+	}
+}
+void light() {
+	float amount = max(dot(NORMAL,LIGHT),0.0);
+	float band = banded ? floor(amount*4.0+0.5)/4.0 : amount;
+	DIFFUSE_LIGHT += band*ATTENUATION*LIGHT_COLOR/PI;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_obicj"]
+render_priority = 0
+shader = SubResource("Shader_p1cxi")
+shader_parameter/surface_texture = ExtResource("4_emkmb")
+shader_parameter/texels_per_meter = 25.0
+shader_parameter/soft_edges = false
+shader_parameter/banded = null
+shader_parameter/wall_reveal = 0.0
+shader_parameter/wall_coverage = null
+shader_parameter/wall_center = null
+shader_parameter/wall_viewport = null
+shader_parameter/wall_dither_origin = null
+shader_parameter/wall_radius = null
+shader_parameter/wall_feather = null
+shader_parameter/wall_clear_core = null
+shader_parameter/wall_target = null
+shader_parameter/wall_to_camera = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_iht2m"]
+top_radius = 0.35531086
+bottom_radius = 0.35531086
+height = 1.7765542
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c1h2n"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.8, 0.85, 0.32)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nodp3"]
+render_priority = -120
+shader = ExtResource("5_5hrim")
+shader_parameter/foot_origin = Vector2(12.567932, 20.5192)
+shader_parameter/foot_scale = Vector2(1, 1)
+shader_parameter/lobes = PackedVector4Array(0.71062165, -1.9186785, 1.3112662, 1.1843694, -0.19457495, -2.0421915, 0.8459782, 0.8036793, 1.5565999, -2.003276, 0.8459782, 0.7613804, 0.21149455, -2.7874982, 0.8036793, 0.71908146, 1.2774271, -2.8103397, 0.8036793, 0.67678255, 0.08459784, -1.1082315, 0.8036793, 0.71908146, 1.2266685, -1.1505305, 0.8459782, 0.7613804, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/contacts = PackedVector4Array(0, 0, 0.29609236, 0.25379348, -0.2368739, 0.08459782, 0.27071303, 0.12689674, 0.2368739, 0.04229891, 0.25379348, 0.12689674, 0, 0, 0, 0)
+shader_parameter/lobe_count = 7
+shader_parameter/contact_count = 3
+shader_parameter/stem_end = Vector2(0.50758696, -1.3704848)
+shader_parameter/stem_radius = 0.109977166056633
+shader_parameter/strength = 0.22
+shader_parameter/shadow_color = Color(0.09, 0.16, 0.11, 1)
+shader_parameter/feather = 0.18
+shader_parameter/pixels_per_meter = 28.0
+shader_parameter/sway = null
+shader_parameter/polygon = PackedVector2Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/polygon_count = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_3fw0d"]
+size = Vector2(4.0431314, 4.360373)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_46nu2"]
+render_priority = -125
+shader = ExtResource("7_3b400")
+shader_parameter/extent = null
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_bs6bh"]
+size = Vector2(2.1995432, 1.6919564)
+
+[node name="TreeA" type="Node3D" unique_id=551118962]
+process_physics_priority = 30
+script = ExtResource("1_x12qh")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Illustration" type="MeshInstance3D" parent="." unique_id=359903841]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, -0.5247674, 1.7733392, -1.1253673)
+material_override = SubResource("ShaderMaterial_ox6am")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_opom7")
+
+[node name="SimpleBody" type="StaticBody3D" parent="." unique_id=288559785]
+collision_layer = 13
+collision_mask = 0
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="SimpleBody" unique_id=492586982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8882771, 0)
+shape = SubResource("CylinderShape3D_a0uc7")
+
+[node name="OcclusionProxy" type="MeshInstance3D" parent="SimpleBody" unique_id=1214784557]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8882771, 0)
+layers = 0
+material_override = SubResource("ShaderMaterial_obicj")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_iht2m")
+
+[node name="CollisionGuide" type="MeshInstance3D" parent="SimpleBody" unique_id=832930914]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8882771, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_c1h2n")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_iht2m")
+
+[node name="PaintedShadow" type="MeshInstance3D" parent="." unique_id=1622787996]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.248945, 0.008, 18.892807)
+top_level = true
+material_override = SubResource("ShaderMaterial_nodp3")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_3fw0d")
+script = ExtResource("6_72qls")
+footprint = Rect2(-1.340553, -3.8065796, 4.0431314, 4.360373)
+
+[node name="GroundContact" type="MeshInstance3D" parent="." unique_id=115519169]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.004, 0)
+material_override = SubResource("ShaderMaterial_46nu2")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_bs6bh")

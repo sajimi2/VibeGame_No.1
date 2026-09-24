@@ -1,10 +1,12 @@
+@tool
 extends Node3D
 ## 单视角画稿负责轮廓；独立盒/柱负责物理。近似深度体积和碰撞体积分别配置，避免树冠堵路。
 const FOLDER="res://assets/environment/painted/courtyard/"
 const PAINT=preload("res://scripts/presentation/illustrated_prop.gdshader")
 const PARAMETERS=preload("res://scripts/presentation/occlusion_style.gd").WALL_PARAMETERS
-var asset_id: String
-var spec: Dictionary
+@export var asset_id: String
+@export_storage var spec: Dictionary
+@export_storage var built_scale := 1.0
 var art: MeshInstance3D
 var shadow: MeshInstance3D
 var proxy: MeshInstance3D
@@ -16,9 +18,26 @@ var artwork:=true
 var collision_guides:=false
 var visual_sway:=Vector3.ZERO
 
+## 已保存的子节点直接绑定，不再重建画稿和碰撞；编辑器拖动也同步深度原点。
+func _ready() -> void:
+	if not has_node("Illustration"): return
+	process_physics_priority=30
+	art=get_node("Illustration")
+	art_material=art.material_override.duplicate()
+	art.material_override=art_material
+	body=get_node_or_null("SimpleBody")
+	if body!=null:
+		proxy=body.get_node("OcclusionProxy")
+		guide=body.get_node("CollisionGuide")
+		proxy.material_override=proxy.material_override.duplicate()
+	shadow=get_node_or_null("PaintedShadow")
+	set_notify_transform(true)
+	_notification(NOTIFICATION_TRANSFORM_CHANGED)
+
 ## 调用者先入树再装配。尺寸与摆放从资产目录读入，同一图片可以实例化为多个物件。
 func setup(id: String,definition: Dictionary,baked: Dictionary,scale_factor: float=1.0) -> void:
 	asset_id=id
+	built_scale=scale_factor
 	spec=definition
 	process_physics_priority=30
 	var size:=Vector2(float(spec.width),float(spec.width)*float(baked.aspect))*scale_factor
@@ -78,6 +97,10 @@ func set_visual_sway(offset: Vector2) -> void:
 func _notification(what: int) -> void:
 	if what!=NOTIFICATION_TRANSFORM_CHANGED or art_material==null: return
 	art_material.set_shader_parameter("prop_origin",global_position)
+	if not spec.is_empty():
+		art_material.set_shader_parameter("depth_size",vector(spec.depth_box)*built_scale*global_basis.get_scale())
+		if spec.has("pixels_per_meter") and spec.shape!="none":
+			art_material.set_shader_parameter("logical_size",(art.mesh.size*global_basis.get_scale().x*preload("res://scripts/presentation/pixel_standard.gd").ENVIRONMENT_PIXELS_PER_METER).round())
 	if is_instance_valid(shadow): shadow.sync_transform()
 
 static func vector(values: Array) -> Vector3: return Vector3(values[0],values[1],values[2])

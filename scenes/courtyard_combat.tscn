@@ -1,4 +1,2860 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=4]
+
 [ext_resource type="Script" path="res://scripts/world/courtyard_combat.gd" id="1"]
-[node name="CourtyardCombat" type="Node3D"]
+[ext_resource type="Shader" path="res://scripts/presentation/courtyard_ground.gdshader" id="2_e3s2q"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/courtyard/textures/earth.png" id="3_gv63w"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/unified/source/grass.png" id="4_uvhym"]
+[ext_resource type="Script" path="res://scripts/presentation/painted_courtyard.gd" id="5_8te8u"]
+[ext_resource type="PackedScene" path="res://scenes/props/well.tscn" id="6_3sm2a"]
+[ext_resource type="Script" path="res://scripts/presentation/illustrated_prop.gd" id="7_upgdc"]
+[ext_resource type="PackedScene" path="res://scenes/props/bucket.tscn" id="8_gnal3"]
+[ext_resource type="PackedScene" path="res://scenes/props/cart.tscn" id="9_n0jxt"]
+[ext_resource type="PackedScene" path="res://scenes/props/stump.tscn" id="10_8tdga"]
+[ext_resource type="PackedScene" path="res://scenes/props/rock.tscn" id="11_su3wq"]
+[ext_resource type="PackedScene" path="res://scenes/props/wall.tscn" id="12_6vvkh"]
+[ext_resource type="PackedScene" path="res://scenes/props/flowers.tscn" id="13_rjqw4"]
+[ext_resource type="Script" path="res://scripts/world/woodpath_region.gd" id="14_yc8s2"]
+[ext_resource type="PackedScene" path="res://scenes/props/tree_b.tscn" id="15_bvg3y"]
+[ext_resource type="PackedScene" path="res://scenes/props/tree_c.tscn" id="16_06wyk"]
+[ext_resource type="PackedScene" path="res://scenes/props/tree_a.tscn" id="17_1kn86"]
+[ext_resource type="PackedScene" path="res://scenes/props/wall_z.tscn" id="18_5kpyk"]
+[ext_resource type="PackedScene" path="res://scenes/props/waystation_ruin.tscn" id="19_xq3li"]
+[ext_resource type="PackedScene" path="res://scenes/props/litter.tscn" id="20_x4hp4"]
+[ext_resource type="PackedScene" path="res://scenes/props/cottage.tscn" id="21_iqv6j"]
+[ext_resource type="Script" path="res://assets/environment/painted/cottage/structure/cottage.gd" id="22_x60p0"]
+[ext_resource type="PackedScene" path="res://scenes/props/steward.tscn" id="23_r8uoc"]
+[ext_resource type="Script" path="res://scripts/presentation/story_villager.gd" id="24_e67rf"]
+[ext_resource type="PackedScene" path="res://scenes/props/healer.tscn" id="25_4x8yw"]
+[ext_resource type="PackedScene" path="res://scenes/props/chest.tscn" id="26_re4ba"]
+[ext_resource type="Script" path="res://scripts/presentation/animated_container.gd" id="27_h1blo"]
+[ext_resource type="Texture2D" path="res://assets/environment/painted/woodpath/source/chest_motion.png" id="28_wr7xf"]
+[ext_resource type="PackedScene" path="res://scenes/props/satchel.tscn" id="29_lribn"]
+
+[ext_resource type="Shader" path="res://scripts/presentation/woodland_footing.gdshader" id="30_contact"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_458mq"]
+size = Vector3(32, 0.5, 48)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lx3tb"]
+render_priority = 0
+shader = ExtResource("2_e3s2q")
+shader_parameter/meadow = ExtResource("4_uvhym")
+shader_parameter/earth = ExtResource("3_gv63w")
+shader_parameter/meadow_extension = true
+shader_parameter/woodpath_region = true
+shader_parameter/density_trial = null
+shader_parameter/density_bounds = null
+shader_parameter/density_right = null
+shader_parameter/density_up = null
+shader_parameter/density_ppm = null
+shader_parameter/woodpath_segments = PackedVector4Array(0.8, 14, 12, 14, 12, 14, 20, 10, 20, 10, 32, 10, 32, 10, 42, 8, 42, 8, 52, 0, 52, 0, 60, -7, 20, 10, 22, 0, 22, 0, 30, -9, 30, -9, 42, -17, 42, -17, 54, -17, 54, -17, 60, -7, 60, -7, 66, 3, 66, 3, 55, 15, 55, 15, 42, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/terrain_guides = null
+shader_parameter/relief_strength = 0.0
+shader_parameter/terrain_light = null
+shader_parameter/climb_path = null
+
+[sub_resource type="BoxMesh" id="BoxMesh_ve3b8"]
+size = Vector3(32, 0.5, 48)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3ncbm"]
+size = Vector3(40, 0.5, 48)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rkhch"]
+size = Vector3(40, 0.5, 48)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_kxgjx"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6xrt4"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vwl4l"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_usglw"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rc8ii"]
+size = Vector3(40, 0.5, 48)
+
+[sub_resource type="BoxMesh" id="BoxMesh_i4g86"]
+size = Vector3(40, 0.5, 48)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_u4ud8"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_odd4x"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xm2ts"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fiplr"]
+size = Vector3(72, 0.5, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ya5mh"]
+size = Vector3(32, 0.5, 48)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tkd4t"]
+size = Vector3(32, 0.5, 48)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qlwh8"]
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0.3882353, 0.3137255, 0.21960784, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_aovfr"]
+size = Vector3(0.13, 1.4, 0.13)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5mlta"]
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0.5764706, 0.45882353, 0.29803923, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xt8x5"]
+size = Vector3(1.2, 0.3, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pnjwh"]
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0.4509804, 0.3764706, 0.26666668, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fhew8"]
+size = Vector3(0.9, 0.25, 0.15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rfa2w"]
+size = Vector3(68, 2, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3ihc6"]
+size = Vector3(68, 2, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_c71iu"]
+size = Vector3(1, 2, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_afpir"]
+atlas = ExtResource("28_wr7xf")
+region = Rect2(0, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_db0e2"]
+atlas = ExtResource("28_wr7xf")
+region = Rect2(525.75, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gbvtw"]
+atlas = ExtResource("28_wr7xf")
+region = Rect2(1051.5, 0, 525.75, 748)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q6olh"]
+atlas = ExtResource("28_wr7xf")
+region = Rect2(1577.25, 0, 525.75, 748)
+
+[sub_resource type="Environment" id="Environment_ap3kb"]
+background_mode = 1
+background_color = Color(0.1254902, 0.18039216, 0.21176471, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.695639, 0.76622725, 0.80779016, 1)
+ambient_light_energy = 0.45868626
+
+[sub_resource type="ShaderMaterial" id="ContactMaterial"]
+render_priority = -125
+shader = ExtResource("30_contact")
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_rock23"]
+size = Vector2(2.415, 1.8974999999999997)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_rock24"]
+size = Vector2(2.415, 1.8974999999999997)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_rock25"]
+size = Vector2(2.415, 1.8974999999999997)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_stump26"]
+size = Vector2(2.6, 2.0)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_rock27"]
+size = Vector2(2.415, 1.8974999999999997)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_wall29"]
+size = Vector2(5.2, 1.1)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_wall30"]
+size = Vector2(5.2, 1.1)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_wall31"]
+size = Vector2(5.2, 1.1)
+
+[sub_resource type="PlaneMesh" id="Contact_Woodpath_wall32"]
+size = Vector2(5.2, 1.1)
+
+[node name="CourtyardCombat" type="Node3D" unique_id=1220465961]
 script = ExtResource("1")
+
+[node name="Map" type="Node3D" parent="." unique_id=1030193296]
+
+[node name="Ground" type="Node3D" parent="Map" unique_id=1647484181]
+
+[node name="Meadow" type="StaticBody3D" parent="Map/Ground" unique_id=1542113077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, -0.27, 4)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/Meadow" unique_id=814329684]
+shape = SubResource("BoxShape3D_458mq")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/Meadow" unique_id=447209898]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_ve3b8")
+
+[node name="ExplorationMeadow" type="StaticBody3D" parent="Map/Ground" unique_id=136216095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, -0.27, 4)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/ExplorationMeadow" unique_id=452672430]
+shape = SubResource("BoxShape3D_3ncbm")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/ExplorationMeadow" unique_id=598180752]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_rkhch")
+
+[node name="MeadowMargin" type="StaticBody3D" parent="Map/Ground" unique_id=956951735]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, -0.27, -40)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin" unique_id=1062326427]
+shape = SubResource("BoxShape3D_kxgjx")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin" unique_id=1640831002]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_6xrt4")
+
+[node name="MeadowMargin2" type="StaticBody3D" parent="Map/Ground" unique_id=78564586]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, -0.27, 48)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin2" unique_id=1046505718]
+shape = SubResource("BoxShape3D_vwl4l")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin2" unique_id=1723068770]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_usglw")
+
+[node name="MeadowMargin3" type="StaticBody3D" parent="Map/Ground" unique_id=2143998167]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, -0.27, 4)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin3" unique_id=1321246817]
+shape = SubResource("BoxShape3D_rc8ii")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin3" unique_id=274764413]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_i4g86")
+
+[node name="MeadowMargin4" type="StaticBody3D" parent="Map/Ground" unique_id=285105964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, -0.27, -40)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin4" unique_id=1546538659]
+shape = SubResource("BoxShape3D_u4ud8")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin4" unique_id=1060300668]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_odd4x")
+
+[node name="MeadowMargin5" type="StaticBody3D" parent="Map/Ground" unique_id=648870348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, -0.27, 48)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin5" unique_id=1843955624]
+shape = SubResource("BoxShape3D_xm2ts")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin5" unique_id=485802189]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_fiplr")
+
+[node name="MeadowMargin6" type="StaticBody3D" parent="Map/Ground" unique_id=2031438546]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, -0.27, 4)
+collision_layer = 13
+collision_mask = 0
+metadata/occlusion_role = "support"
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/Ground/MeadowMargin6" unique_id=503333099]
+shape = SubResource("BoxShape3D_ya5mh")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/Ground/MeadowMargin6" unique_id=1471642167]
+material_override = SubResource("ShaderMaterial_lx3tb")
+mesh = SubResource("BoxMesh_tkd4t")
+
+[node name="Courtyard" type="Node3D" parent="Map" unique_id=1919544577]
+script = ExtResource("5_8te8u")
+authored_layout = true
+
+[node name="Well" type="Node3D" parent="Map/Courtyard" unique_id=565452659 instance=ExtResource("6_3sm2a")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.9, 0, 6.2)
+script = ExtResource("7_upgdc")
+asset_id = "well"
+spec = {
+"anchor": [0.49, 0.91],
+"depth_box": [1.8, 2.8, 1.8],
+"height": 0.95,
+"radius": 0.8,
+"shape": "cylinder",
+"width": 2.3
+}
+
+[node name="Bucket" type="Node3D" parent="Map/Courtyard" unique_id=334900348 instance=ExtResource("8_gnal3")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 0, 6.8)
+script = ExtResource("7_upgdc")
+asset_id = "bucket"
+spec = {
+"anchor": [0.5, 0.94],
+"depth_box": [0.5, 0.65, 0.5],
+"height": 0.46,
+"radius": 0.22,
+"shape": "cylinder",
+"width": 0.65
+}
+
+[node name="Cart" type="Node3D" parent="Map/Courtyard" unique_id=1017278517 instance=ExtResource("9_n0jxt")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1, 0, 5.9)
+script = ExtResource("7_upgdc")
+asset_id = "cart"
+spec = {
+"anchor": [0.65, 0.8],
+"depth_box": [2.0, 1.6, 2.5],
+"shape": "box",
+"size": [1.55, 1.1, 1.8],
+"width": 2.8
+}
+
+[node name="Stump" type="Node3D" parent="Map/Courtyard" unique_id=442172439 instance=ExtResource("10_8tdga")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.8, 0, 9.2)
+script = ExtResource("7_upgdc")
+asset_id = "stump"
+spec = {
+"anchor": [0.52, 0.88],
+"depth_box": [1.0, 0.7, 1.0],
+"height": 0.52,
+"radius": 0.39,
+"shape": "cylinder",
+"width": 1.35
+}
+
+[node name="RockEast" type="Node3D" parent="Map/Courtyard" unique_id=1458487033 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.1, 0, 9)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="RockWest" type="Node3D" parent="Map/Courtyard" unique_id=1643161464 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(0.6956522, 0, 0, 0, 0.6956522, 0, 0, 0, 0.6956522, -7.5, 0, 6.5)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="RockBack" type="Node3D" parent="Map/Courtyard" unique_id=2037146362 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(0.6956522, 0, 0, 0, 0.6956522, 0, 0, 0, 0.6956522, 4.7, 0, -2.8)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="RockNorth" type="Node3D" parent="Map/Courtyard" unique_id=2105989965 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(0.6086956, 0, 0, 0, 0.6086956, 0, 0, 0, 0.6086956, -4.1, 0, -4.8)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="GateWallLeft" type="Node3D" parent="Map/Courtyard" unique_id=710816999 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0, 11.4)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="GateWallRight" type="Node3D" parent="Map/Courtyard" unique_id=805521437 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 0, 11.4)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="BackWall" type="Node3D" parent="Map/Courtyard" unique_id=1877926604 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, -5.3)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="BackWallLeft" type="Node3D" parent="Map/Courtyard" unique_id=86665115 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(0.68, 0, 0, 0, 0.68, 0, 0, 0, 0.68, -6.3, 0, -4.1)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="Flowers0" type="Node3D" parent="Map/Courtyard" unique_id=1923995106 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.015, 3.2)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers1" type="Node3D" parent="Map/Courtyard" unique_id=590186158 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.77675956, 0, 0, 0, 0.77675956, 0, 0, 0, 0.77675956, -2.9, 0.015, 1.5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers2" type="Node3D" parent="Map/Courtyard" unique_id=1933418088 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.82007104, 0, 0, 0, 0.82007104, 0, 0, 0, 0.82007104, -2.9, 0.015, -1.5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers3" type="Node3D" parent="Map/Courtyard" unique_id=1981409966 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9072293, 0, 0, 0, 0.9072293, 0, 0, 0, 0.9072293, 2.8, 0.015, 2.4)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers4" type="Node3D" parent="Map/Courtyard" unique_id=1304371458 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.997843, 0, 0, 0, 0.997843, 0, 0, 0, 0.997843, 2.8, 0.015, 0.5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers5" type="Node3D" parent="Map/Courtyard" unique_id=1976838515 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.80114853, 0, 0, 0, 0.80114853, 0, 0, 0, 0.80114853, -5.9, 0.015, 6.6)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers6" type="Node3D" parent="Map/Courtyard" unique_id=34315752 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9120038, 0, 0, 0, 0.9120038, 0, 0, 0, 0.9120038, -4.9, 0.015, 7.1)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers7" type="Node3D" parent="Map/Courtyard" unique_id=1237592207 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0622919, 0, 0, 0, 1.0622919, 0, 0, 0, 1.0622919, -5.5, 0.015, 5.3)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers8" type="Node3D" parent="Map/Courtyard" unique_id=1753637169 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.8621984, 0, 0, 0, 0.8621984, 0, 0, 0, 0.8621984, 4.2, 0.015, 5.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers9" type="Node3D" parent="Map/Courtyard" unique_id=1787227105 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.75995195, 0, 0, 0, 0.75995195, 0, 0, 0, 0.75995195, 5.7, 0.015, 6.8)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers10" type="Node3D" parent="Map/Courtyard" unique_id=1994956950 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.96163183, 0, 0, 0, 0.96163183, 0, 0, 0, 0.96163183, 6, 0.015, 5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers11" type="Node3D" parent="Map/Courtyard" unique_id=264129148 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.66181326, 0, 0, 0, 0.66181326, 0, 0, 0, 0.66181326, 7.5, 0.015, 9.4)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers12" type="Node3D" parent="Map/Courtyard" unique_id=1609306517 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0440577, 0, 0, 0, 1.0440577, 0, 0, 0, 1.0440577, 6.2, 0.015, 9)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers13" type="Node3D" parent="Map/Courtyard" unique_id=828631796 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.985419, 0, 0, 0, 0.985419, 0, 0, 0, 0.985419, 3.3, 0.015, 9.5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers14" type="Node3D" parent="Map/Courtyard" unique_id=2112059242 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.80521804, 0, 0, 0, 0.80521804, 0, 0, 0, 0.80521804, -7.6, 0.015, 6.9)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers15" type="Node3D" parent="Map/Courtyard" unique_id=522615582 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.83128667, 0, 0, 0, 0.83128667, 0, 0, 0, 0.83128667, -6, 0.015, 1.2)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers16" type="Node3D" parent="Map/Courtyard" unique_id=877182826 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9159067, 0, 0, 0, 0.9159067, 0, 0, 0, 0.9159067, -6.8, 0.015, 0.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers17" type="Node3D" parent="Map/Courtyard" unique_id=124485542 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0101477, 0, 0, 0, 1.0101477, 0, 0, 0, 1.0101477, -5.8, 0.015, -0.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers18" type="Node3D" parent="Map/Courtyard" unique_id=440932017 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9263766, 0, 0, 0, 0.9263766, 0, 0, 0, 0.9263766, -7.7, 0.015, 11.9)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers19" type="Node3D" parent="Map/Courtyard" unique_id=1807651007 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.74477255, 0, 0, 0, 0.74477255, 0, 0, 0, 0.74477255, -6.2, 0.015, 11.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers20" type="Node3D" parent="Map/Courtyard" unique_id=2113794609 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0330575, 0, 0, 0, 1.0330575, 0, 0, 0, 1.0330575, -4.5, 0.015, 11.6)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers21" type="Node3D" parent="Map/Courtyard" unique_id=710923278 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9261543, 0, 0, 0, 0.9261543, 0, 0, 0, 0.9261543, -3.2, 0.015, 11.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers22" type="Node3D" parent="Map/Courtyard" unique_id=979065061 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.64844173, 0, 0, 0, 0.64844173, 0, 0, 0, 0.64844173, 3.4, 0.015, 11.7)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers23" type="Node3D" parent="Map/Courtyard" unique_id=1505660313 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.058113, 0, 0, 0, 1.058113, 0, 0, 0, 1.058113, 4.6, 0.015, 11.9)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers24" type="Node3D" parent="Map/Courtyard" unique_id=1615476803 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0701966, 0, 0, 0, 1.0701966, 0, 0, 0, 1.0701966, 6.4, 0.015, 11.6)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers25" type="Node3D" parent="Map/Courtyard" unique_id=635321653 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.74616146, 0, 0, 0, 0.74616146, 0, 0, 0, 0.74616146, 7.5, 0.015, 11.9)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers26" type="Node3D" parent="Map/Courtyard" unique_id=769451698 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.1143742, 0, 0, 0, 1.1143742, 0, 0, 0, 1.1143742, -1.8, 0.015, 8.3)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers27" type="Node3D" parent="Map/Courtyard" unique_id=610808693 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0729383, 0, 0, 0, 1.0729383, 0, 0, 0, 1.0729383, 3.6, 0.015, 7.4)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers28" type="Node3D" parent="Map/Courtyard" unique_id=1378838379 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(1.0193675, 0, 0, 0, 1.0193675, 0, 0, 0, 1.0193675, 5.2, 0.015, -4.6)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers29" type="Node3D" parent="Map/Courtyard" unique_id=1162254198 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.8451132, 0, 0, 0, 0.8451132, 0, 0, 0, 0.8451132, 6.3, 0.015, -5.1)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers30" type="Node3D" parent="Map/Courtyard" unique_id=1335799350 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9224748, 0, 0, 0, 0.9224748, 0, 0, 0, 0.9224748, -8, 0.015, 8.4)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers31" type="Node3D" parent="Map/Courtyard" unique_id=213988395 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.9827051, 0, 0, 0, 0.9827051, 0, 0, 0, 0.9827051, -9.8, 0.015, 10.1)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers32" type="Node3D" parent="Map/Courtyard" unique_id=996586275 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.89638716, 0, 0, 0, 0.89638716, 0, 0, 0, 0.89638716, -6.1, 0.015, -4)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="Flowers33" type="Node3D" parent="Map/Courtyard" unique_id=1260464697 instance=ExtResource("13_rjqw4")]
+process_physics_priority = 30
+transform = Transform3D(0.8499087, 0, 0, 0, 0.8499087, 0, 0, 0, 0.8499087, -4.7, 0.015, -4.5)
+script = ExtResource("7_upgdc")
+asset_id = "flowers"
+spec = {
+"anchor": [0.5, 0.98],
+"depth_box": [0.8, 0.45, 0.45],
+"shape": "none",
+"width": 0.8
+}
+built_scale = 1.0111582
+
+[node name="WoodpathRegion" type="Node3D" parent="Map" unique_id=388493938]
+script = ExtResource("14_yc8s2")
+authored_layout = true
+
+[node name="TrailSign" type="Node3D" parent="Map/WoodpathRegion" unique_id=284145198]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 12)
+
+[node name="MeshInstance3D1" type="MeshInstance3D" parent="Map/WoodpathRegion/TrailSign" unique_id=21394427]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+material_override = SubResource("StandardMaterial3D_qlwh8")
+mesh = SubResource("BoxMesh_aovfr")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Map/WoodpathRegion/TrailSign" unique_id=349689452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = SubResource("StandardMaterial3D_5mlta")
+mesh = SubResource("BoxMesh_xt8x5")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Map/WoodpathRegion/TrailSign" unique_id=1207561855]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.8, 0)
+material_override = SubResource("StandardMaterial3D_pnjwh")
+mesh = SubResource("BoxMesh_fhew8")
+
+[node name="SignInteraction" type="Marker3D" parent="Map/WoodpathRegion/TrailSign" unique_id=972436962]
+metadata/interaction_id = "sign"
+
+[node name="NorthBoundary" type="StaticBody3D" parent="Map/WoodpathRegion" unique_id=1221255987]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43, 1, -28)
+collision_layer = 9
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/WoodpathRegion/NorthBoundary" unique_id=907640020]
+shape = SubResource("BoxShape3D_rfa2w")
+
+[node name="SouthBoundary" type="StaticBody3D" parent="Map/WoodpathRegion" unique_id=1728997945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43, 1, 28)
+collision_layer = 9
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/WoodpathRegion/SouthBoundary" unique_id=713538210]
+shape = SubResource("BoxShape3D_3ihc6")
+
+[node name="EastBoundary" type="StaticBody3D" parent="Map/WoodpathRegion" unique_id=654874097]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77, 1, 0)
+collision_layer = 9
+
+[node name="CollisionShape3D1" type="CollisionShape3D" parent="Map/WoodpathRegion/EastBoundary" unique_id=1551884368]
+shape = SubResource("BoxShape3D_c71iu")
+
+[node name="Woodpath_tree_b0" type="Node3D" parent="Map/WoodpathRegion" unique_id=199781366 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.837075, 0, 5.953556)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c1" type="Node3D" parent="Map/WoodpathRegion" unique_id=202731470 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.841656, 0, 19.30742)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b2" type="Node3D" parent="Map/WoodpathRegion" unique_id=639935759 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9395029, 0, 0, 0, 0.9395029, 0, 0, 0, 0.9395029, 15.3686495, 0, 24.863861)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a3" type="Node3D" parent="Map/WoodpathRegion" unique_id=551118962 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.567932, 0, 20.5192)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c4" type="Node3D" parent="Map/WoodpathRegion" unique_id=1239724551 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.9934478, 0, 0, 0, 0.9934478, 0, 0, 0, 0.9934478, 28.539177, 0, 21.10813)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_c5" type="Node3D" parent="Map/WoodpathRegion" unique_id=69194096 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.0328393, 0, 0, 0, 1.0328393, 0, 0, 0, 1.0328393, 31.996967, 0, 20.819958)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b6" type="Node3D" parent="Map/WoodpathRegion" unique_id=1752342678 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9387909, 0, 0, 0, 0.9387909, 0, 0, 0, 0.9387909, 34.97614, 0, 2.066031)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c7" type="Node3D" parent="Map/WoodpathRegion" unique_id=1933538729 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.0012088, 0, 0, 0, 1.0012088, 0, 0, 0, 1.0012088, 42.340946, 0, -7.3957815)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_c8" type="Node3D" parent="Map/WoodpathRegion" unique_id=1307095113 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.90789765, 0, 0, 0, 0.90789765, 0, 0, 0, 0.90789765, 36.38009, 0, -3.7411757)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b9" type="Node3D" parent="Map/WoodpathRegion" unique_id=1244802072 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.8521282, 0, 0, 0, 0.8521282, 0, 0, 0, 0.8521282, 19.119047, 0, -13.824153)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_b10" type="Node3D" parent="Map/WoodpathRegion" unique_id=1501673882 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.97314, 0, 0, 0, 0.97314, 0, 0, 0, 0.97314, 24.928555, 0, -12.392765)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a11" type="Node3D" parent="Map/WoodpathRegion" unique_id=57833465 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0748842, 0, 0, 0, 1.0748842, 0, 0, 0, 1.0748842, 37.522156, 0, -22.891947)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b12" type="Node3D" parent="Map/WoodpathRegion" unique_id=197192642 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.8681858, 0, 0, 0, 0.8681858, 0, 0, 0, 0.8681858, 55.830643, 0, -24.940495)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a13" type="Node3D" parent="Map/WoodpathRegion" unique_id=1762687423 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0582834, 0, 0, 0, 1.0582834, 0, 0, 0, 1.0582834, 52.10929, 0, -26.943504)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c14" type="Node3D" parent="Map/WoodpathRegion" unique_id=889435067 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.99383754, 0, 0, 0, 0.99383754, 0, 0, 0, 0.99383754, 50.79099, 0, -21.724094)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b15" type="Node3D" parent="Map/WoodpathRegion" unique_id=1651469294 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9101739, 0, 0, 0, 0.9101739, 0, 0, 0, 0.9101739, 69.333595, 0, -15.469743)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_b16" type="Node3D" parent="Map/WoodpathRegion" unique_id=1837740086 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9697837, 0, 0, 0, 0.9697837, 0, 0, 0, 0.9697837, 65.98701, 0, -16.907412)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a17" type="Node3D" parent="Map/WoodpathRegion" unique_id=585525467 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0388165, 0, 0, 0, 1.0388165, 0, 0, 0, 1.0388165, 68.81821, 0, 4.5603237)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b18" type="Node3D" parent="Map/WoodpathRegion" unique_id=828530374 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9293474, 0, 0, 0, 0.9293474, 0, 0, 0, 0.9293474, 60.75363, 0, 21.246227)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a19" type="Node3D" parent="Map/WoodpathRegion" unique_id=491349710 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.2040213, 0, 0, 0, 1.2040213, 0, 0, 0, 1.2040213, 65.42386, 0, 21.158184)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a20" type="Node3D" parent="Map/WoodpathRegion" unique_id=1615082178 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0791193, 0, 0, 0, 1.0791193, 0, 0, 0, 1.0791193, 50.40055, 0, 20.638546)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c21" type="Node3D" parent="Map/WoodpathRegion" unique_id=1229566371 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.96362376, 0, 0, 0, 0.96362376, 0, 0, 0, 0.96362376, 48.781982, 0, 23.51674)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_cart22" type="Node3D" parent="Map/WoodpathRegion" unique_id=279023813 instance=ExtResource("9_n0jxt")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 30.8, 0, -6.2)
+script = ExtResource("7_upgdc")
+asset_id = "cart"
+spec = {
+"anchor": [0.65, 0.8],
+"depth_box": [2.0, 1.6, 2.5],
+"shape": "box",
+"size": [1.55, 1.1, 1.8],
+"width": 2.8
+}
+
+[node name="TrailInteraction" type="Marker3D" parent="Map/WoodpathRegion/Woodpath_cart22" unique_id=1132707860]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.25, 0, -2.25)
+metadata/interaction_id = "trail"
+
+[node name="Woodpath_rock23" type="Node3D" parent="Map/WoodpathRegion" unique_id=662454823 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(0.8695652, 0, 0, 0, 0.8695652, 0, 0, 0, 0.8695652, 23, 0, 12.5)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="Woodpath_rock24" type="Node3D" parent="Map/WoodpathRegion" unique_id=2015609728 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(1.0434783, 0, 0, 0, 1.0434783, 0, 0, 0, 1.0434783, 36, 0, 5)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="Woodpath_rock25" type="Node3D" parent="Map/WoodpathRegion" unique_id=1955182267 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(0.95652175, 0, 0, 0, 0.95652175, 0, 0, 0, 0.95652175, 49, 0, -12)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="Woodpath_stump26" type="Node3D" parent="Map/WoodpathRegion" unique_id=242374082 instance=ExtResource("10_8tdga")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 44, 0, -19)
+script = ExtResource("7_upgdc")
+asset_id = "stump"
+spec = {
+"anchor": [0.52, 0.88],
+"depth_box": [1.0, 0.7, 1.0],
+"height": 0.52,
+"radius": 0.39,
+"shape": "cylinder",
+"width": 1.35
+}
+
+[node name="Woodpath_rock27" type="Node3D" parent="Map/WoodpathRegion" unique_id=1408880530 instance=ExtResource("11_su3wq")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53, 0, 17.3)
+script = ExtResource("7_upgdc")
+asset_id = "rock"
+spec = {
+"anchor": [0.5, 0.88],
+"depth_box": [1.5, 1.05, 1.3],
+"height": 0.85,
+"radius": 0.66,
+"shape": "cylinder",
+"width": 1.7
+}
+built_scale = 1.15
+
+[node name="MemorialInteraction" type="Marker3D" parent="Map/WoodpathRegion/Woodpath_rock27" unique_id=1068373760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.2999992)
+metadata/interaction_id = "memorial"
+
+[node name="Woodpath_well28" type="Node3D" parent="Map/WoodpathRegion" unique_id=97244598 instance=ExtResource("6_3sm2a")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 66, 0, -9)
+script = ExtResource("7_upgdc")
+asset_id = "well"
+spec = {
+"anchor": [0.49, 0.91],
+"depth_box": [1.8, 2.8, 1.8],
+"height": 0.95,
+"radius": 0.8,
+"shape": "cylinder",
+"width": 2.3
+}
+
+[node name="Woodpath_wall29" type="Node3D" parent="Map/WoodpathRegion" unique_id=46021858 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 55, 0, -3)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="Woodpath_wall30" type="Node3D" parent="Map/WoodpathRegion" unique_id=75786902 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 66, 0, -3)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="Woodpath_wall31" type="Node3D" parent="Map/WoodpathRegion" unique_id=1753194113 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 55, 0, -13)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="Woodpath_wall32" type="Node3D" parent="Map/WoodpathRegion" unique_id=303074260 instance=ExtResource("12_6vvkh")]
+process_physics_priority = 30
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 66, 0, -13)
+script = ExtResource("7_upgdc")
+asset_id = "wall"
+spec = {
+"anchor": [0.5, 0.73],
+"depth_box": [4.9, 1.45, 0.65],
+"shape": "box",
+"size": [4.9, 1.05, 0.6],
+"width": 4.9
+}
+
+[node name="Woodpath_wall_z33" type="Node3D" parent="Map/WoodpathRegion" unique_id=425876713 instance=ExtResource("18_5kpyk")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52.8, 0, -11)
+script = ExtResource("7_upgdc")
+asset_id = "wall_z"
+spec = {
+"anchor": [0.5, 0.72],
+"aspect": 1.18105849582173,
+"depth_box": [0.65, 1.45, 4.0],
+"pixels_per_meter": 28.0,
+"region": [27.0, 104.0, 1077.0, 1272.0],
+"shape": "box",
+"size": [0.6, 1.05, 4.0],
+"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+"width": 2.6
+}
+
+[node name="Woodpath_wall_z34" type="Node3D" parent="Map/WoodpathRegion" unique_id=931183855 instance=ExtResource("18_5kpyk")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52.8, 0, -5)
+script = ExtResource("7_upgdc")
+asset_id = "wall_z"
+spec = {
+"anchor": [0.5, 0.72],
+"aspect": 1.18105849582173,
+"depth_box": [0.65, 1.45, 4.0],
+"pixels_per_meter": 28.0,
+"region": [27.0, 104.0, 1077.0, 1272.0],
+"shape": "box",
+"size": [0.6, 1.05, 4.0],
+"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+"width": 2.6
+}
+
+[node name="Woodpath_wall_z35" type="Node3D" parent="Map/WoodpathRegion" unique_id=1427065892 instance=ExtResource("18_5kpyk")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.8, 0, -11)
+script = ExtResource("7_upgdc")
+asset_id = "wall_z"
+spec = {
+"anchor": [0.5, 0.72],
+"aspect": 1.18105849582173,
+"depth_box": [0.65, 1.45, 4.0],
+"pixels_per_meter": 28.0,
+"region": [27.0, 104.0, 1077.0, 1272.0],
+"shape": "box",
+"size": [0.6, 1.05, 4.0],
+"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+"width": 2.6
+}
+
+[node name="Woodpath_wall_z36" type="Node3D" parent="Map/WoodpathRegion" unique_id=1082105901 instance=ExtResource("18_5kpyk")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.8, 0, -5)
+script = ExtResource("7_upgdc")
+asset_id = "wall_z"
+spec = {
+"anchor": [0.5, 0.72],
+"aspect": 1.18105849582173,
+"depth_box": [0.65, 1.45, 4.0],
+"pixels_per_meter": 28.0,
+"region": [27.0, 104.0, 1077.0, 1272.0],
+"shape": "box",
+"size": [0.6, 1.05, 4.0],
+"texture": "res://assets/environment/painted/woodpath/unified/source/wall_z_v4.png",
+"width": 2.6
+}
+
+[node name="Woodpath_waystation_ruin37" type="Node3D" parent="Map/WoodpathRegion" unique_id=1673439529 instance=ExtResource("19_xq3li")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61, 0, -16)
+script = ExtResource("7_upgdc")
+asset_id = "waystation_ruin"
+spec = {
+"anchor": [0.5, 0.75],
+"aspect": 0.829570284049527,
+"collision_parts": [{
+"at": [0.0, 1.1, -1.6],
+"size": [5.4, 2.2, 0.4]
+}, {
+"at": [-2.5, 1.0, 0.0],
+"size": [0.4, 2.0, 3.2]
+}, {
+"at": [2.5, 1.0, 0.0],
+"size": [0.4, 2.0, 3.2]
+}, {
+"at": [-1.7, 0.8, 1.6],
+"size": [1.6, 1.6, 0.4]
+}, {
+"at": [1.7, 0.8, 1.6],
+"size": [1.6, 1.6, 0.4]
+}],
+"depth_box": [5.0, 3.0, 3.0],
+"region": [0.0, 6.0, 1373.0, 1139.0],
+"shape": "box",
+"size": [5.0, 2.4, 3.0],
+"texture": "res://assets/environment/painted/woodpath/source/waystation_ruin.png",
+"width": 8.0
+}
+
+[node name="Woodpath_litter38" type="Node3D" parent="Map/WoodpathRegion" unique_id=1585776792 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.017932, 0.03, 20.8692)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter39" type="Node3D" parent="Map/WoodpathRegion" unique_id=1893833490 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(1.1609899, 0, 0, 0, 1.1609899, 0, 0, 0, 1.1609899, 25.378555, 0.03, -12.042765)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter40" type="Node3D" parent="Map/WoodpathRegion" unique_id=220888054 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(1.0851699, 0, 0, 0, 1.0851699, 0, 0, 0, 1.0851699, 37.972157, 0.03, -22.541946)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter41" type="Node3D" parent="Map/WoodpathRegion" unique_id=1299586997 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(1.0343854, 0, 0, 0, 1.0343854, 0, 0, 0, 1.0343854, 66.437004, 0.03, -16.557411)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter42" type="Node3D" parent="Map/WoodpathRegion" unique_id=698242682 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(0.8504873, 0, 0, 0, 0.8504873, 0, 0, 0, 0.8504873, 65.873856, 0.03, 21.508184)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter43" type="Node3D" parent="Map/WoodpathRegion" unique_id=829867390 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(0.9830322, 0, 0, 0, 0.9830322, 0, 0, 0, 0.9830322, 50.85055, 0.03, 20.988546)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_litter44" type="Node3D" parent="Map/WoodpathRegion" unique_id=1342784117 instance=ExtResource("20_x4hp4")]
+process_physics_priority = 30
+transform = Transform3D(1.255972, 0, 0, 0, 1.255972, 0, 0, 0, 1.255972, 49.231983, 0.03, 23.866741)
+script = ExtResource("7_upgdc")
+asset_id = "litter"
+spec = {
+"anchor": [0.5, 0.65],
+"aspect": 0.580459770114943,
+"depth_box": [1.6, 0.1, 1.0],
+"region": [89.0, 18.0, 1566.0, 909.0],
+"shape": "none",
+"texture": "res://assets/environment/painted/woodpath/unified/source/litter.png",
+"width": 1.6
+}
+built_scale = 0.7721307
+
+[node name="Woodpath_tree_a45" type="Node3D" parent="Map/WoodpathRegion" unique_id=1100387727 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0176419, 0, 0, 0, 1.0176419, 0, 0, 0, 1.0176419, 11.291378, 0, -27.731178)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a46" type="Node3D" parent="Map/WoodpathRegion" unique_id=1657778491 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0275778, 0, 0, 0, 1.0275778, 0, 0, 0, 1.0275778, 11.575543, 0, 27.800653)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a47" type="Node3D" parent="Map/WoodpathRegion" unique_id=2016553185 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(0.97512215, 0, 0, 0, 0.97512215, 0, 0, 0, 0.97512215, 17.58075, 0, -28.398203)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b48" type="Node3D" parent="Map/WoodpathRegion" unique_id=280338712 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(1.03645, 0, 0, 0, 1.03645, 0, 0, 0, 1.03645, 17.266087, 0, 28.740463)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c49" type="Node3D" parent="Map/WoodpathRegion" unique_id=618735847 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.0916374, 0, 0, 0, 1.0916374, 0, 0, 0, 1.0916374, 21.951286, 0, -28.81518)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a50" type="Node3D" parent="Map/WoodpathRegion" unique_id=511936420 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0768185, 0, 0, 0, 1.0768185, 0, 0, 0, 1.0768185, 21.087, 0, 28.607298)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c51" type="Node3D" parent="Map/WoodpathRegion" unique_id=1858756216 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.9140594, 0, 0, 0, 0.9140594, 0, 0, 0, 0.9140594, 25.493927, 0, -26.86246)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a52" type="Node3D" parent="Map/WoodpathRegion" unique_id=1581835692 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1121786, 0, 0, 0, 1.1121786, 0, 0, 0, 1.1121786, 26.010056, 0, 28.713717)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a53" type="Node3D" parent="Map/WoodpathRegion" unique_id=2114944601 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1724824, 0, 0, 0, 1.1724824, 0, 0, 0, 1.1724824, 31.026043, 0, -28.893225)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c54" type="Node3D" parent="Map/WoodpathRegion" unique_id=1643711457 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.1315906, 0, 0, 0, 1.1315906, 0, 0, 0, 1.1315906, 29.650206, 0, 27.642824)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a55" type="Node3D" parent="Map/WoodpathRegion" unique_id=179732257 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.2619162, 0, 0, 0, 1.2619162, 0, 0, 0, 1.2619162, 33.686172, 0, -27.519373)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a56" type="Node3D" parent="Map/WoodpathRegion" unique_id=761872427 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(0.98632884, 0, 0, 0, 0.98632884, 0, 0, 0, 0.98632884, 34.49486, 0, 28.831968)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b57" type="Node3D" parent="Map/WoodpathRegion" unique_id=557202314 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.8498685, 0, 0, 0, 0.8498685, 0, 0, 0, 0.8498685, 38.92802, 0, -27.64915)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_b58" type="Node3D" parent="Map/WoodpathRegion" unique_id=579216544 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9413475, 0, 0, 0, 0.9413475, 0, 0, 0, 0.9413475, 38.387844, 0, 26.920368)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a59" type="Node3D" parent="Map/WoodpathRegion" unique_id=1664444519 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0929255, 0, 0, 0, 1.0929255, 0, 0, 0, 1.0929255, 44.45297, 0, -29.293793)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c60" type="Node3D" parent="Map/WoodpathRegion" unique_id=117138297 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.1059877, 0, 0, 0, 1.1059877, 0, 0, 0, 1.1059877, 43.290356, 0, 28.53752)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b61" type="Node3D" parent="Map/WoodpathRegion" unique_id=610984742 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9538208, 0, 0, 0, 0.9538208, 0, 0, 0, 0.9538208, 49.315136, 0, -27.014645)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c62" type="Node3D" parent="Map/WoodpathRegion" unique_id=122333388 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.8972651, 0, 0, 0, 0.8972651, 0, 0, 0, 0.8972651, 50.30203, 0, 26.961344)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_c63" type="Node3D" parent="Map/WoodpathRegion" unique_id=1312558988 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.9430889, 0, 0, 0, 0.9430889, 0, 0, 0, 0.9430889, 54.73273, 0, -28.719866)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b64" type="Node3D" parent="Map/WoodpathRegion" unique_id=1534300969 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.99408054, 0, 0, 0, 0.99408054, 0, 0, 0, 0.99408054, 53.859665, 0, 28.390095)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c65" type="Node3D" parent="Map/WoodpathRegion" unique_id=1170818151 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.1211149, 0, 0, 0, 1.1211149, 0, 0, 0, 1.1211149, 58.700226, 0, -29.01854)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b66" type="Node3D" parent="Map/WoodpathRegion" unique_id=1748391801 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.88746804, 0, 0, 0, 0.88746804, 0, 0, 0, 0.88746804, 60.048813, 0, 27.670727)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c67" type="Node3D" parent="Map/WoodpathRegion" unique_id=46832498 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.89100593, 0, 0, 0, 0.89100593, 0, 0, 0, 0.89100593, 62.273193, 0, -28.843763)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b68" type="Node3D" parent="Map/WoodpathRegion" unique_id=1591688878 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9572779, 0, 0, 0, 0.9572779, 0, 0, 0, 0.9572779, 62.57974, 0, 27.289948)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c69" type="Node3D" parent="Map/WoodpathRegion" unique_id=2050106896 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.113808, 0, 0, 0, 1.113808, 0, 0, 0, 1.113808, 68.05558, 0, -28.686857)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a70" type="Node3D" parent="Map/WoodpathRegion" unique_id=1962698212 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1491431, 0, 0, 0, 1.1491431, 0, 0, 0, 1.1491431, 68.28965, 0, 26.908451)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b71" type="Node3D" parent="Map/WoodpathRegion" unique_id=1787614050 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(1.0054129, 0, 0, 0, 1.0054129, 0, 0, 0, 1.0054129, 72.02119, 0, -27.42602)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_b72" type="Node3D" parent="Map/WoodpathRegion" unique_id=1636141513 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.8258655, 0, 0, 0, 0.8258655, 0, 0, 0, 0.8258655, 73.30493, 0, 27.596407)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a73" type="Node3D" parent="Map/WoodpathRegion" unique_id=2034618670 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.2646102, 0, 0, 0, 1.2646102, 0, 0, 0, 1.2646102, 76.6148, 0, -29.130684)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a74" type="Node3D" parent="Map/WoodpathRegion" unique_id=849953343 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0594784, 0, 0, 0, 1.0594784, 0, 0, 0, 1.0594784, 78.4632, 0, 27.606726)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a75" type="Node3D" parent="Map/WoodpathRegion" unique_id=1738248746 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1703705, 0, 0, 0, 1.1703705, 0, 0, 0, 1.1703705, 76.94541, 0, -24)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c76" type="Node3D" parent="Map/WoodpathRegion" unique_id=1871204580 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.87380856, 0, 0, 0, 0.87380856, 0, 0, 0, 0.87380856, 77.204895, 0, -19.28411)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_b77" type="Node3D" parent="Map/WoodpathRegion" unique_id=690961437 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.98329526, 0, 0, 0, 0.98329526, 0, 0, 0, 0.98329526, 76.23818, 0, -15.155718)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_a78" type="Node3D" parent="Map/WoodpathRegion" unique_id=594897249 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1093166, 0, 0, 0, 1.1093166, 0, 0, 0, 1.1093166, 77.48029, 0, -11.268493)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a79" type="Node3D" parent="Map/WoodpathRegion" unique_id=1523602218 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.168111, 0, 0, 0, 1.168111, 0, 0, 0, 1.168111, 77.4247, 0, -7.555333)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a80" type="Node3D" parent="Map/WoodpathRegion" unique_id=982122799 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0060164, 0, 0, 0, 1.0060164, 0, 0, 0, 1.0060164, 77.43931, 0, -3.7400286)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b81" type="Node3D" parent="Map/WoodpathRegion" unique_id=611310137 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.80596036, 0, 0, 0, 0.80596036, 0, 0, 0, 0.80596036, 77.40323, 0, 0.6732013)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c82" type="Node3D" parent="Map/WoodpathRegion" unique_id=628971185 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.0556294, 0, 0, 0, 1.0556294, 0, 0, 0, 1.0556294, 77.769196, 0, 5.5831747)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a83" type="Node3D" parent="Map/WoodpathRegion" unique_id=979901121 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.0126717, 0, 0, 0, 1.0126717, 0, 0, 0, 1.0126717, 77.64459, 0, 10.140295)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_a84" type="Node3D" parent="Map/WoodpathRegion" unique_id=2131414197 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1770017, 0, 0, 0, 1.1770017, 0, 0, 0, 1.1770017, 76.74408, 0, 14.991166)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_c85" type="Node3D" parent="Map/WoodpathRegion" unique_id=1062884018 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.9721515, 0, 0, 0, 0.9721515, 0, 0, 0, 0.9721515, 77.10903, 0, 20.476303)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_c86" type="Node3D" parent="Map/WoodpathRegion" unique_id=342496821 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(0.9729058, 0, 0, 0, 0.9729058, 0, 0, 0, 0.9729058, 76.660576, 0, 25.597677)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Woodpath_tree_a87" type="Node3D" parent="Map/WoodpathRegion" unique_id=375642223 instance=ExtResource("17_1kn86")]
+process_physics_priority = 30
+transform = Transform3D(1.1229603, 0, 0, 0, 1.1229603, 0, 0, 0, 1.1229603, -6.2, 0, 0.3)
+script = ExtResource("7_upgdc")
+asset_id = "tree_a"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.13430282292558,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 19.0, 1169.0, 1326.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_a.png",
+"width": 4.8
+}
+built_scale = 0.8459782
+
+[node name="Woodpath_tree_b88" type="Node3D" parent="Map/WoodpathRegion" unique_id=1230773460 instance=ExtResource("15_bvg3y")]
+process_physics_priority = 30
+transform = Transform3D(0.9481407, 0, 0, 0, 0.9481407, 0, 0, 0, 0.9481407, 5.7, 0, -5.7)
+script = ExtResource("7_upgdc")
+asset_id = "tree_b"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.23796548592189,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.36,
+"region": [2.0, 19.0, 1101.0, 1363.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_b.png",
+"width": 3.6
+}
+built_scale = 1.001961
+
+[node name="Woodpath_tree_c89" type="Node3D" parent="Map/WoodpathRegion" unique_id=375541680 instance=ExtResource("16_06wyk")]
+process_physics_priority = 30
+transform = Transform3D(1.0127527, 0, 0, 0, 1.0127527, 0, 0, 0, 1.0127527, -9.6, 0, 10)
+script = ExtResource("7_upgdc")
+asset_id = "tree_c"
+spec = {
+"anchor": [0.5, 0.97],
+"aspect": 1.05671392827356,
+"depth_box": [3.8, 4.8, 3.0],
+"depth_mode": 1.0,
+"height": 2.1,
+"pixels_per_meter": 28.0,
+"radius": 0.42,
+"region": [0.0, 9.0, 1199.0, 1267.0],
+"shadow_profile": "oak",
+"shape": "cylinder",
+"texture": "res://assets/environment/painted/woodpath/unified/source/tree_c.png",
+"width": 4.4
+}
+built_scale = 0.9380375
+
+[node name="Cottage" type="Node3D" parent="Map" unique_id=494312810 instance=ExtResource("21_iqv6j")]
+script = ExtResource("22_x60p0")
+
+[node name="Interactions" type="Node3D" parent="Map" unique_id=1438308184]
+
+[node name="Steward" type="CharacterBody3D" parent="Map/Interactions" unique_id=164954875 instance=ExtResource("23_r8uoc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 13.6)
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("24_e67rf")
+metadata/interaction_id = "steward"
+
+[node name="Healer" type="CharacterBody3D" parent="Map/Interactions" unique_id=1286368064 instance=ExtResource("25_4x8yw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.4, 0, 8.2)
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("24_e67rf")
+asset_id = "healer"
+metadata/interaction_id = "healer"
+
+[node name="Stash" type="Node3D" parent="Map/Interactions" unique_id=1436988353 instance=ExtResource("26_re4ba")]
+process_mode = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 0, 14.7)
+script = ExtResource("27_h1blo")
+frames = Array[AtlasTexture]([SubResource("AtlasTexture_afpir"), SubResource("AtlasTexture_db0e2"), SubResource("AtlasTexture_gbvtw"), SubResource("AtlasTexture_q6olh")])
+metadata/interaction_id = "stash"
+
+[node name="Satchel" type="Node3D" parent="Map/Interactions" unique_id=2062998662 instance=ExtResource("29_lribn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, -8)
+metadata/interaction_id = "satchel"
+
+[node name="Chest" type="Node3D" parent="Map/Interactions" unique_id=876486864 instance=ExtResource("26_re4ba")]
+process_mode = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 0, -5)
+script = ExtResource("27_h1blo")
+frames = Array[AtlasTexture]([SubResource("AtlasTexture_afpir"), SubResource("AtlasTexture_db0e2"), SubResource("AtlasTexture_gbvtw"), SubResource("AtlasTexture_q6olh")])
+metadata/interaction_id = "chest"
+
+[node name="Cache" type="Node3D" parent="Map/Interactions" unique_id=1257054970 instance=ExtResource("26_re4ba")]
+process_mode = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, -20)
+script = ExtResource("27_h1blo")
+frames = Array[AtlasTexture]([SubResource("AtlasTexture_afpir"), SubResource("AtlasTexture_db0e2"), SubResource("AtlasTexture_gbvtw"), SubResource("AtlasTexture_q6olh")])
+metadata/interaction_id = "cache"
+
+[node name="Supply" type="Node3D" parent="Map/Interactions" unique_id=510906159 instance=ExtResource("26_re4ba")]
+process_mode = 3
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62.2, 0, -16)
+script = ExtResource("27_h1blo")
+frames = Array[AtlasTexture]([SubResource("AtlasTexture_afpir"), SubResource("AtlasTexture_db0e2"), SubResource("AtlasTexture_gbvtw"), SubResource("AtlasTexture_q6olh")])
+metadata/interaction_id = "supply"
+
+[node name="PlayerSpawn" type="Marker3D" parent="Map" unique_id=1671173695]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0.1, 13.6)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1901066702]
+environment = SubResource("Environment_ap3kb")
+
+[node name="Sunlight" type="DirectionalLight3D" parent="." unique_id=1420248735]
+transform = Transform3D(0.9805807, -0.091774106, -0.17331775, 0.1961161, 0.4588705, 0.8665889, -2.9802322e-08, -0.88375074, 0.46795794, 0, 0, 0)
+light_color = Color(0.9082705, 0.90429586, 0.840181, 1)
+light_energy = 0.78529763
+shadow_enabled = true
+shadow_opacity = 0.22
+
+[node name="EditorCamera" type="Camera3D" parent="." unique_id=542099178]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, 9.807317, 15.71247, 32.903946)
+projection = 1
+size = 14.166667
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_rock23"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_rock23")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_rock24"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_rock24")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_rock25"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_rock25")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_stump26"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_stump26")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_rock27"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_rock27")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_wall29"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_wall29")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_wall30"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_wall30")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_wall31"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_wall31")
+
+[node name="GroundContact" type="MeshInstance3D" parent="Map/WoodpathRegion/Woodpath_wall32"]
+position = Vector3(0, 0.004, 0)
+material_override = SubResource("ContactMaterial")
+cast_shadow = 0
+mesh = SubResource("Contact_Woodpath_wall32")

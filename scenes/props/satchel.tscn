@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6yyu7"]
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0.4745098, 0.35686275, 0.2509804, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fd04w"]
+size = Vector3(0.42, 0.28, 0.34)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grsr6"]
+diffuse_mode = 3
+specular_mode = 2
+albedo_color = Color(0.6901961, 0.5647059, 0.3764706, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xqqcc"]
+size = Vector3(0.08, 0.3, 0.36)
+
+[node name="Satchel" type="Node3D" unique_id=2062998662]
+
+[node name="MeshInstance3D1" type="MeshInstance3D" parent="." unique_id=461070176]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+material_override = SubResource("StandardMaterial3D_6yyu7")
+mesh = SubResource("BoxMesh_fd04w")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=551929481]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0)
+material_override = SubResource("StandardMaterial3D_grsr6")
+mesh = SubResource("BoxMesh_xqqcc")

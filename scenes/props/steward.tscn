@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/presentation/story_villager.gd" id="1_tleug"]
+[ext_resource type="Shader" path="res://scripts/presentation/baked_human.gdshader" id="2_48iqa"]
+[ext_resource type="Texture2D" path="res://assets/characters/steward_baked/page_00.png" id="3_vrgcn"]
+[ext_resource type="Texture2D" path="res://assets/characters/steward_baked/page_00_depth.png" id="4_fgv2j"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rtv37"]
+render_priority = 0
+shader = ExtResource("2_48iqa")
+shader_parameter/color_atlas = ExtResource("3_vrgcn")
+shader_parameter/depth_atlas = ExtResource("4_fgv2j")
+shader_parameter/frame_rect = Vector4(0, 0, 0.025390625, 0.034179688)
+shader_parameter/depth_rect = Vector4(0, 0, 0.025390625, 0.034179688)
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/opacity = 1.0
+shader_parameter/depth_axis = Vector3(0, 2.9802322e-08, 1.0000001)
+
+[sub_resource type="QuadMesh" id="QuadMesh_6leer"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5yxxo"]
+render_priority = 0
+shader = ExtResource("2_48iqa")
+shader_parameter/color_atlas = ExtResource("3_vrgcn")
+shader_parameter/depth_atlas = ExtResource("4_fgv2j")
+shader_parameter/frame_rect = Vector4(0.20898438, 0.11425781, 0.017578125, 0.040039063)
+shader_parameter/depth_rect = Vector4(0.20898438, 0.11425781, 0.017578125, 0.040039063)
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/opacity = 1.0
+shader_parameter/depth_axis = Vector3(0, 2.9802322e-08, 1.0000001)
+
+[sub_resource type="QuadMesh" id="QuadMesh_ll10p"]
+
+[node name="Steward" type="CharacterBody3D" unique_id=164954875]
+script = ExtResource("1_tleug")
+
+[node name="EditorPose" type="Node3D" parent="." unique_id=305108152]
+
+[node name="UpperBody" type="MeshInstance3D" parent="EditorPose" unique_id=1634885364]
+transform = Transform3D(0.62837344, -0.22624363, 0.34618863, 0, 0.7645419, 0.57357645, -0.29301536, -0.485181, 0.74240386, -0.074337244, 1.1722066, -0.1594162)
+material_override = SubResource("ShaderMaterial_rtv37")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_6leer")
+
+[node name="LowerBody" type="MeshInstance3D" parent="EditorPose" unique_id=382561860]
+transform = Transform3D(0.43502778, -0.26502827, 0.34618863, 0, 0.8956063, 0.57357645, -0.2028568, -0.5683549, 0.74240386, 0.0695613, 0.5632612, 0.2122736)
+material_override = SubResource("ShaderMaterial_5yxxo")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_ll10p")
